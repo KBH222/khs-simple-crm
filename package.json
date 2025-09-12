@@ -1,0 +1,33 @@
+{
+  "name": "khs-simple-crm",
+  "version": "1.0.0",
+  "description": "KHS Construction & Remodeling CRM - Simple & Reliable",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'No build step required for simple backend'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "bcryptjs": "^2.4.3",
+    "express-session": "^1.17.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "crm",
+    "construction",
+    "customer-management",
+    "job-management"
+  ],
+  "author": "KHS Construction",
+  "license": "Private",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KBH222/khs-simple-crm.git"
+  }
+}

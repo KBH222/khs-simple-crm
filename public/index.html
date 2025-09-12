@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>KHS CRM</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="screen">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <h1>KHS CRM</h1>
+          <p>Sign in to your account</p>
+        </div>
+
+        <div id="loginError" class="error-message" style="display: none;"></div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required placeholder="Enter your email">
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" required placeholder="Enter your password">
+          </div>
+
+          <button type="submit" id="loginBtn">Sign in</button>
+        </form>
+
+        <div class="login-footer">
+          <p>Don't have an account? <button type="button" id="toggleSignUp" class="link-btn">Sign Up</button></p>
+          <div class="default-credentials">
+            <p>Default credentials:</p>
+            <code>
+              Email: admin@khscrm.com<br>
+              Password: admin123
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Screen -->
+  <div id="appScreen" class="screen" style="display: none;">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">
+          <div class="logo-placeholder">K</div>
+          <span>KHS CRM</span>
+        </h1>
+        <div class="header-user">
+          <span id="userName"></span>
+          <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Dashboard -->
+      <div id="dashboard" class="page active">
+        <div class="page-container">
+          <!-- Date and Time -->
+          <div class="dashboard-header">
+            <div class="current-date" id="currentDate"></div>
+            <div class="current-time" id="currentTime"></div>
+          </div>
+
+          <!-- Quick Access Cards -->
+          <h2 class="section-title">Quick Access</h2>
+          <div class="nav-grid">
+            <div class="nav-card" data-page="customers">
+              <div class="nav-card-header" style="background-color: #3B82F6;"></div>
+              <div class="nav-card-content">
+                <div class="nav-card-icon">👥</div>
+                <div class="nav-card-info">
+                  <h3>Customers</h3>
+                  <p>View and manage customer information</p>
+                </div>
+                <div class="nav-card-arrow">→</div>
+              </div>
+            </div>
+
+            <div class="nav-card" data-page="jobs">
+              <div class="nav-card-header" style="background-color: #10B981;"></div>
+              <div class="nav-card-content">
+                <div class="nav-card-icon">📅</div>
+                <div class="nav-card-info">
+                  <h3>Jobs</h3>
+                  <p>Manage jobs and schedules</p>
+                </div>
+                <div class="nav-card-arrow">→</div>
+              </div>
+            </div>
+
+            <div class="nav-card" data-page="workers">
+              <div class="nav-card-header" style="background-color: #F59E0B;"></div>
+              <div class="nav-card-content">
+                <div class="nav-card-icon">👷</div>
+                <div class="nav-card-info">
+                  <h3>Workers</h3>
+                  <p>Manage team assignments</p>
+                </div>
+                <div class="nav-card-arrow">→</div>
+              </div>
+            </div>
+
+            <div class="nav-card" data-page="materials">
+              <div class="nav-card-header" style="background-color: #8B5CF6;"></div>
+              <div class="nav-card-content">
+                <div class="nav-card-icon">📦</div>
+                <div class="nav-card-info">
+                  <h3>Materials</h3>
+                  <p>Master list from all jobs</p>
+                </div>
+                <div class="nav-card-arrow">→</div>
+              </div>
+            </div>
+
+            <div class="nav-card" data-page="profile">
+              <div class="nav-card-header" style="background-color: #6B7280;"></div>
+              <div class="nav-card-content">
+                <div class="nav-card-icon">⚙️</div>
+                <div class="nav-card-info">
+                  <h3>Profile</h3>
+                  <p>Account settings</p>
+                </div>
+                <div class="nav-card-arrow">→</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customers Page -->
+      <div id="customers" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Customers</h2>
+            <button class="add-btn" id="addCustomerBtn">+ Add Customer</button>
+          </div>
+
+          <div class="filters">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-type="">All</button>
+              <button class="filter-tab" data-type="CURRENT">Current</button>
+              <button class="filter-tab" data-type="LEADS">Leads</button>
+            </div>
+          </div>
+
+          <div class="search-bar">
+            <input type="text" id="customerSearch" placeholder="Search customers...">
+          </div>
+
+          <div id="customersList" class="customers-list">
+            <!-- Customers will be loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Add/Edit Customer Modal -->
+      <div id="customerModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="customerModalTitle">Add Customer</h3>
+            <button class="close-btn">&times;</button>
+          </div>
+          <form id="customerForm">
+            <div class="form-group">
+              <label for="customerName">Name *</label>
+              <input type="text" id="customerName" required>
+            </div>
+            <div class="form-group">
+              <label for="customerPhone">Phone</label>
+              <input type="tel" id="customerPhone">
+            </div>
+            <div class="form-group">
+              <label for="customerEmail">Email</label>
+              <input type="email" id="customerEmail">
+            </div>
+            <div class="form-group">
+              <label for="customerAddress">Address</label>
+              <textarea id="customerAddress"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="customerReference">Reference</label>
+              <select id="customerReference">
+                <option value="">Select reference...</option>
+                <option value="HOD">Home Depot</option>
+                <option value="Yelp">Yelp</option>
+                <option value="Cust">Customer Referral</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="customerType">Type</label>
+              <select id="customerType">
+                <option value="CURRENT">Current Customer</option>
+                <option value="LEADS">Lead</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="customerNotes">Notes</label>
+              <textarea id="customerNotes"></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="submit" class="save-btn">Save Customer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Other pages (placeholder) -->
+      <div id="jobs" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Jobs</h2>
+          </div>
+          <p>Jobs management coming soon...</p>
+        </div>
+      </div>
+
+      <div id="workers" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Workers</h2>
+          </div>
+          <p>Workers management coming soon...</p>
+        </div>
+      </div>
+
+      <div id="materials" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Materials</h2>
+          </div>
+          <p>Materials management coming soon...</p>
+        </div>
+      </div>
+
+      <div id="profile" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Profile</h2>
+          </div>
+          <p>Profile settings coming soon...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
