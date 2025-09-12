@@ -1,5 +1,4 @@
 // Global state
-let currentUser = null;
 let customers = [];
 let currentFilter = 'all';
 
@@ -23,26 +22,15 @@ function formatTime(date) {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-  checkAuthState();
   updateDateTime();
   setInterval(updateDateTime, 1000);
+  loadCustomers();
   
   // Event listeners
   setupEventListeners();
 });
 
 function setupEventListeners() {
-  // Login form
-  const loginBtn = document.getElementById('loginBtn');
-  if (loginBtn) {
-    loginBtn.addEventListener('click', handleLogin);
-  }
-  
-  // Logout
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
-  }
   
   // Navigation cards
   document.querySelectorAll('.nav-card').forEach(card => {
@@ -79,16 +67,16 @@ function setupEventListeners() {
   // Filter tabs
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', function() {
-      const filter = this.dataset.filter;
+      const filter = this.dataset.type || 'all';
       setFilter(filter);
     });
   });
   
   // Search
-  const searchInput = document.getElementById('searchInput');
+  const searchInput = document.getElementById('customerSearch');
   if (searchInput) {
     searchInput.addEventListener('input', function() {
-      filterCustomers(this.value);
+      renderCustomers();
     });
   }
   
@@ -102,108 +90,6 @@ function setupEventListeners() {
   });
 }
 
-// Authentication
-function checkAuthState() {
-  fetch('/api/auth/check')
-    .then(response => response.json())
-    .then(data => {
-      if (data.authenticated) {
-        currentUser = data.user;
-        showApp();
-        loadCustomers();
-      } else {
-        showLogin();
-      }
-    })
-    .catch(error => {
-      console.error('Auth check failed:', error);
-      showLogin();
-    });
-}
-
-async function handleLogin(e) {
-  e.preventDefault();
-  
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  const errorDiv = document.getElementById('errorMessage');
-  
-  // Clear previous errors
-  errorDiv.style.display = 'none';
-  
-  if (!username || !password) {
-    showError('Please enter both username and password');
-    return;
-  }
-  
-  try {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-    
-    const data = await response.json();
-    
-    if (response.ok) {
-      currentUser = data.user;
-      showApp();
-      loadCustomers();
-    } else {
-      showError(data.message || 'Login failed');
-    }
-  } catch (error) {
-    console.error('Login error:', error);
-    showError('Connection error. Please try again.');
-  }
-}
-
-async function handleLogout() {
-  try {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    currentUser = null;
-    customers = [];
-    showLogin();
-  } catch (error) {
-    console.error('Logout error:', error);
-    // Force logout even if request fails
-    currentUser = null;
-    customers = [];
-    showLogin();
-  }
-}
-
-function showError(message) {
-  const errorDiv = document.getElementById('errorMessage');
-  errorDiv.textContent = message;
-  errorDiv.style.display = 'block';
-}
-
-// UI Navigation
-function showLogin() {
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appScreen').style.display = 'none';
-  
-  // Clear form
-  document.getElementById('username').value = '';
-  document.getElementById('password').value = '';
-  document.getElementById('errorMessage').style.display = 'none';
-}
-
-function showApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appScreen').style.display = 'block';
-  
-  // Update header with user info
-  const userNameSpan = document.getElementById('userName');
-  if (userNameSpan && currentUser) {
-    userNameSpan.textContent = currentUser.name || currentUser.username;
-  }
-  
-  showPage('dashboard');
-}
 
 function showPage(pageName) {
   // Hide all pages
@@ -212,7 +98,7 @@ function showPage(pageName) {
   });
   
   // Show selected page
-  const targetPage = document.getElementById(pageName + 'Page');
+  const targetPage = document.getElementById(pageName);
   if (targetPage) {
     targetPage.classList.add('active');
   }
@@ -262,11 +148,11 @@ function renderCustomers() {
   // Filter customers based on current filter and search
   let filteredCustomers = customers;
   
-  if (currentFilter !== 'all') {
-    filteredCustomers = customers.filter(customer => customer.type === currentFilter);
+  if (currentFilter !== 'all' && currentFilter !== '') {
+    filteredCustomers = customers.filter(customer => customer.customer_type === currentFilter);
   }
   
-  const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+  const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
   if (searchTerm) {
     filteredCustomers = filteredCustomers.filter(customer =>
       customer.name.toLowerCase().includes(searchTerm) ||
@@ -290,8 +176,8 @@ function renderCustomers() {
     <div class="customer-card" onclick="editCustomer(${customer.id})">
       <div class="customer-header">
         <div class="customer-name">${escapeHtml(customer.name)}</div>
-        <div class="customer-type ${customer.type}">
-          ${customer.type === 'current' ? 'Current' : 'Lead'}
+        <div class="customer-type ${customer.customer_type?.toLowerCase()}">
+          ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
         </div>
       </div>
       <div class="customer-info">
@@ -312,7 +198,11 @@ function setFilter(filter) {
     tab.classList.remove('active');
   });
   
-  const activeTab = document.querySelector(`[data-filter="${filter}"]`);
+  const activeTab = document.querySelector(`[data-type="${filter}"]`);
+  if (!activeTab) {
+    const allTab = document.querySelector(`[data-type=""]:not([data-type="CURRENT"]):not([data-type="LEADS"])`);
+    if (allTab) allTab.classList.add('active');
+  }
   if (activeTab) {
     activeTab.classList.add('active');
   }
@@ -332,14 +222,15 @@ function showCustomerModal(customer = null) {
   if (customer) {
     // Edit mode
     title.textContent = 'Edit Customer';
-    form.elements.name.value = customer.name;
-    form.elements.email.value = customer.email;
-    form.elements.phone.value = customer.phone;
-    form.elements.address.value = customer.address || '';
-    form.elements.type.value = customer.type;
-    form.elements.notes.value = customer.notes || '';
+    document.getElementById('customerName').value = customer.name;
+    document.getElementById('customerEmail').value = customer.email || '';
+    document.getElementById('customerPhone').value = customer.phone || '';
+    document.getElementById('customerAddress').value = customer.address || '';
+    document.getElementById('customerReference').value = customer.reference || '';
+    document.getElementById('customerType').value = customer.customer_type || 'CURRENT';
+    document.getElementById('customerNotes').value = customer.notes || '';
     form.dataset.customerId = customer.id;
-  } else {
+  }
     // Add mode
     title.textContent = 'Add Customer';
     form.reset();
@@ -363,12 +254,13 @@ async function handleCustomerSubmit(e) {
   const formData = new FormData(form);
   
   const customerData = {
-    name: formData.get('name'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-    address: formData.get('address'),
-    type: formData.get('type'),
-    notes: formData.get('notes')
+    name: document.getElementById('customerName').value,
+    email: document.getElementById('customerEmail').value,
+    phone: document.getElementById('customerPhone').value,
+    address: document.getElementById('customerAddress').value,
+    reference: document.getElementById('customerReference').value,
+    customer_type: document.getElementById('customerType').value,
+    notes: document.getElementById('customerNotes').value
   };
   
   const customerId = form.dataset.customerId;

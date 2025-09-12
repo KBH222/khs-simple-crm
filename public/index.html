@@ -8,47 +8,8 @@
   <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="loginScreen" class="screen">
-    <div class="login-container">
-      <div class="login-card">
-        <div class="login-header">
-          <h1>KHS CRM</h1>
-          <p>Sign in to your account</p>
-        </div>
-
-        <div id="loginError" class="error-message" style="display: none;"></div>
-
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" required placeholder="Enter your email">
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" required placeholder="Enter your password">
-          </div>
-
-          <button type="submit" id="loginBtn">Sign in</button>
-        </form>
-
-        <div class="login-footer">
-          <p>Don't have an account? <button type="button" id="toggleSignUp" class="link-btn">Sign Up</button></p>
-          <div class="default-credentials">
-            <p>Default credentials:</p>
-            <code>
-              Email: admin@khscrm.com<br>
-              Password: admin123
-            </code>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Main App Screen -->
-  <div id="appScreen" class="screen" style="display: none;">
+  <div id="appScreen" class="screen">
     <!-- Header -->
     <header class="app-header">
       <div class="header-content">
@@ -57,8 +18,7 @@
           <span>KHS CRM</span>
         </h1>
         <div class="header-user">
-          <span id="userName"></span>
-          <button id="logoutBtn" class="logout-btn">Logout</button>
+          <span id="userName">Administrator</span>
         </div>
       </div>
     </header>

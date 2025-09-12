@@ -1,7 +1,5 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcryptjs');
-const session = require('express-session');
 const path = require('path');
 
 const app = express();
@@ -66,13 +64,12 @@ db.serialize(() => {
     FOREIGN KEY (job_id) REFERENCES jobs (id)
   )`);
 
-  // Create default admin user
+  // Create default admin user (simplified)
   const adminId = 'admin-' + Date.now();
-  const hashedPassword = bcrypt.hashSync('admin123', 10);
   
   db.run(`INSERT OR IGNORE INTO users (id, email, password, name, role) 
           VALUES (?, ?, ?, ?, ?)`,
-    [adminId, 'admin@khscrm.com', hashedPassword, 'Administrator', 'OWNER']
+    [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER']
   );
 });
 
@@ -80,16 +77,6 @@ db.serialize(() => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
-app.use(session({
-  secret: 'khs-crm-secret-2024',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: false, // Set to true in production with HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
 
 // CORS headers
 app.use((req, res, next) => {
@@ -110,13 +97,7 @@ function generateId(prefix = 'id') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Authentication middleware
-function requireAuth(req, res, next) {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  next();
-}
+// Simplified - no auth required for now
 
 // API Routes
 
@@ -129,94 +110,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Authentication
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    req.session.userId = user.id;
-    req.session.userEmail = user.email;
-    req.session.userRole = user.role;
-    
-    res.json({
-      token: req.session.id, // Simple token
-      refreshToken: req.session.id + '-refresh',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      }
-    });
-  });
-});
 
-app.post('/api/auth/register', (req, res) => {
-  const { email, password, name } = req.body;
-  
-  if (!email || !password || !name) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-  
-  const userId = generateId('user');
-  const hashedPassword = bcrypt.hashSync(password, 10);
-  
-  db.run('INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)',
-    [userId, email, hashedPassword, name], function(err) {
-    if (err) {
-      if (err.code === 'SQLITE_CONSTRAINT') {
-        return res.status(400).json({ error: 'User already exists' });
-      }
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    req.session.userId = userId;
-    req.session.userEmail = email;
-    req.session.userRole = 'WORKER';
-    
-    res.json({
-      token: req.session.id,
-      refreshToken: req.session.id + '-refresh',
-      user: {
-        id: userId,
-        email: email,
-        name: name,
-        role: 'WORKER'
-      }
-    });
-  });
-});
 
-app.get('/api/auth/me', requireAuth, (req, res) => {
-  db.get('SELECT id, email, name, role FROM users WHERE id = ?', 
-    [req.session.userId], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    res.json(user);
-  });
-});
 
-app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ message: 'Logged out' });
-});
 
 // Customers API
-app.get('/api/customers', requireAuth, (req, res) => {
+app.get('/api/customers', (req, res) => {
   const { type } = req.query;
   let query = `SELECT c.*, COUNT(j.id) as job_count 
                FROM customers c 
@@ -246,7 +145,7 @@ app.get('/api/customers', requireAuth, (req, res) => {
   });
 });
 
-app.post('/api/customers', requireAuth, (req, res) => {
+app.post('/api/customers', (req, res) => {
   const { name, phone, email, address, notes, reference, customer_type } = req.body;
   
   if (!name) {
@@ -280,7 +179,7 @@ app.post('/api/customers', requireAuth, (req, res) => {
     });
 });
 
-app.put('/api/customers/:id', requireAuth, (req, res) => {
+app.put('/api/customers/:id', (req, res) => {
   const { id } = req.params;
   const { name, phone, email, address, notes, reference, customer_type } = req.body;
   
@@ -318,7 +217,7 @@ app.put('/api/customers/:id', requireAuth, (req, res) => {
     });
 });
 
-app.delete('/api/customers/:id', requireAuth, (req, res) => {
+app.delete('/api/customers/:id', (req, res) => {
   const { id } = req.params;
   
   db.run('DELETE FROM customers WHERE id = ?', [id], function(err) {
@@ -335,7 +234,7 @@ app.delete('/api/customers/:id', requireAuth, (req, res) => {
 });
 
 // Jobs API
-app.get('/api/jobs', requireAuth, (req, res) => {
+app.get('/api/jobs', (req, res) => {
   const query = `SELECT j.*, c.name as customer_name 
                  FROM jobs j 
                  JOIN customers c ON j.customer_id = c.id 
@@ -349,7 +248,7 @@ app.get('/api/jobs', requireAuth, (req, res) => {
   });
 });
 
-app.post('/api/jobs', requireAuth, (req, res) => {
+app.post('/api/jobs', (req, res) => {
   const { customer_id, title, description, status, priority, total_cost, start_date, end_date, notes } = req.body;
   
   if (!customer_id || !title) {
