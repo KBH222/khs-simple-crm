@@ -201,10 +201,9 @@ async function loadCustomerJobs(customerId) {
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <strong>${escapeHtml(job.title)}</strong>
-                <span class="job-status" style="margin-left: 8px; padding: 2px 6px; border-radius: 2px; font-size: 10px; background: ${getStatusColor(job.status)}; color: white;">${job.status}</span>
               </div>
               <div style="color: #6B7280;">
-                ${job.total_cost > 0 ? `$${job.total_cost.toFixed(2)}` : 'No cost'}
+                ${job.total_cost > 0 ? `$${job.total_cost.toFixed(2)}` : ''}
               </div>
             </div>
             ${job.description ? `<div style="color: #6B7280; margin-top: 4px;">${escapeHtml(job.description.substring(0, 80))}${job.description.length > 80 ? '...' : ''}</div>` : ''}
