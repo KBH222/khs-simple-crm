@@ -83,6 +83,12 @@ function setupEventListeners() {
     customerForm.addEventListener('submit', handleCustomerSubmit);
   }
   
+  // Job form
+  const jobForm = document.getElementById('jobForm');
+  if (jobForm) {
+    jobForm.addEventListener('submit', handleJobSubmit);
+  }
+  
   // Filter tabs
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', function() {
@@ -217,6 +223,7 @@ function renderCustomers() {
         ${customer.notes ? `<p><strong>Notes:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
         <div style="margin-top: 10px;">
           <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;">Edit</button>
+          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;">Create Job</button>
           <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Delete</button>
         </div>
       </div>
@@ -299,6 +306,90 @@ async function deleteCustomer(customerId) {
     }
   } catch (error) {
     console.error('Error deleting customer:', error);
+    alert('Connection error. Please try again.');
+  }
+}
+
+// Job Management Functions
+function createJob(customerId) {
+  const customer = customers.find(c => c.id === customerId);
+  if (customer) {
+    showJobModal(customer);
+  }
+}
+
+function showJobModal(customer = null) {
+  const modal = document.getElementById('jobModal');
+  const form = document.getElementById('jobForm');
+  const title = modal.querySelector('.modal-header h3');
+  
+  // Set customer info
+  if (customer) {
+    document.getElementById('jobCustomer').value = customer.name;
+    form.dataset.customerId = customer.id;
+    title.textContent = `Create Job for ${customer.name}`;
+  } else {
+    document.getElementById('jobCustomer').value = '';
+    delete form.dataset.customerId;
+    title.textContent = 'Create Job';
+  }
+  
+  // Reset form
+  document.getElementById('jobTitle').value = '';
+  document.getElementById('jobDescription').value = '';
+  document.getElementById('jobStatus').value = 'QUOTED';
+  document.getElementById('jobPriority').value = 'medium';
+  document.getElementById('jobCost').value = '';
+  document.getElementById('jobStartDate').value = '';
+  document.getElementById('jobEndDate').value = '';
+  document.getElementById('jobNotes').value = '';
+  
+  modal.classList.add('active');
+}
+
+async function handleJobSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const customerId = form.dataset.customerId;
+  
+  if (!customerId) {
+    alert('Customer not selected');
+    return;
+  }
+  
+  const jobData = {
+    customer_id: customerId,
+    title: document.getElementById('jobTitle').value,
+    description: document.getElementById('jobDescription').value,
+    status: document.getElementById('jobStatus').value,
+    priority: document.getElementById('jobPriority').value,
+    total_cost: parseFloat(document.getElementById('jobCost').value) || 0,
+    start_date: document.getElementById('jobStartDate').value || null,
+    end_date: document.getElementById('jobEndDate').value || null,
+    notes: document.getElementById('jobNotes').value
+  };
+  
+  try {
+    const response = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(jobData),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      hideModals();
+      alert(`Job "${jobData.title}" created successfully!`);
+      // Could load jobs page or refresh customer data here
+    } else {
+      alert(data.message || 'Failed to create job');
+    }
+  } catch (error) {
+    console.error('Error creating job:', error);
     alert('Connection error. Please try again.');
   }
 }
@@ -416,5 +507,7 @@ function testNavigation() {
 window.showPage = showPage;
 window.editCustomer = editCustomer;
 window.deleteCustomer = deleteCustomer;
+window.createJob = createJob;
 window.showCustomerModal = showCustomerModal;
+window.showJobModal = showJobModal;
 window.testNavigation = testNavigation;
