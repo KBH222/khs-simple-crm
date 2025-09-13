@@ -931,6 +931,194 @@ button {
   }
 }
 
+/* iPhone Specific Styles */
+@media (max-width: 480px) {
+  /* App Header for iPhone */
+  .app-header {
+    height: 60px;
+  }
+  
+  .app-title {
+    font-size: 20px;
+  }
+  
+  /* Dashboard optimized for iPhone */
+  .dashboard-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .current-date {
+    font-size: 18px;
+  }
+  
+  .current-time {
+    font-size: 24px;
+  }
+  
+  /* Navigation cards for iPhone */
+  .nav-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px;
+  }
+  
+  .nav-card {
+    min-height: 80px;
+  }
+  
+  .nav-card-icon {
+    font-size: 28px;
+  }
+  
+  .nav-card-info h3 {
+    font-size: 18px;
+  }
+  
+  /* Calendar optimized for iPhone */
+  .calendar-nav {
+    padding: 0 16px;
+    gap: 12px;
+  }
+  
+  .nav-btn {
+    padding: 12px 20px;
+    font-size: 18px;
+    min-width: 50px;
+  }
+  
+  .today-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .calendar-container {
+    margin: 0 8px;
+  }
+  
+  .calendar-day {
+    min-height: 100px;
+    padding: 6px;
+  }
+  
+  .calendar-day-number {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  
+  .calendar-event {
+    font-size: 12px;
+    padding: 3px 6px;
+    margin-bottom: 2px;
+    min-height: 20px;
+  }
+  
+  .event-delete-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 14px;
+  }
+  
+  /* Customer cards for iPhone */
+  .customer-card-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "info"
+      "buttons";
+    gap: 12px;
+  }
+  
+  .customer-buttons-cell {
+    justify-self: center;
+    flex-direction: row;
+    gap: 12px;
+  }
+  
+  .customer-buttons-cell button {
+    min-width: 70px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  /* Modals optimized for iPhone */
+  .modal {
+    padding: 16px;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 12px;
+  }
+  
+  .modal-header h3 {
+    font-size: 18px;
+  }
+  
+  /* Form inputs for iPhone */
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    font-size: 16px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  /* Event type radio buttons for iPhone */
+  .event-type-radio {
+    gap: 16px;
+  }
+  
+  .event-type-radio label {
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  
+  /* Buttons optimized for iPhone */
+  .save-btn,
+  .cancel-btn,
+  .add-btn {
+    padding: 14px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    min-height: 44px;
+  }
+  
+  .back-btn {
+    font-size: 16px;
+    padding: 8px 16px;
+  }
+  
+  /* Job tabs for iPhone */
+  .job-tab {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="color"],
+  input[type="date"],
+  input[type="datetime"],
+  input[type="datetime-local"],
+  input[type="email"],
+  input[type="month"],
+  input[type="number"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="text"],
+  input[type="time"],
+  input[type="url"],
+  input[type="week"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Job Detail Tabs */
 .job-tabs {
   display: flex;
