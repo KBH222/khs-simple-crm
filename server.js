@@ -3,7 +3,8 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
+const HOST = '0.0.0.0';
 
 // Database setup
 const db = new sqlite3.Database('crm.db');
@@ -394,13 +395,12 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.log('');
   console.log('🚀 KHS Simple CRM Server Started!');
   console.log('=====================================');
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log('📧 Login: admin@khscrm.com');
-  console.log('🔑 Password: admin123');
+  console.log(`📍 URL: http://${HOST}:${PORT}`);
+  console.log(`🌐 Local: http://localhost:${PORT}`);
   console.log('=====================================');
   console.log('');
 });
