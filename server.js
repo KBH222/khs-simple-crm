@@ -330,9 +330,38 @@ app.post('/api/jobs', (req, res) => {
         total_cost: total_cost || 0,
         start_date,
         end_date,
-        notes
+        notes,
+        created_at: now
       });
     });
+});
+
+// Job detail and deletion
+app.get('/api/jobs/:id', (req, res) => {
+  const { id } = req.params;
+  const query = `SELECT j.*, c.name as customer_name FROM jobs j JOIN customers c ON j.customer_id = c.id WHERE j.id = ?`;
+  db.get(query, [id], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!row) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    res.json(row);
+  });
+});
+
+app.delete('/api/jobs/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM jobs WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    res.json({ message: 'Job deleted' });
+  });
 });
 
 // Catch-all for React Router

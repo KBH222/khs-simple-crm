@@ -197,7 +197,7 @@ async function loadCustomerJobs(customerId) {
         `;
       } else {
         jobsContainer.innerHTML = data.map(job => `
-          <div class="job-item" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 8px; margin: 4px 0; font-size: 12px;">
+          <div class="job-item" onclick="viewJob('${job.id}')" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 8px; margin: 4px 0; font-size: 12px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <strong>${escapeHtml(job.title)}</strong>
@@ -586,11 +586,103 @@ function testNavigation() {
   console.log('=== END TEST ===');
 }
 
+// Job viewing and management
+let currentJob = null;
+
+async function viewJob(jobId) {
+  try {
+    const response = await fetch(`/api/jobs/${jobId}`);
+    const job = await response.json();
+    
+    if (response.ok) {
+      currentJob = job;
+      showJobDetailsModal(job);
+    } else {
+      alert('Failed to load job details');
+    }
+  } catch (error) {
+    console.error('Error loading job:', error);
+    alert('Error loading job details');
+  }
+}
+
+function showJobDetailsModal(job) {
+  const modal = document.getElementById('jobDetailsModal');
+  
+  document.getElementById('jobDetailCustomer').textContent = job.customer_name || 'Unknown';
+  document.getElementById('jobDetailType').textContent = job.title;
+  
+  const statusEl = document.getElementById('jobDetailStatus');
+  statusEl.textContent = job.status;
+  statusEl.style.backgroundColor = getStatusColor(job.status);
+  
+  // Handle description
+  const descGroup = document.getElementById('jobDetailDescriptionGroup');
+  const descEl = document.getElementById('jobDetailDescription');
+  if (job.description && job.description.trim()) {
+    descEl.textContent = job.description;
+    descGroup.style.display = 'block';
+  } else {
+    descGroup.style.display = 'none';
+  }
+  
+  // Handle notes
+  const notesGroup = document.getElementById('jobDetailNotesGroup');
+  const notesEl = document.getElementById('jobDetailNotes');
+  if (job.notes && job.notes.trim()) {
+    notesEl.textContent = job.notes;
+    notesGroup.style.display = 'block';
+  } else {
+    notesGroup.style.display = 'none';
+  }
+  
+  document.getElementById('jobDetailCreated').textContent = new Date(job.created_at).toLocaleString();
+  
+  modal.classList.add('active');
+}
+
+function editJob() {
+  if (currentJob) {
+    alert('Job editing feature coming soon!');
+    // TODO: Implement job editing
+  }
+}
+
+async function deleteJob() {
+  if (!currentJob) return;
+  
+  if (!confirm(`Are you sure you want to delete the job "${currentJob.title}"?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      hideModals();
+      // Refresh the jobs for this customer
+      loadCustomerJobs(currentJob.customer_id);
+      currentJob = null;
+    } else {
+      const data = await response.json();
+      alert(data.message || 'Failed to delete job');
+    }
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    alert('Connection error. Please try again.');
+  }
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
 window.deleteCustomer = deleteCustomer;
 window.createJob = createJob;
+window.viewJob = viewJob;
+window.editJob = editJob;
+window.deleteJob = deleteJob;
 window.showCustomerModal = showCustomerModal;
 window.showJobModal = showJobModal;
 window.testNavigation = testNavigation;

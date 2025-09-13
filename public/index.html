@@ -236,6 +236,54 @@
         </div>
       </div>
 
+      <!-- Job Details Modal -->
+      <div id="jobDetailsModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="jobDetailsTitle">Job Details</h3>
+            <button class="close-btn">&times;</button>
+          </div>
+          <div class="job-details-content" style="padding: 20px;">
+            <div class="job-detail-section">
+              <div class="form-group">
+                <label>Customer</label>
+                <div id="jobDetailCustomer" style="font-weight: 600; color: #111827;"></div>
+              </div>
+              
+              <div class="form-group">
+                <label>Job Type</label>
+                <div id="jobDetailType" style="font-weight: 600; color: #111827;"></div>
+              </div>
+              
+              <div class="form-group">
+                <label>Status</label>
+                <div id="jobDetailStatus" style="display: inline-block; padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px; font-weight: 500;"></div>
+              </div>
+              
+              <div class="form-group" id="jobDetailDescriptionGroup">
+                <label>Description</label>
+                <div id="jobDetailDescription" style="color: #374151; white-space: pre-wrap;"></div>
+              </div>
+              
+              <div class="form-group" id="jobDetailNotesGroup">
+                <label>Notes</label>
+                <div id="jobDetailNotes" style="color: #374151; white-space: pre-wrap;"></div>
+              </div>
+              
+              <div class="form-group">
+                <label>Created</label>
+                <div id="jobDetailCreated" style="color: #6B7280; font-size: 14px;"></div>
+              </div>
+            </div>
+            
+            <div class="modal-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between;">
+              <button onclick="editJob()" class="save-btn" style="background-color: #3B82F6;">Edit Job</button>
+              <button onclick="deleteJob()" class="cancel-btn" style="background-color: #EF4444;">Delete Job</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Other pages (placeholder) -->
       <div id="jobs" class="page">
         <div class="page-container">
