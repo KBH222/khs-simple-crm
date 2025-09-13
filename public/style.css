@@ -449,15 +449,17 @@ button {
 
 .customer-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0px;
+  gap: 16px;
 }
 
 .customer-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .customer-actions {
@@ -465,7 +467,8 @@ button {
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
-  min-width: 70px;
+  flex-shrink: 0;
+  width: 70px;
 }
 
 .customer-content {
