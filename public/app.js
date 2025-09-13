@@ -413,13 +413,10 @@ function showJobModal(customer = null) {
   }
   
   // Reset form
-  document.getElementById('jobTitle').value = '';
+  document.querySelectorAll('input[name="jobType"]').forEach(radio => {
+    radio.checked = false;
+  });
   document.getElementById('jobDescription').value = '';
-  document.getElementById('jobStatus').value = 'QUOTED';
-  document.getElementById('jobPriority').value = 'medium';
-  document.getElementById('jobCost').value = '';
-  document.getElementById('jobStartDate').value = '';
-  document.getElementById('jobEndDate').value = '';
   document.getElementById('jobNotes').value = '';
   
   modal.classList.add('active');
@@ -436,15 +433,22 @@ async function handleJobSubmit(e) {
     return;
   }
   
+  // Get selected job type
+  const selectedJobType = document.querySelector('input[name="jobType"]:checked');
+  if (!selectedJobType) {
+    alert('Please select a job type');
+    return;
+  }
+  
   const jobData = {
     customer_id: customerId,
-    title: document.getElementById('jobTitle').value,
+    title: selectedJobType.value,
     description: document.getElementById('jobDescription').value,
-    status: document.getElementById('jobStatus').value,
-    priority: document.getElementById('jobPriority').value,
-    total_cost: parseFloat(document.getElementById('jobCost').value) || 0,
-    start_date: document.getElementById('jobStartDate').value || null,
-    end_date: document.getElementById('jobEndDate').value || null,
+    status: 'QUOTED', // Default status
+    priority: 'medium', // Default priority
+    total_cost: 0, // Default cost
+    start_date: null,
+    end_date: null,
     notes: document.getElementById('jobNotes').value
   };
   

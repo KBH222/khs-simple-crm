@@ -192,43 +192,37 @@
               <input type="text" id="jobCustomer" readonly style="background-color: #f9fafb;">
             </div>
             <div class="form-group">
-              <label for="jobTitle">Job Title *</label>
-              <input type="text" id="jobTitle" required placeholder="e.g. Kitchen Remodel">
+              <label>Job Type *</label>
+              <div class="job-types" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 8px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="jobType" value="Kitchen" required style="margin-right: 6px;">
+                  Kitchen
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="jobType" value="Bathroom" required style="margin-right: 6px;">
+                  Bathroom
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="jobType" value="Flooring" required style="margin-right: 6px;">
+                  Flooring
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="jobType" value="Decking" required style="margin-right: 6px;">
+                  Decking
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="jobType" value="Drywall" required style="margin-right: 6px;">
+                  Drywall
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="jobType" value="Various" required style="margin-right: 6px;">
+                  Various
+                </label>
+              </div>
             </div>
             <div class="form-group">
               <label for="jobDescription">Description</label>
               <textarea id="jobDescription" placeholder="Detailed description of the job..."></textarea>
-            </div>
-            <div class="form-group">
-              <label for="jobStatus">Status</label>
-              <select id="jobStatus">
-                <option value="QUOTED">Quoted</option>
-                <option value="APPROVED">Approved</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="jobPriority">Priority</label>
-              <select id="jobPriority">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="jobCost">Total Cost ($)</label>
-              <input type="number" id="jobCost" min="0" step="0.01" placeholder="0.00">
-            </div>
-            <div class="form-group">
-              <label for="jobStartDate">Start Date</label>
-              <input type="date" id="jobStartDate">
-            </div>
-            <div class="form-group">
-              <label for="jobEndDate">End Date</label>
-              <input type="date" id="jobEndDate">
             </div>
             <div class="form-group">
               <label for="jobNotes">Notes</label>
