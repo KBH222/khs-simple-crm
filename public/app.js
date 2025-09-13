@@ -275,18 +275,25 @@ function renderCustomers() {
             ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
           </div>
         </div>
-        <div class="customer-actions">
-          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
-          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer; font-size: 12px;">+ Job</button>
-          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+        <div class="customer-actions" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">Edit</button>
+          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">+ Job</button>
+          <button onclick="sendText('${customer.phone}')" style="background: #8B5CF6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">Text</button>
+          <div style="margin-top: 12px;"></div>
+          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">Del</button>
         </div>
       </div>
       <div class="customer-content">
-        <div class="customer-info">
-          <p><strong>Email:</strong> ${escapeHtml(customer.email || 'Not provided')}</p>
-          <p><strong>Phone:</strong> ${escapeHtml(customer.phone || 'Not provided')}</p>
-          ${customer.address ? `<p><strong>Address:</strong> ${escapeHtml(customer.address)}</p>` : ''}
-          ${customer.notes ? `<p><strong>Notes:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
+        <div class="customer-info" style="margin-top: 12px;">
+          <p style="margin-bottom: 12px;">
+            <strong>Email:</strong> 
+            ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+          </p>
+          <p style="margin-bottom: 12px;">
+            <strong>Phone:</strong> 
+            ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+          </p>
+          ${customer.address ? `<p style="margin-bottom: 12px;"><strong>Address:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.address)}</a></p>` : ''}
           
           <div class="customer-jobs" id="jobs-${customer.id}">
             <div class="jobs-header" style="margin-top: 15px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px; display: flex; align-items: center;">
@@ -848,6 +855,29 @@ function addExtraCost() {
   alert('Add extra cost functionality coming soon!');
 }
 
+// Communication functions
+function sendText(phoneNumber) {
+  if (!phoneNumber || phoneNumber === 'Not provided') {
+    alert('No phone number available for this customer.');
+    return;
+  }
+  
+  // Clean phone number (remove formatting)
+  const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+  
+  // Try SMS protocol first (works on mobile devices)
+  if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) {
+    window.location.href = `sms:${cleanPhone}`;
+  } else {
+    // For desktop, copy number to clipboard
+    navigator.clipboard.writeText(cleanPhone).then(() => {
+      alert(`Phone number ${phoneNumber} copied to clipboard!`);
+    }).catch(() => {
+      alert(`Phone number: ${phoneNumber}`);
+    });
+  }
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
@@ -857,6 +887,7 @@ window.viewJob = viewJob;
 window.editJob = editJob;
 window.deleteJob = deleteJob;
 window.deleteJobFromTile = deleteJobFromTile;
+window.sendText = sendText;
 window.switchJobTab = switchJobTab;
 window.addTask = addTask;
 window.addExtraCost = addExtraCost;

@@ -462,7 +462,10 @@ button {
 
 .customer-actions {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  min-width: 70px;
 }
 
 .customer-content {
