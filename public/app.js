@@ -953,11 +953,11 @@ function setupCalendarEventListeners() {
     allDayCheckbox.addEventListener('change', toggleTimeFields);
   }
   
-  // Event type dropdown
-  const eventTypeSelect = document.getElementById('eventType');
-  if (eventTypeSelect) {
-    eventTypeSelect.addEventListener('change', toggleCustomerJobFields);
-  }
+  // Event type radio buttons
+  const eventTypeRadios = document.querySelectorAll('input[name="eventType"]');
+  eventTypeRadios.forEach(radio => {
+    radio.addEventListener('change', toggleCustomerJobFields);
+  });
 }
 
 function navigateMonth(direction) {
@@ -1089,7 +1089,8 @@ function toggleTimeFields() {
 }
 
 function toggleCustomerJobFields() {
-  const eventType = document.getElementById('eventType').value;
+  const eventTypeRadio = document.querySelector('input[name="eventType"]:checked');
+  const eventType = eventTypeRadio ? eventTypeRadio.value : 'business';
   const customerJobGroup = document.getElementById('customerJobGroup');
   
   if (customerJobGroup) {
@@ -1100,13 +1101,15 @@ function toggleCustomerJobFields() {
 async function handleEventSubmit(e) {
   e.preventDefault();
   
+  const eventTypeRadio = document.querySelector('input[name="eventType"]:checked');
+  
   const formData = {
     title: document.getElementById('eventTitle').value,
     description: document.getElementById('eventDescription').value,
     event_date: document.getElementById('eventDate').value,
     start_time: document.getElementById('eventStartTime').value || null,
     end_time: document.getElementById('eventEndTime').value || null,
-    event_type: document.getElementById('eventType').value,
+    event_type: eventTypeRadio ? eventTypeRadio.value : 'business',
     customer_id: document.getElementById('eventCustomer').value || null,
     job_id: document.getElementById('eventJob').value || null,
     all_day: document.getElementById('eventAllDay').checked ? 1 : 0
