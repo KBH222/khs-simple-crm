@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacing Debug</title>
+    <style>
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+        
+        .test-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 80px !important;
+            grid-template-rows: auto auto !important;
+            grid-template-areas:
+                "name buttons"
+                "info buttons" !important;
+            gap: 0 !important;
+            row-gap: 0 !important;
+            column-gap: 16px !important;
+            background: white;
+            border: 2px solid red;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .name-area {
+            grid-area: name !important;
+            background: yellow;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 1px solid green;
+        }
+        
+        .info-area {
+            grid-area: info !important;
+            background: lightblue;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 1px solid blue;
+        }
+        
+        .buttons-area {
+            grid-area: buttons !important;
+            background: orange;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 1px solid purple;
+        }
+        
+        .customer-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1.2;
+            background: pink;
+        }
+        
+        .contact-info div {
+            font-size: 16px;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: lightgreen;
+            border: 1px dotted red;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSS Grid Spacing Test</h1>
+    
+    <div class="test-grid">
+        <div class="name-area">
+            <div class="customer-name">John Smith Construction</div>
+            <div style="font-size: 14px; margin-top: 4px; background: cyan;">Current Customer</div>
+        </div>
+        
+        <div class="buttons-area">
+            <button style="width: 60px; margin-bottom: 8px;">Edit</button>
+            <button style="width: 60px; margin-bottom: 8px;">+Job</button>
+            <button style="width: 60px; margin-bottom: 8px;">Text</button>
+            <button style="width: 60px;">Del</button>
+        </div>
+        
+        <div class="info-area">
+            <div class="contact-info">
+                <div><strong>Email:</strong> john@example.com</div>
+                <div><strong>Phone:</strong> (555) 123-4567</div>
+                <div><strong>Address:</strong> 123 Main St, City, State</div>
+            </div>
+        </div>
+    </div>
+    
+    <p><strong>What you should see:</strong></p>
+    <ul>
+        <li>Yellow box with customer name should be directly above blue contact info box</li>
+        <li>Orange buttons on the right side</li>
+        <li>NO gap between yellow and blue areas</li>
+        <li>All areas have colored borders to show exact positioning</li>
+    </ul>
+    
+    <p><strong>If there's still a gap:</strong> The issue is likely with browser defaults or something else overriding the CSS Grid.</p>
+</body>
+</html>

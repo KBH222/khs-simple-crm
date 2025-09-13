@@ -502,30 +502,7 @@ button {
   padding-top: 0 !important;
 }
 
-.customer-content {
-  margin-top: 0px;
-}
-
-/* Force remove all spacing in customer cards */
-.customer-card p {
-  margin-top: 0px !important;
-  padding-top: 0px !important;
-}
-
-.customer-card .customer-header {
-  margin-bottom: 0px !important;
-  padding-bottom: 0px !important;
-}
-
-.customer-card .customer-content {
-  margin-top: 0px !important;
-  padding-top: 0px !important;
-}
-
-.customer-card .customer-info {
-  margin-top: 0px !important;
-  padding-top: 0px !important;
-}
+/* OLD CUSTOMER CSS REMOVED - GRID ONLY */
 
 /* Job Detail Tabs */
 .job-tabs {
