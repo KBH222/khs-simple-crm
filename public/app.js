@@ -284,7 +284,7 @@ function renderCustomers() {
         </div>
       </div>
       <div class="customer-content">
-        <div class="customer-info" style="margin-top: 6px;">
+        <div class="customer-info" style="margin-top: 2px;">
           <p style="margin-bottom: 8px; font-size: 16.1px;">
             <strong>Email:</strong> 
             ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}

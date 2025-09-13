@@ -451,7 +451,7 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 
 .customer-left {
@@ -469,7 +469,7 @@ button {
 }
 
 .customer-content {
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
 /* Job Detail Tabs */
