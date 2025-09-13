@@ -699,7 +699,7 @@ button {
   color: white;
   padding: 2px 6px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.2;
   cursor: pointer;
   overflow: hidden;
@@ -747,7 +747,7 @@ button {
 .event-delete-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: #EF4444;
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
@@ -764,8 +764,8 @@ button {
 }
 
 .event-delete-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: rgba(239, 68, 68, 0.2);
+  color: #DC2626;
   transform: scale(1.1);
 }
 
@@ -916,7 +916,7 @@ button {
   }
   
   .calendar-event {
-    font-size: 10px;
+    font-size: 11px;
     padding: 1px 4px;
   }
   
