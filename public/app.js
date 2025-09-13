@@ -173,7 +173,7 @@ function renderCustomers() {
   }
   
   container.innerHTML = filteredCustomers.map(customer => `
-    <div class="customer-card" onclick="editCustomer(${customer.id})">
+    <div class="customer-card">
       <div class="customer-header">
         <div class="customer-name">${escapeHtml(customer.name)}</div>
         <div class="customer-type ${customer.customer_type?.toLowerCase()}">
@@ -181,10 +181,14 @@ function renderCustomers() {
         </div>
       </div>
       <div class="customer-info">
-        <p><strong>Email:</strong> ${escapeHtml(customer.email)}</p>
-        <p><strong>Phone:</strong> ${escapeHtml(customer.phone)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(customer.email || '')}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(customer.phone || '')}</p>
         ${customer.address ? `<p><strong>Address:</strong> ${escapeHtml(customer.address)}</p>` : ''}
         ${customer.notes ? `<p><strong>Notes:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
+        <div style="margin-top: 10px;">
+          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;">Edit</button>
+          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Delete</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -247,6 +251,28 @@ function editCustomer(customerId) {
   }
 }
 
+async function deleteCustomer(customerId) {
+  if (!confirm('Are you sure you want to delete this customer?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/customers/${customerId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      loadCustomers(); // Reload the list
+    } else {
+      const data = await response.json();
+      alert(data.message || 'Failed to delete customer');
+    }
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    alert('Connection error. Please try again.');
+  }
+}
+
 async function handleCustomerSubmit(e) {
   e.preventDefault();
   
@@ -300,6 +326,7 @@ function hideModals() {
 
 // Utility functions
 function escapeHtml(text) {
+  if (!text) return '';
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;

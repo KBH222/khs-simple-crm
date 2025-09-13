@@ -71,6 +71,50 @@ db.serialize(() => {
           VALUES (?, ?, ?, ?, ?)`,
     [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER']
   );
+  
+  // Add some sample customers for demo
+  const sampleCustomers = [
+    {
+      id: 'demo-customer-1',
+      name: 'John Smith',
+      phone: '(555) 123-4567',
+      email: 'john.smith@email.com',
+      address: '123 Main Street, Anytown, ST 12345',
+      notes: 'Regular customer, prefers morning appointments',
+      reference: 'HOD',
+      customer_type: 'CURRENT'
+    },
+    {
+      id: 'demo-customer-2', 
+      name: 'ABC Construction LLC',
+      phone: '(555) 987-6543',
+      email: 'contact@abcconstruction.com',
+      address: '456 Business Park Drive, Anytown, ST 12345',
+      notes: 'Commercial client, large projects',
+      reference: 'Cust',
+      customer_type: 'CURRENT'
+    },
+    {
+      id: 'demo-customer-3',
+      name: 'Sarah Johnson', 
+      phone: '(555) 456-7890',
+      email: 'sarah.j@example.com',
+      address: '789 Oak Avenue, Anytown, ST 12345',
+      notes: 'Interested in kitchen remodel - follow up needed',
+      reference: 'Yelp',
+      customer_type: 'LEADS'
+    }
+  ];
+  
+  const now = new Date().toISOString();
+  sampleCustomers.forEach(customer => {
+    db.run(`INSERT OR IGNORE INTO customers 
+            (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [customer.id, customer.name, customer.phone, customer.email, customer.address, 
+       customer.notes, customer.reference, customer.customer_type, now, now]
+    );
+  });
 });
 
 // Middleware
