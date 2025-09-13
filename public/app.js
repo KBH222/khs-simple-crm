@@ -270,35 +270,35 @@ function renderCustomers() {
     <div class="customer-card">
       <div class="customer-header">
         <div class="customer-left">
-          <div class="customer-name">${escapeHtml(customer.name)}</div>
-          <div class="customer-type ${customer.customer_type?.toLowerCase()}">
+          <div class="customer-name" style="font-size: 20.7px;">${escapeHtml(customer.name)}</div>
+          <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px;">
             ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
           </div>
         </div>
         <div class="customer-actions" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
-          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">Edit</button>
-          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">+ Job</button>
-          <button onclick="sendText('${customer.phone}')" style="background: #8B5CF6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">Text</button>
+          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Edit</button>
+          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">+ Job</button>
+          <button onclick="sendText('${customer.phone}')" style="background: #8B5CF6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Text</button>
           <div style="margin-top: 12px;"></div>
-          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; min-width: 60px;">Del</button>
+          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Del</button>
         </div>
       </div>
       <div class="customer-content">
-        <div class="customer-info" style="margin-top: 12px;">
-          <p style="margin-bottom: 12px;">
+        <div class="customer-info" style="margin-top: 6px;">
+          <p style="margin-bottom: 8px; font-size: 16.1px;">
             <strong>Email:</strong> 
             ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
           </p>
-          <p style="margin-bottom: 12px;">
+          <p style="margin-bottom: 8px; font-size: 16.1px;">
             <strong>Phone:</strong> 
             ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
           </p>
-          ${customer.address ? `<p style="margin-bottom: 12px;"><strong>Address:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.address)}</a></p>` : ''}
+          ${customer.address ? `<p style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none;">${escapeHtml(customer.address)}</a></p>` : ''}
           
           <div class="customer-jobs" id="jobs-${customer.id}">
-            <div class="jobs-header" style="margin-top: 15px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px; display: flex; align-items: center;">
+            <div class="jobs-header" style="margin-top: 12px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
               📋 Jobs 
-              <span class="jobs-loading" style="margin-left: 10px; font-size: 12px; color: #6B7280;">Loading...</span>
+              <span class="jobs-loading" style="margin-left: 10px; font-size: 13.8px; color: #6B7280;">Loading...</span>
             </div>
             <div class="jobs-list"></div>
           </div>
