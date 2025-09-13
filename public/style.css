@@ -434,58 +434,72 @@ button {
   gap: 12px;
 }
 
-.customer-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
+/* Old customer-card styles removed - using customer-card-grid instead */
 
-.customer-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* CSS Grid Layout for Customer Cards - Zero spacing issues */
+/* CSS Grid Layout for Customer Cards - BULLETPROOF spacing control */
 .customer-card-grid {
-  display: grid;
-  grid-template-columns: 1fr 80px;
-  grid-template-rows: auto auto;
+  display: grid !important;
+  grid-template-columns: 1fr 80px !important;
+  grid-template-rows: auto auto !important;
   grid-template-areas:
     "name buttons"
-    "info buttons";
-  gap: 0;
+    "info buttons" !important;
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 16px !important;
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 16px;
   margin-bottom: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.customer-card-grid:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .customer-name-cell {
-  grid-area: name;
-  margin: 0;
-  padding: 0;
-  align-self: start;
+  grid-area: name !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-self: start !important;
+  line-height: 1.2 !important;
 }
 
 .customer-buttons-cell {
-  grid-area: buttons;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-self: end;
-  margin: 0;
-  padding: 0;
+  grid-area: buttons !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-self: end !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .customer-info-cell {
-  grid-area: info;
-  margin: 0;
-  padding: 0;
-  margin-top: 0;
-  padding-top: 0;
+  grid-area: info !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Force zero spacing for all grid cell contents */
+.customer-name-cell * {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.customer-info-cell * {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.customer-info-cell div {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .customer-content {
