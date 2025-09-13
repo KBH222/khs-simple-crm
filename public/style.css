@@ -451,7 +451,22 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.customer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customer-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.customer-content {
+  margin-top: 8px;
 }
 
 .customer-name {

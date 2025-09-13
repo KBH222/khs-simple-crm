@@ -279,12 +279,20 @@ app.delete('/api/customers/:id', (req, res) => {
 
 // Jobs API
 app.get('/api/jobs', (req, res) => {
-  const query = `SELECT j.*, c.name as customer_name 
-                 FROM jobs j 
-                 JOIN customers c ON j.customer_id = c.id 
-                 ORDER BY j.created_at DESC`;
+  const { customer_id } = req.query;
+  let query = `SELECT j.*, c.name as customer_name 
+               FROM jobs j 
+               JOIN customers c ON j.customer_id = c.id`;
+  const params = [];
   
-  db.all(query, (err, rows) => {
+  if (customer_id) {
+    query += ` WHERE j.customer_id = ?`;
+    params.push(customer_id);
+  }
+  
+  query += ` ORDER BY j.created_at DESC`;
+  
+  db.all(query, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }

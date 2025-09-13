@@ -177,6 +177,67 @@ async function loadCustomers() {
   }
 }
 
+// Load jobs for a specific customer
+async function loadCustomerJobs(customerId) {
+  try {
+    const response = await fetch(`/api/jobs?customer_id=${customerId}`);
+    const data = await response.json();
+    
+    const jobsContainer = document.querySelector(`#jobs-${customerId} .jobs-list`);
+    const loadingSpan = document.querySelector(`#jobs-${customerId} .jobs-loading`);
+    
+    if (!jobsContainer || !loadingSpan) return;
+    
+    if (response.ok) {
+      loadingSpan.style.display = 'none';
+      
+      if (data.length === 0) {
+        jobsContainer.innerHTML = `
+          <p style="color: #6B7280; font-size: 12px; margin: 5px 0;">No jobs yet</p>
+        `;
+      } else {
+        jobsContainer.innerHTML = data.map(job => `
+          <div class="job-item" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 8px; margin: 4px 0; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${escapeHtml(job.title)}</strong>
+                <span class="job-status" style="margin-left: 8px; padding: 2px 6px; border-radius: 2px; font-size: 10px; background: ${getStatusColor(job.status)}; color: white;">${job.status}</span>
+              </div>
+              <div style="color: #6B7280;">
+                ${job.total_cost > 0 ? `$${job.total_cost.toFixed(2)}` : 'No cost'}
+              </div>
+            </div>
+            ${job.description ? `<div style="color: #6B7280; margin-top: 4px;">${escapeHtml(job.description.substring(0, 80))}${job.description.length > 80 ? '...' : ''}</div>` : ''}
+            ${job.start_date ? `<div style="color: #6B7280; margin-top: 4px;">Start: ${new Date(job.start_date).toLocaleDateString()}</div>` : ''}
+          </div>
+        `).join('');
+      }
+    } else {
+      loadingSpan.textContent = 'Failed to load';
+      loadingSpan.style.color = '#EF4444';
+    }
+  } catch (error) {
+    console.error('Error loading customer jobs:', error);
+    const loadingSpan = document.querySelector(`#jobs-${customerId} .jobs-loading`);
+    if (loadingSpan) {
+      loadingSpan.textContent = 'Error loading';
+      loadingSpan.style.color = '#EF4444';
+    }
+  }
+}
+
+// Helper function to get status colors
+function getStatusColor(status) {
+  switch(status) {
+    case 'QUOTED': return '#6B7280';
+    case 'APPROVED': return '#3B82F6';
+    case 'IN_PROGRESS': return '#F59E0B';
+    case 'COMPLETED': return '#10B981';
+    case 'CANCELLED': return '#EF4444';
+    default: return '#6B7280';
+  }
+}
+
 function renderCustomers() {
   const container = document.getElementById('customersList');
   if (!container) return;
@@ -211,24 +272,41 @@ function renderCustomers() {
   container.innerHTML = filteredCustomers.map(customer => `
     <div class="customer-card">
       <div class="customer-header">
-        <div class="customer-name">${escapeHtml(customer.name)}</div>
-        <div class="customer-type ${customer.customer_type?.toLowerCase()}">
-          ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+        <div class="customer-left">
+          <div class="customer-name">${escapeHtml(customer.name)}</div>
+          <div class="customer-type ${customer.customer_type?.toLowerCase()}">
+            ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+          </div>
+        </div>
+        <div class="customer-actions">
+          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer; font-size: 12px;">+ Job</button>
+          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; margin-left: 5px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
         </div>
       </div>
-      <div class="customer-info">
-        <p><strong>Email:</strong> ${escapeHtml(customer.email || '')}</p>
-        <p><strong>Phone:</strong> ${escapeHtml(customer.phone || '')}</p>
-        ${customer.address ? `<p><strong>Address:</strong> ${escapeHtml(customer.address)}</p>` : ''}
-        ${customer.notes ? `<p><strong>Notes:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
-        <div style="margin-top: 10px;">
-          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;">Edit</button>
-          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;">Create Job</button>
-          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Delete</button>
+      <div class="customer-content">
+        <div class="customer-info">
+          <p><strong>Email:</strong> ${escapeHtml(customer.email || 'Not provided')}</p>
+          <p><strong>Phone:</strong> ${escapeHtml(customer.phone || 'Not provided')}</p>
+          ${customer.address ? `<p><strong>Address:</strong> ${escapeHtml(customer.address)}</p>` : ''}
+          ${customer.notes ? `<p><strong>Notes:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
+          
+          <div class="customer-jobs" id="jobs-${customer.id}">
+            <div class="jobs-header" style="margin-top: 15px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px; display: flex; align-items: center;">
+              📋 Jobs 
+              <span class="jobs-loading" style="margin-left: 10px; font-size: 12px; color: #6B7280;">Loading...</span>
+            </div>
+            <div class="jobs-list"></div>
+          </div>
         </div>
       </div>
     </div>
   `).join('');
+  
+  // Load jobs for each customer
+  filteredCustomers.forEach(customer => {
+    loadCustomerJobs(customer.id);
+  });
 }
 
 function setFilter(filter) {
@@ -384,7 +462,8 @@ async function handleJobSubmit(e) {
     if (response.ok) {
       hideModals();
       alert(`Job "${jobData.title}" created successfully!`);
-      // Could load jobs page or refresh customer data here
+      // Refresh the jobs for this customer
+      loadCustomerJobs(customerId);
     } else {
       alert(data.message || 'Failed to create job');
     }
