@@ -40,6 +40,7 @@ db.serialize(() => {
     customer_id TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
+    project_scope TEXT,
     status TEXT DEFAULT 'QUOTED',
     priority TEXT DEFAULT 'medium',
     total_cost REAL DEFAULT 0,
@@ -50,6 +51,11 @@ db.serialize(() => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers (id)
   )`);
+  
+  // Add project_scope column if it doesn't exist (for existing databases)
+  db.run(`ALTER TABLE jobs ADD COLUMN project_scope TEXT`, (err) => {
+    // Ignore error if column already exists
+  });
 
   // Materials table
   db.run(`CREATE TABLE IF NOT EXISTS materials (
@@ -361,6 +367,24 @@ app.delete('/api/jobs/:id', (req, res) => {
       return res.status(404).json({ error: 'Job not found' });
     }
     res.json({ message: 'Job deleted' });
+  });
+});
+
+// Update job project scope
+app.put('/api/jobs/:id/scope', (req, res) => {
+  const { id } = req.params;
+  const { project_scope } = req.body;
+  
+  const now = new Date().toISOString();
+  db.run('UPDATE jobs SET project_scope = ?, updated_at = ? WHERE id = ?', 
+    [project_scope, now, id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    res.json({ message: 'Project scope updated' });
   });
 });
 

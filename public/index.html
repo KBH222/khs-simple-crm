@@ -258,13 +258,21 @@
             <!-- Info Tab -->
             <div id="jobTab-info" class="job-tab-panel active">
               <div class="form-group">
-                <label>Customer</label>
-                <div id="jobDetailCustomer" style="font-weight: 600; color: #111827;"></div>
+                <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 15px;">
+                  <div>
+                    <label style="display: block; margin-bottom: 4px;">Customer</label>
+                    <div id="jobDetailCustomer" style="font-weight: 600; color: #111827; font-size: 16px;"></div>
+                  </div>
+                  <div>
+                    <label style="display: block; margin-bottom: 4px;">Job Type</label>
+                    <div id="jobDetailType" style="font-weight: 600; color: #3B82F6; font-size: 16px;"></div>
+                  </div>
+                </div>
               </div>
               
               <div class="form-group">
-                <label>Job Type</label>
-                <div id="jobDetailType" style="font-weight: 600; color: #111827;"></div>
+                <label for="projectScope">Project Scope</label>
+                <textarea id="projectScope" placeholder="Enter the overall scope and details of this project..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 14px; resize: vertical; font-family: inherit;"></textarea>
               </div>
               
               <div class="form-group" id="jobDetailDescriptionGroup">
@@ -275,11 +283,6 @@
               <div class="form-group" id="jobDetailNotesGroup">
                 <label>Notes</label>
                 <div id="jobDetailNotes" style="color: #374151; white-space: pre-wrap;"></div>
-              </div>
-              
-              <div class="form-group">
-                <label>Created</label>
-                <div id="jobDetailCreated" style="color: #6B7280; font-size: 14px;"></div>
               </div>
             </div>
             
@@ -351,11 +354,6 @@
             
           </div>
           
-          <!-- Modal Actions -->
-          <div class="modal-actions" style="padding: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between; background: #F9FAFB;">
-            <button onclick="editJob()" class="save-btn" style="background-color: #3B82F6;">Edit Job</button>
-            <button onclick="deleteJob()" class="cancel-btn" style="background-color: #EF4444;">Delete Job</button>
-          </div>
         </div>
       </div>
 

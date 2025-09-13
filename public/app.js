@@ -197,17 +197,15 @@ async function loadCustomerJobs(customerId) {
         `;
       } else {
         jobsContainer.innerHTML = data.map(job => `
-          <div class="job-item" onclick="viewJob('${job.id}')" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 8px; margin: 4px 0; font-size: 12px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
+          <div class="job-item" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px 6px; margin: 2px 0; font-size: 10px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
+              <div onclick="viewJob('${job.id}')" style="cursor: pointer; flex: 1;">
                 <strong>${escapeHtml(job.title)}</strong>
+                ${job.total_cost > 0 ? `<span style="color: #6B7280; margin-left: 8px;">$${job.total_cost.toFixed(2)}</span>` : ''}
               </div>
-              <div style="color: #6B7280;">
-                ${job.total_cost > 0 ? `$${job.total_cost.toFixed(2)}` : ''}
-              </div>
+              <button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 14px; font-weight: bold; cursor: pointer; padding: 2px; line-height: 1;">×</button>
             </div>
-            ${job.description ? `<div style="color: #6B7280; margin-top: 4px;">${escapeHtml(job.description.substring(0, 80))}${job.description.length > 80 ? '...' : ''}</div>` : ''}
-            ${job.start_date ? `<div style="color: #6B7280; margin-top: 4px;">Start: ${new Date(job.start_date).toLocaleDateString()}</div>` : ''}
+            ${job.description ? `<div onclick="viewJob('${job.id}')" style="color: #6B7280; margin-top: 2px; cursor: pointer;">${escapeHtml(job.description.substring(0, 40))}${job.description.length > 40 ? '...' : ''}</div>` : ''}
           </div>
         `).join('');
       }
@@ -611,6 +609,14 @@ function showJobDetailsModal(job) {
   document.getElementById('jobDetailCustomer').textContent = job.customer_name || 'Unknown';
   document.getElementById('jobDetailType').textContent = job.title;
   
+  // Handle project scope
+  const projectScopeEl = document.getElementById('projectScope');
+  if (projectScopeEl) {
+    projectScopeEl.value = job.project_scope || '';
+    // Auto-save project scope on change
+    projectScopeEl.onblur = () => saveProjectScope(job.id, projectScopeEl.value);
+  }
+  
   // Handle description
   const descGroup = document.getElementById('jobDetailDescriptionGroup');
   const descEl = document.getElementById('jobDetailDescription');
@@ -630,8 +636,6 @@ function showJobDetailsModal(job) {
   } else {
     notesGroup.style.display = 'none';
   }
-  
-  document.getElementById('jobDetailCreated').textContent = new Date(job.created_at).toLocaleString();
   
   // Initialize tabs and content
   switchJobTab('info');
@@ -674,6 +678,55 @@ async function deleteJob() {
   } catch (error) {
     console.error('Error deleting job:', error);
     alert('Connection error. Please try again.');
+  }
+}
+
+// Delete job directly from customer tile
+async function deleteJobFromTile(jobId) {
+  if (!confirm('Are you sure you want to delete this job?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/jobs/${jobId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      // Find which customer this job belongs to and refresh their jobs
+      const job = await fetch(`/api/jobs/${jobId}`).then(r => r.json()).catch(() => null);
+      if (job && job.customer_id) {
+        loadCustomerJobs(job.customer_id);
+      } else {
+        // Refresh all customers if we can't determine the specific customer
+        loadCustomers();
+      }
+    } else {
+      const data = await response.json();
+      alert(data.message || 'Failed to delete job');
+    }
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    alert('Connection error. Please try again.');
+  }
+}
+
+// Save project scope
+async function saveProjectScope(jobId, scope) {
+  try {
+    const response = await fetch(`/api/jobs/${jobId}/scope`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ project_scope: scope }),
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to save project scope');
+    }
+  } catch (error) {
+    console.error('Error saving project scope:', error);
   }
 }
 
@@ -803,6 +856,7 @@ window.createJob = createJob;
 window.viewJob = viewJob;
 window.editJob = editJob;
 window.deleteJob = deleteJob;
+window.deleteJobFromTile = deleteJobFromTile;
 window.switchJobTab = switchJobTab;
 window.addTask = addTask;
 window.addExtraCost = addExtraCost;
