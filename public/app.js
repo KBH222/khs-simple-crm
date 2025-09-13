@@ -375,10 +375,6 @@ function editCustomer(customerId) {
 }
 
 async function deleteCustomer(customerId) {
-  if (!confirm('Are you sure you want to delete this customer?')) {
-    return;
-  }
-  
   try {
     const response = await fetch(`/api/customers/${customerId}`, {
       method: 'DELETE'
@@ -387,12 +383,10 @@ async function deleteCustomer(customerId) {
     if (response.ok) {
       loadCustomers(); // Reload the list
     } else {
-      const data = await response.json();
-      alert(data.message || 'Failed to delete customer');
+      console.error('Failed to delete customer');
     }
   } catch (error) {
     console.error('Error deleting customer:', error);
-    alert('Connection error. Please try again.');
   }
 }
 
@@ -526,7 +520,6 @@ async function handleCustomerSubmit(e) {
     }
   } catch (error) {
     console.error('Error saving customer:', error);
-    alert('Connection error. Please try again.');
   }
 }
 
@@ -645,11 +638,10 @@ async function viewJob(jobId) {
       currentJob = job;
       showJobDetailsModal(job);
     } else {
-      alert('Failed to load job details');
+      console.error('Failed to load job details');
     }
   } catch (error) {
     console.error('Error loading job:', error);
-    alert('Error loading job details');
   }
 }
 
@@ -699,17 +691,13 @@ function showJobDetailsModal(job) {
 
 function editJob() {
   if (currentJob) {
-    alert('Job editing feature coming soon!');
+    console.log('Job editing feature coming soon!');
     // TODO: Implement job editing
   }
 }
 
 async function deleteJob() {
   if (!currentJob) return;
-  
-  if (!confirm(`Are you sure you want to delete the job "${currentJob.title}"?`)) {
-    return;
-  }
   
   try {
     const response = await fetch(`/api/jobs/${currentJob.id}`, {
@@ -722,21 +710,15 @@ async function deleteJob() {
       loadCustomerJobs(currentJob.customer_id);
       currentJob = null;
     } else {
-      const data = await response.json();
-      alert(data.message || 'Failed to delete job');
+      console.error('Failed to save job');
     }
   } catch (error) {
-    console.error('Error deleting job:', error);
-    alert('Connection error. Please try again.');
+    console.error('Error saving job:', error);
   }
 }
 
 // Delete job directly from customer tile
 async function deleteJobFromTile(jobId) {
-  if (!confirm('Are you sure you want to delete this job?')) {
-    return;
-  }
-  
   try {
     const response = await fetch(`/api/jobs/${jobId}`, {
       method: 'DELETE'
@@ -752,12 +734,10 @@ async function deleteJobFromTile(jobId) {
         loadCustomers();
       }
     } else {
-      const data = await response.json();
-      alert(data.message || 'Failed to delete job');
+      console.error('Failed to delete job');
     }
   } catch (error) {
     console.error('Error deleting job:', error);
-    alert('Connection error. Please try again.');
   }
 }
 
@@ -871,7 +851,7 @@ function handleFileDrop(event, type) {
 function uploadFiles(files, type) {
   console.log(`Uploading ${files.length} files to ${type}`);
   // TODO: Implement file upload to server
-  alert(`File upload functionality coming soon! Selected ${files.length} ${type} files.`);
+  console.log(`File upload functionality coming soon! Selected ${files.length} ${type} files.`);
 }
 
 // Placeholder functions for tab features
@@ -891,17 +871,17 @@ function loadExtraCosts(jobId) {
 }
 
 function addTask() {
-  alert('Add task functionality coming soon!');
+  console.log('Add task functionality coming soon!');
 }
 
 function addExtraCost() {
-  alert('Add extra cost functionality coming soon!');
+  console.log('Add extra cost functionality coming soon!');
 }
 
 // Communication functions
 function sendText(phoneNumber) {
   if (!phoneNumber || phoneNumber === 'Not provided') {
-    alert('No phone number available for this customer.');
+    console.log('No phone number available for this customer.');
     return;
   }
   
@@ -914,9 +894,9 @@ function sendText(phoneNumber) {
   } else {
     // For desktop, copy number to clipboard
     navigator.clipboard.writeText(cleanPhone).then(() => {
-      alert(`Phone number ${phoneNumber} copied to clipboard!`);
+      console.log(`Phone number ${phoneNumber} copied to clipboard!`);
     }).catch(() => {
-      alert(`Phone number: ${phoneNumber}`);
+      console.log(`Phone number: ${phoneNumber}`);
     });
   }
 }
@@ -1125,14 +1105,13 @@ async function handleEventSubmit(e) {
     if (response.ok) {
       hideModals();
       loadCalendarEvents();
-      alert('Event created successfully!');
+      console.log('Event created successfully!');
     } else {
       const error = await response.json();
-      alert(error.message || 'Failed to create event');
+      console.error(error.message || 'Failed to create event');
     }
   } catch (error) {
     console.error('Error creating event:', error);
-    alert('Failed to create event');
   }
 }
 
@@ -1191,7 +1170,8 @@ function renderEvents() {
 }
 
 function viewEvent(event) {
-  alert(`Event: ${event.title}\nDate: ${event.event_date}\nType: ${event.event_type}\n\n${event.description || 'No description'}`);
+  console.log(`Event: ${event.title} - Date: ${event.event_date} - Type: ${event.event_type}`);
+  // TODO: Show event details in a modal instead of alert
 }
 
 // Drag and Drop Functions
@@ -1325,11 +1305,9 @@ async function handleDayDrop(e) {
       showMoveSuccessFeedback(targetDate);
     } else {
       console.error('Failed to move event');
-      alert('Failed to move event. Please try again.');
     }
   } catch (error) {
     console.error('Error moving event:', error);
-    alert('Error moving event. Please try again.');
   }
 }
 
