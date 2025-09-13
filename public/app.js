@@ -1001,11 +1001,13 @@ function renderCalendar() {
     
     const isCurrentMonth = date.getMonth() === month;
     const isToday = date.toDateString() === today.toDateString();
+    const isPast = date < today && !isToday;
     const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
     
     let classes = ['calendar-day'];
     if (!isCurrentMonth) classes.push('other-month');
     if (isToday) classes.push('today');
+    if (isPast) classes.push('past');
     if (isSelected) classes.push('selected');
     
     const dateStr = date.toISOString().split('T')[0];

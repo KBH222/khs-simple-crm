@@ -619,6 +619,53 @@ button {
 
 .calendar-day.today {
   background: #EBF8FF;
+  border: 2px solid #3B82F6;
+  position: relative;
+}
+
+.calendar-day.today::after {
+  content: 'TODAY';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #3B82F6;
+  color: white;
+  font-size: 8px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-weight: bold;
+  opacity: 0.8;
+}
+
+.calendar-day.past {
+  background: #F9FAFB;
+  color: #6B7280;
+  position: relative;
+}
+
+.calendar-day.past::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+}
+
+.calendar-day.past .calendar-day-number {
+  color: #6B7280;
+  opacity: 0.8;
+}
+
+.calendar-day.past .calendar-event {
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+.calendar-day.past:hover {
+  background: #F3F4F6;
 }
 
 .calendar-day.selected {
