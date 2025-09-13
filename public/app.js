@@ -612,10 +612,6 @@ function showJobDetailsModal(job) {
   document.getElementById('jobDetailCustomer').textContent = job.customer_name || 'Unknown';
   document.getElementById('jobDetailType').textContent = job.title;
   
-  const statusEl = document.getElementById('jobDetailStatus');
-  statusEl.textContent = job.status;
-  statusEl.style.backgroundColor = getStatusColor(job.status);
-  
   // Handle description
   const descGroup = document.getElementById('jobDetailDescriptionGroup');
   const descEl = document.getElementById('jobDetailDescription');
@@ -637,6 +633,13 @@ function showJobDetailsModal(job) {
   }
   
   document.getElementById('jobDetailCreated').textContent = new Date(job.created_at).toLocaleString();
+  
+  // Initialize tabs and content
+  switchJobTab('info');
+  setupFileDropZones();
+  loadJobTasks(job.id);
+  loadJobFiles(job.id);
+  loadExtraCosts(job.id);
   
   modal.classList.add('active');
 }
@@ -675,6 +678,124 @@ async function deleteJob() {
   }
 }
 
+// Tab switching functionality
+function switchJobTab(tabName) {
+  // Hide all tab panels
+  document.querySelectorAll('.job-tab-panel').forEach(panel => {
+    panel.classList.remove('active');
+  });
+  
+  // Remove active class from all tabs
+  document.querySelectorAll('.job-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Show selected tab panel
+  const targetPanel = document.getElementById(`jobTab-${tabName}`);
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+  }
+  
+  // Add active class to selected tab
+  const targetTab = document.querySelector(`[data-tab="${tabName}"]`);
+  if (targetTab) {
+    targetTab.classList.add('active');
+  }
+}
+
+// File handling functions
+function setupFileDropZones() {
+  // Setup pictures drop zone
+  const picsDropZone = document.getElementById('picsDropZone');
+  const picsFileInput = document.getElementById('picsFileInput');
+  
+  if (picsDropZone && picsFileInput) {
+    picsDropZone.onclick = () => picsFileInput.click();
+    
+    picsFileInput.addEventListener('change', (e) => handleFileSelect(e, 'pics'));
+    
+    picsDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      picsDropZone.classList.add('dragover');
+    });
+    
+    picsDropZone.addEventListener('dragleave', () => {
+      picsDropZone.classList.remove('dragover');
+    });
+    
+    picsDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      picsDropZone.classList.remove('dragover');
+      handleFileDrop(e, 'pics');
+    });
+  }
+  
+  // Setup plans drop zone
+  const plansDropZone = document.getElementById('plansDropZone');
+  const plansFileInput = document.getElementById('plansFileInput');
+  
+  if (plansDropZone && plansFileInput) {
+    plansDropZone.onclick = () => plansFileInput.click();
+    
+    plansFileInput.addEventListener('change', (e) => handleFileSelect(e, 'plans'));
+    
+    plansDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      plansDropZone.classList.add('dragover');
+    });
+    
+    plansDropZone.addEventListener('dragleave', () => {
+      plansDropZone.classList.remove('dragover');
+    });
+    
+    plansDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      plansDropZone.classList.remove('dragover');
+      handleFileDrop(e, 'plans');
+    });
+  }
+}
+
+function handleFileSelect(event, type) {
+  const files = Array.from(event.target.files);
+  uploadFiles(files, type);
+}
+
+function handleFileDrop(event, type) {
+  const files = Array.from(event.dataTransfer.files);
+  uploadFiles(files, type);
+}
+
+function uploadFiles(files, type) {
+  console.log(`Uploading ${files.length} files to ${type}`);
+  // TODO: Implement file upload to server
+  alert(`File upload functionality coming soon! Selected ${files.length} ${type} files.`);
+}
+
+// Placeholder functions for tab features
+function loadJobTasks(jobId) {
+  console.log('Loading tasks for job:', jobId);
+  // TODO: Load tasks from server
+}
+
+function loadJobFiles(jobId) {
+  console.log('Loading files for job:', jobId);
+  // TODO: Load files from server
+}
+
+function loadExtraCosts(jobId) {
+  console.log('Loading extra costs for job:', jobId);
+  // TODO: Load extra costs from server
+}
+
+function addTask() {
+  alert('Add task functionality coming soon!');
+}
+
+function addExtraCost() {
+  alert('Add extra cost functionality coming soon!');
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
@@ -683,6 +804,9 @@ window.createJob = createJob;
 window.viewJob = viewJob;
 window.editJob = editJob;
 window.deleteJob = deleteJob;
+window.switchJobTab = switchJobTab;
+window.addTask = addTask;
+window.addExtraCost = addExtraCost;
 window.showCustomerModal = showCustomerModal;
 window.showJobModal = showJobModal;
 window.testNavigation = testNavigation;

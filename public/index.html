@@ -238,13 +238,25 @@
 
       <!-- Job Details Modal -->
       <div id="jobDetailsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
           <div class="modal-header">
             <h3 id="jobDetailsTitle">Job Details</h3>
             <button class="close-btn">&times;</button>
           </div>
-          <div class="job-details-content" style="padding: 20px;">
-            <div class="job-detail-section">
+          
+          <!-- Tab Navigation -->
+          <div class="job-tabs" style="display: flex; border-bottom: 1px solid #E5E7EB; background: #F9FAFB;">
+            <button class="job-tab active" data-tab="info" onclick="switchJobTab('info')">Info</button>
+            <button class="job-tab" data-tab="tasks" onclick="switchJobTab('tasks')">Task List</button>
+            <button class="job-tab" data-tab="pics" onclick="switchJobTab('pics')">Pics</button>
+            <button class="job-tab" data-tab="plans" onclick="switchJobTab('plans')">Plans</button>
+            <button class="job-tab" data-tab="extra" onclick="switchJobTab('extra')">Extra $</button>
+          </div>
+          
+          <div class="job-tab-content" style="max-height: 60vh; overflow-y: auto; padding: 20px;">
+            
+            <!-- Info Tab -->
+            <div id="jobTab-info" class="job-tab-panel active">
               <div class="form-group">
                 <label>Customer</label>
                 <div id="jobDetailCustomer" style="font-weight: 600; color: #111827;"></div>
@@ -253,11 +265,6 @@
               <div class="form-group">
                 <label>Job Type</label>
                 <div id="jobDetailType" style="font-weight: 600; color: #111827;"></div>
-              </div>
-              
-              <div class="form-group">
-                <label>Status</label>
-                <div id="jobDetailStatus" style="display: inline-block; padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px; font-weight: 500;"></div>
               </div>
               
               <div class="form-group" id="jobDetailDescriptionGroup">
@@ -276,10 +283,78 @@
               </div>
             </div>
             
-            <div class="modal-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between;">
-              <button onclick="editJob()" class="save-btn" style="background-color: #3B82F6;">Edit Job</button>
-              <button onclick="deleteJob()" class="cancel-btn" style="background-color: #EF4444;">Delete Job</button>
+            <!-- Task List Tab -->
+            <div id="jobTab-tasks" class="job-tab-panel">
+              <div class="task-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h4 style="margin: 0; color: #111827;">Tasks</h4>
+                <button onclick="addTask()" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">+ Add Task</button>
+              </div>
+              <div id="tasksList" class="tasks-list">
+                <p style="color: #6B7280; text-align: center; padding: 20px;">No tasks yet. Click "+ Add Task" to get started.</p>
+              </div>
             </div>
+            
+            <!-- Pics Tab -->
+            <div id="jobTab-pics" class="job-tab-panel">
+              <div class="file-upload-section">
+                <h4 style="margin: 0 0 15px 0; color: #111827;">Pictures</h4>
+                <div class="file-drop-zone" id="picsDropZone" style="border: 2px dashed #D1D5DB; border-radius: 8px; padding: 40px; text-align: center; background: #F9FAFB; cursor: pointer; transition: border-color 0.2s;">
+                  <div style="color: #6B7280;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📸</div>
+                    <p>Drop image files here or <strong style="color: #3B82F6;">click to browse</strong></p>
+                    <p style="font-size: 12px;">Supported: JPG, PNG, GIF (Max 10MB each)</p>
+                  </div>
+                  <input type="file" id="picsFileInput" multiple accept="image/*" style="display: none;">
+                </div>
+                <div id="picsList" class="files-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 20px;">
+                  <!-- Pictures will be loaded here -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Plans Tab -->
+            <div id="jobTab-plans" class="job-tab-panel">
+              <div class="file-upload-section">
+                <h4 style="margin: 0 0 15px 0; color: #111827;">Plans & Documents</h4>
+                <div class="file-drop-zone" id="plansDropZone" style="border: 2px dashed #D1D5DB; border-radius: 8px; padding: 40px; text-align: center; background: #F9FAFB; cursor: pointer; transition: border-color 0.2s;">
+                  <div style="color: #6B7280;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                    <p>Drop plan files here or <strong style="color: #3B82F6;">click to browse</strong></p>
+                    <p style="font-size: 12px;">Supported: PDF, DWG, JPG, PNG (Max 25MB each)</p>
+                  </div>
+                  <input type="file" id="plansFileInput" multiple accept=".pdf,.dwg,.jpg,.jpeg,.png" style="display: none;">
+                </div>
+                <div id="plansList" class="files-list" style="margin-top: 20px;">
+                  <!-- Plans will be loaded here -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Extra $ Tab -->
+            <div id="jobTab-extra" class="job-tab-panel">
+              <div class="extra-costs-section">
+                <div class="cost-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                  <h4 style="margin: 0; color: #111827;">Extra Costs</h4>
+                  <button onclick="addExtraCost()" style="background: #F59E0B; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">+ Add Cost</button>
+                </div>
+                <div id="extraCostsList" class="extra-costs-list">
+                  <p style="color: #6B7280; text-align: center; padding: 20px;">No extra costs yet. Click "+ Add Cost" to add additional charges.</p>
+                </div>
+                <div class="cost-summary" style="border-top: 2px solid #E5E7EB; padding-top: 15px; margin-top: 20px;">
+                  <div style="display: flex; justify-content: space-between; font-weight: 600; color: #111827; font-size: 18px;">
+                    <span>Total Extra Costs:</span>
+                    <span id="totalExtraCosts">$0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+          
+          <!-- Modal Actions -->
+          <div class="modal-actions" style="padding: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between; background: #F9FAFB;">
+            <button onclick="editJob()" class="save-btn" style="background-color: #3B82F6;">Edit Job</button>
+            <button onclick="deleteJob()" class="cancel-btn" style="background-color: #EF4444;">Delete Job</button>
           </div>
         </div>
       </div>

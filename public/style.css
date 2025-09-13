@@ -469,6 +469,75 @@ button {
   margin-top: 8px;
 }
 
+/* Job Detail Tabs */
+.job-tabs {
+  display: flex;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.job-tab {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.job-tab:hover {
+  color: #3B82F6;
+  background: #F3F4F6;
+}
+
+.job-tab.active {
+  color: #3B82F6;
+  border-bottom-color: #3B82F6;
+  background: white;
+}
+
+.job-tab-panel {
+  display: none;
+}
+
+.job-tab-panel.active {
+  display: block;
+}
+
+/* File Drop Zones */
+.file-drop-zone {
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.file-drop-zone:hover {
+  border-color: #3B82F6;
+  background-color: #F0F9FF;
+}
+
+.file-drop-zone.dragover {
+  border-color: #3B82F6;
+  background-color: #EBF8FF;
+}
+
+/* Task and Cost Items */
+.task-item, .cost-item {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-item:hover, .cost-item:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .customer-name {
   font-size: 18px;
   font-weight: 600;
