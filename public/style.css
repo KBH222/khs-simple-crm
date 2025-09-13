@@ -682,6 +682,48 @@ button {
   background: #2563EB;
 }
 
+/* Drag and Drop Styles */
+.calendar-event {
+  cursor: grab;
+}
+
+.calendar-event:active {
+  cursor: grabbing;
+}
+
+.calendar-event.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  z-index: 1000;
+  cursor: grabbing;
+}
+
+.calendar-day.drag-over {
+  background: #DBEAFE;
+  border: 2px dashed #3B82F6;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.calendar-day.drop-valid {
+  background: #D1FAE5;
+  border: 2px dashed #10B981;
+}
+
+.calendar-day.drop-invalid {
+  background: #FEE2E2;
+  border: 2px dashed #EF4444;
+}
+
+.drag-preview {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.8;
+  transform: rotate(5deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 /* Event Modal Styles */
 .time-container {
   display: flex;

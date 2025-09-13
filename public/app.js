@@ -1162,14 +1162,201 @@ function renderEvents() {
       eventElement.className = `calendar-event ${event.event_type}`;
       eventElement.textContent = event.title;
       eventElement.title = `${event.title}\n${event.description || ''}`;
-      eventElement.onclick = () => viewEvent(event);
+      eventElement.draggable = true;
+      eventElement.dataset.eventId = event.id;
+      eventElement.dataset.eventDate = event.event_date;
+      
+      // Add drag event listeners
+      eventElement.addEventListener('dragstart', handleEventDragStart);
+      eventElement.addEventListener('dragend', handleEventDragEnd);
+      
+      // Click handler (prevent when dragging)
+      eventElement.addEventListener('click', (e) => {
+        if (!eventElement.classList.contains('dragging')) {
+          viewEvent(event);
+        }
+      });
+      
       eventContainer.appendChild(eventElement);
     }
   });
+  
+  // Add drop event listeners to calendar days
+  setupCalendarDayDropListeners();
 }
 
 function viewEvent(event) {
   alert(`Event: ${event.title}\nDate: ${event.event_date}\nType: ${event.event_type}\n\n${event.description || 'No description'}`);
+}
+
+// Drag and Drop Functions
+let draggedEvent = null;
+let draggedEventElement = null;
+
+function handleEventDragStart(e) {
+  draggedEventElement = e.target;
+  draggedEvent = {
+    id: e.target.dataset.eventId,
+    originalDate: e.target.dataset.eventDate,
+    title: e.target.textContent
+  };
+  
+  e.target.classList.add('dragging');
+  
+  // Set drag data
+  e.dataTransfer.setData('text/plain', draggedEvent.id);
+  e.dataTransfer.effectAllowed = 'move';
+  
+  // Add visual feedback to all calendar days
+  document.querySelectorAll('.calendar-day').forEach(day => {
+    day.classList.add('drop-zone');
+  });
+  
+  console.log('Started dragging event:', draggedEvent.title);
+}
+
+function handleEventDragEnd(e) {
+  e.target.classList.remove('dragging');
+  
+  // Clean up visual feedback
+  document.querySelectorAll('.calendar-day').forEach(day => {
+    day.classList.remove('drop-zone', 'drag-over', 'drop-valid', 'drop-invalid');
+  });
+  
+  draggedEvent = null;
+  draggedEventElement = null;
+  
+  console.log('Ended dragging event');
+}
+
+function setupCalendarDayDropListeners() {
+  document.querySelectorAll('.calendar-day').forEach(day => {
+    // Remove existing listeners to prevent duplicates
+    day.removeEventListener('dragover', handleDayDragOver);
+    day.removeEventListener('dragenter', handleDayDragEnter);
+    day.removeEventListener('dragleave', handleDayDragLeave);
+    day.removeEventListener('drop', handleDayDrop);
+    
+    // Add new listeners
+    day.addEventListener('dragover', handleDayDragOver);
+    day.addEventListener('dragenter', handleDayDragEnter);
+    day.addEventListener('dragleave', handleDayDragLeave);
+    day.addEventListener('drop', handleDayDrop);
+  });
+}
+
+function handleDayDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDayDragEnter(e) {
+  e.preventDefault();
+  if (draggedEvent && e.target.classList.contains('calendar-day')) {
+    const targetDate = e.target.dataset.date;
+    
+    // Remove previous drag-over states
+    document.querySelectorAll('.calendar-day').forEach(day => {
+      day.classList.remove('drag-over', 'drop-valid', 'drop-invalid');
+    });
+    
+    // Add drag-over state to current target
+    e.target.classList.add('drag-over');
+    
+    // Validate drop (can't drop on same date)
+    if (targetDate === draggedEvent.originalDate) {
+      e.target.classList.add('drop-invalid');
+    } else {
+      e.target.classList.add('drop-valid');
+    }
+  }
+}
+
+function handleDayDragLeave(e) {
+  // Only remove classes if we're actually leaving the day (not entering a child element)
+  if (!e.target.contains(e.relatedTarget)) {
+    e.target.classList.remove('drag-over', 'drop-valid', 'drop-invalid');
+  }
+}
+
+async function handleDayDrop(e) {
+  e.preventDefault();
+  
+  if (!draggedEvent) return;
+  
+  const targetDate = e.target.closest('.calendar-day')?.dataset.date;
+  
+  if (!targetDate) {
+    console.error('No target date found');
+    return;
+  }
+  
+  // Don't allow dropping on the same date
+  if (targetDate === draggedEvent.originalDate) {
+    console.log('Cannot drop event on the same date');
+    return;
+  }
+  
+  console.log(`Moving event ${draggedEvent.title} from ${draggedEvent.originalDate} to ${targetDate}`);
+  
+  try {
+    // Update event date via API
+    const response = await fetch(`/api/calendar/events/${draggedEvent.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_date: targetDate,
+        // Get the existing event data to preserve other fields
+        ...getEventById(draggedEvent.id)
+      })
+    });
+    
+    if (response.ok) {
+      console.log('Event moved successfully');
+      // Reload calendar events to reflect the change
+      await loadCalendarEvents();
+      
+      // Show success feedback
+      showMoveSuccessFeedback(targetDate);
+    } else {
+      console.error('Failed to move event');
+      alert('Failed to move event. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error moving event:', error);
+    alert('Error moving event. Please try again.');
+  }
+}
+
+function getEventById(eventId) {
+  const event = calendarEvents.find(e => e.id === eventId);
+  if (!event) return {};
+  
+  return {
+    title: event.title,
+    description: event.description,
+    start_time: event.start_time,
+    end_time: event.end_time,
+    event_type: event.event_type,
+    customer_id: event.customer_id,
+    job_id: event.job_id,
+    all_day: event.all_day
+  };
+}
+
+function showMoveSuccessFeedback(targetDate) {
+  const targetDay = document.querySelector(`[data-date="${targetDate}"]`);
+  if (targetDay) {
+    // Add a brief success animation
+    targetDay.style.backgroundColor = '#D1FAE5';
+    targetDay.style.transform = 'scale(1.05)';
+    
+    setTimeout(() => {
+      targetDay.style.backgroundColor = '';
+      targetDay.style.transform = '';
+      targetDay.style.transition = 'all 0.3s ease';
+    }, 500);
+  }
 }
 
 // Make functions globally accessible
