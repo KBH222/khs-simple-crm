@@ -1144,11 +1144,16 @@ function renderEvents() {
     if (eventContainer) {
       const eventElement = document.createElement('div');
       eventElement.className = `calendar-event ${event.event_type}`;
-      eventElement.textContent = event.title;
-      eventElement.title = `${event.title}\n${event.description || ''}`;
       eventElement.draggable = true;
       eventElement.dataset.eventId = event.id;
       eventElement.dataset.eventDate = event.event_date;
+      eventElement.title = `${event.title}\n${event.description || ''}`;
+      
+      // Create event content with title and delete button
+      eventElement.innerHTML = `
+        <span class="event-title">${escapeHtml(event.title)}</span>
+        <button class="event-delete-btn" onclick="deleteCalendarEvent('${event.id}'); event.stopPropagation();" title="Delete event">×</button>
+      `;
       
       // Add drag event listeners
       eventElement.addEventListener('dragstart', handleEventDragStart);
@@ -1156,7 +1161,7 @@ function renderEvents() {
       
       // Click handler (prevent when dragging)
       eventElement.addEventListener('click', (e) => {
-        if (!eventElement.classList.contains('dragging')) {
+        if (!eventElement.classList.contains('dragging') && !e.target.classList.contains('event-delete-btn')) {
           viewEvent(event);
         }
       });
@@ -1183,7 +1188,7 @@ function handleEventDragStart(e) {
   draggedEvent = {
     id: e.target.dataset.eventId,
     originalDate: e.target.dataset.eventDate,
-    title: e.target.textContent
+    title: e.target.querySelector('.event-title')?.textContent || e.target.textContent
   };
   
   e.target.classList.add('dragging');
@@ -1342,6 +1347,25 @@ function showMoveSuccessFeedback(targetDate) {
   }
 }
 
+// Delete calendar event
+async function deleteCalendarEvent(eventId) {
+  try {
+    const response = await fetch(`/api/calendar/events/${eventId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      console.log('Event deleted successfully');
+      // Reload calendar events to reflect the change
+      await loadCalendarEvents();
+    } else {
+      console.error('Failed to delete event');
+    }
+  } catch (error) {
+    console.error('Error deleting event:', error);
+  }
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
@@ -1360,3 +1384,4 @@ window.showJobModal = showJobModal;
 window.testNavigation = testNavigation;
 window.selectDate = selectDate;
 window.viewEvent = viewEvent;
+window.deleteCalendarEvent = deleteCalendarEvent;
