@@ -504,6 +504,269 @@ button {
 
 /* OLD CUSTOMER CSS REMOVED - GRID ONLY */
 
+/* Calendar Styles */
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+.calendar-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  min-width: 200px;
+  text-align: center;
+}
+
+.nav-btn {
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.nav-btn:hover {
+  background: #2563EB;
+}
+
+.today-btn {
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.today-btn:hover {
+  background: #059669;
+}
+
+.calendar-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin: 0 20px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.calendar-header-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.calendar-day-header {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  border-right: 1px solid #E5E7EB;
+}
+
+.calendar-day-header:last-child {
+  border-right: none;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+}
+
+.calendar-day {
+  min-height: 120px;
+  border-right: 1px solid #E5E7EB;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-day:last-child {
+  border-right: none;
+}
+
+.calendar-day:hover {
+  background: #F9FAFB;
+}
+
+.calendar-day.other-month {
+  background: #F9FAFB;
+  color: #9CA3AF;
+}
+
+.calendar-day.today {
+  background: #EBF8FF;
+}
+
+.calendar-day.selected {
+  background: #DBEAFE;
+  border: 2px solid #3B82F6;
+}
+
+.calendar-day-number {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: #111827;
+}
+
+.other-month .calendar-day-number {
+  color: #9CA3AF;
+}
+
+.today .calendar-day-number {
+  color: #1D4ED8;
+}
+
+.calendar-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.calendar-event {
+  background: #3B82F6;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.calendar-event:hover {
+  background: #2563EB;
+}
+
+.calendar-event.personal {
+  background: #10B981;
+}
+
+.calendar-event.personal:hover {
+  background: #059669;
+}
+
+.calendar-event.business {
+  background: #3B82F6;
+}
+
+.calendar-event.business:hover {
+  background: #2563EB;
+}
+
+/* Event Modal Styles */
+.time-container {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+}
+
+.time-group {
+  flex: 1;
+}
+
+.time-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.time-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  padding-top: 24px;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* Mobile Calendar Styles */
+@media (max-width: 768px) {
+  .calendar-nav {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .calendar-header h3 {
+    font-size: 20px;
+  }
+  
+  .calendar-container {
+    margin: 0 10px;
+  }
+  
+  .calendar-day {
+    min-height: 80px;
+    padding: 4px;
+  }
+  
+  .calendar-day-number {
+    font-size: 14px;
+  }
+  
+  .calendar-event {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+  
+  .time-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .checkbox-group {
+    padding-top: 0;
+    margin-top: 10px;
+  }
+}
+
 /* Job Detail Tabs */
 .job-tabs {
   display: flex;

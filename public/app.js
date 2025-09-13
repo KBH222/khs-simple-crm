@@ -1,6 +1,9 @@
 // Global state
 let customers = [];
 let currentFilter = 'all';
+let currentDate = new Date();
+let calendarEvents = [];
+let selectedDate = null;
 
 // Utility functions
 function formatDate(date) {
@@ -142,6 +145,8 @@ function showPage(pageName) {
   // Load page-specific data
   if (pageName === 'customers') {
     loadCustomers();
+  } else if (pageName === 'schedule') {
+    initializeCalendar();
   }
 }
 
@@ -916,6 +921,257 @@ function sendText(phoneNumber) {
   }
 }
 
+// Calendar Functions
+function initializeCalendar() {
+  console.log('Initializing calendar...');
+  setupCalendarEventListeners();
+  renderCalendar();
+  loadCalendarEvents();
+}
+
+function setupCalendarEventListeners() {
+  // Navigation buttons
+  const prevBtn = document.getElementById('prevMonth');
+  const nextBtn = document.getElementById('nextMonth');
+  const todayBtn = document.getElementById('todayBtn');
+  const addEventBtn = document.getElementById('addEventBtn');
+  
+  if (prevBtn) prevBtn.addEventListener('click', () => navigateMonth(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => navigateMonth(1));
+  if (todayBtn) todayBtn.addEventListener('click', goToToday);
+  if (addEventBtn) addEventBtn.addEventListener('click', () => showEventModal());
+  
+  // Event form
+  const eventForm = document.getElementById('eventForm');
+  if (eventForm) {
+    eventForm.addEventListener('submit', handleEventSubmit);
+  }
+  
+  // All-day checkbox toggle
+  const allDayCheckbox = document.getElementById('eventAllDay');
+  if (allDayCheckbox) {
+    allDayCheckbox.addEventListener('change', toggleTimeFields);
+  }
+  
+  // Event type dropdown
+  const eventTypeSelect = document.getElementById('eventType');
+  if (eventTypeSelect) {
+    eventTypeSelect.addEventListener('change', toggleCustomerJobFields);
+  }
+}
+
+function navigateMonth(direction) {
+  currentDate.setMonth(currentDate.getMonth() + direction);
+  renderCalendar();
+  loadCalendarEvents();
+}
+
+function goToToday() {
+  currentDate = new Date();
+  renderCalendar();
+  loadCalendarEvents();
+}
+
+function renderCalendar() {
+  const monthHeader = document.getElementById('currentMonth');
+  const calendarDays = document.getElementById('calendarDays');
+  
+  if (!monthHeader || !calendarDays) return;
+  
+  // Update month header
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+  monthHeader.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+  
+  // Generate calendar days
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - firstDay.getDay());
+  
+  const today = new Date();
+  let calendarHTML = '';
+  
+  // Generate 42 days (6 weeks)
+  for (let i = 0; i < 42; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    
+    const isCurrentMonth = date.getMonth() === month;
+    const isToday = date.toDateString() === today.toDateString();
+    const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+    
+    let classes = ['calendar-day'];
+    if (!isCurrentMonth) classes.push('other-month');
+    if (isToday) classes.push('today');
+    if (isSelected) classes.push('selected');
+    
+    const dateStr = date.toISOString().split('T')[0];
+    
+    calendarHTML += `
+      <div class="${classes.join(' ')}" data-date="${dateStr}" onclick="selectDate('${dateStr}')">
+        <div class="calendar-day-number">${date.getDate()}</div>
+        <div class="calendar-events" id="events-${dateStr}"></div>
+      </div>
+    `;
+  }
+  
+  calendarDays.innerHTML = calendarHTML;
+}
+
+function selectDate(dateStr) {
+  selectedDate = new Date(dateStr + 'T12:00:00');
+  
+  // Update visual selection
+  document.querySelectorAll('.calendar-day').forEach(day => {
+    day.classList.remove('selected');
+  });
+  document.querySelector(`[data-date="${dateStr}"]`).classList.add('selected');
+  
+  // Show event modal with selected date
+  showEventModal(dateStr);
+}
+
+function showEventModal(dateStr = null) {
+  const modal = document.getElementById('eventModal');
+  const form = document.getElementById('eventForm');
+  const title = document.getElementById('eventModalTitle');
+  const dateInput = document.getElementById('eventDate');
+  
+  if (!modal || !form) return;
+  
+  // Reset form
+  form.reset();
+  title.textContent = 'Add Event';
+  delete form.dataset.eventId;
+  
+  // Set date if provided
+  if (dateStr) {
+    dateInput.value = dateStr;
+  } else {
+    dateInput.value = new Date().toISOString().split('T')[0];
+  }
+  
+  // Load customers for dropdown
+  populateCustomerDropdown();
+  
+  modal.classList.add('active');
+}
+
+function populateCustomerDropdown() {
+  const customerSelect = document.getElementById('eventCustomer');
+  if (!customerSelect || !customers.length) return;
+  
+  customerSelect.innerHTML = '<option value="">Select customer...</option>';
+  customers.forEach(customer => {
+    customerSelect.innerHTML += `<option value="${customer.id}">${escapeHtml(customer.name)}</option>`;
+  });
+}
+
+function toggleTimeFields() {
+  const allDayCheckbox = document.getElementById('eventAllDay');
+  const startTimeInput = document.getElementById('eventStartTime');
+  const endTimeInput = document.getElementById('eventEndTime');
+  
+  if (allDayCheckbox && startTimeInput && endTimeInput) {
+    const disabled = allDayCheckbox.checked;
+    startTimeInput.disabled = disabled;
+    endTimeInput.disabled = disabled;
+    if (disabled) {
+      startTimeInput.value = '';
+      endTimeInput.value = '';
+    }
+  }
+}
+
+function toggleCustomerJobFields() {
+  const eventType = document.getElementById('eventType').value;
+  const customerJobGroup = document.getElementById('customerJobGroup');
+  
+  if (customerJobGroup) {
+    customerJobGroup.style.display = eventType === 'business' ? 'block' : 'none';
+  }
+}
+
+async function handleEventSubmit(e) {
+  e.preventDefault();
+  
+  const formData = {
+    title: document.getElementById('eventTitle').value,
+    description: document.getElementById('eventDescription').value,
+    event_date: document.getElementById('eventDate').value,
+    start_time: document.getElementById('eventStartTime').value || null,
+    end_time: document.getElementById('eventEndTime').value || null,
+    event_type: document.getElementById('eventType').value,
+    customer_id: document.getElementById('eventCustomer').value || null,
+    job_id: document.getElementById('eventJob').value || null,
+    all_day: document.getElementById('eventAllDay').checked ? 1 : 0
+  };
+  
+  try {
+    const response = await fetch('/api/calendar/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    
+    if (response.ok) {
+      hideModals();
+      loadCalendarEvents();
+      alert('Event created successfully!');
+    } else {
+      const error = await response.json();
+      alert(error.message || 'Failed to create event');
+    }
+  } catch (error) {
+    console.error('Error creating event:', error);
+    alert('Failed to create event');
+  }
+}
+
+async function loadCalendarEvents() {
+  try {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const response = await fetch(`/api/calendar/events?year=${year}&month=${month}`);
+    const events = await response.json();
+    
+    if (response.ok) {
+      calendarEvents = events;
+      renderEvents();
+    } else {
+      console.error('Failed to load calendar events');
+    }
+  } catch (error) {
+    console.error('Error loading calendar events:', error);
+  }
+}
+
+function renderEvents() {
+  // Clear existing events
+  document.querySelectorAll('.calendar-events').forEach(container => {
+    container.innerHTML = '';
+  });
+  
+  calendarEvents.forEach(event => {
+    const eventContainer = document.getElementById(`events-${event.event_date}`);
+    if (eventContainer) {
+      const eventElement = document.createElement('div');
+      eventElement.className = `calendar-event ${event.event_type}`;
+      eventElement.textContent = event.title;
+      eventElement.title = `${event.title}\n${event.description || ''}`;
+      eventElement.onclick = () => viewEvent(event);
+      eventContainer.appendChild(eventElement);
+    }
+  });
+}
+
+function viewEvent(event) {
+  alert(`Event: ${event.title}\nDate: ${event.event_date}\nType: ${event.event_type}\n\n${event.description || 'No description'}`);
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
@@ -932,3 +1188,5 @@ window.addExtraCost = addExtraCost;
 window.showCustomerModal = showCustomerModal;
 window.showJobModal = showJobModal;
 window.testNavigation = testNavigation;
+window.selectDate = selectDate;
+window.viewEvent = viewEvent;

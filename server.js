@@ -70,7 +70,25 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs (id)
   )`);
-
+  
+  // Calendar events table
+  db.run(`CREATE TABLE IF NOT EXISTS calendar_events (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    event_date DATE NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    event_type TEXT DEFAULT 'business',
+    customer_id TEXT,
+    job_id TEXT,
+    all_day BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers (id),
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
   // Create default admin user (simplified)
   const adminId = 'admin-' + Date.now();
   
@@ -389,6 +407,111 @@ app.put('/api/jobs/:id/scope', (req, res) => {
   });
 });
 
+// Calendar Events API
+app.get('/api/calendar/events', (req, res) => {
+  const { year, month } = req.query;
+  let query = `SELECT e.*, c.name as customer_name, j.title as job_title 
+               FROM calendar_events e 
+               LEFT JOIN customers c ON e.customer_id = c.id 
+               LEFT JOIN jobs j ON e.job_id = j.id`;
+  const params = [];
+  
+  if (year && month) {
+    query += ` WHERE strftime('%Y', e.event_date) = ? AND strftime('%m', e.event_date) = ?`;
+    params.push(year, month.padStart(2, '0'));
+  }
+  
+  query += ` ORDER BY e.event_date, e.start_time`;
+  
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/calendar/events', (req, res) => {
+  const { title, description, event_date, start_time, end_time, event_type, customer_id, job_id, all_day } = req.body;
+  
+  if (!title || !event_date) {
+    return res.status(400).json({ error: 'Title and event date are required' });
+  }
+  
+  const eventId = generateId('event');
+  const now = new Date().toISOString();
+  
+  db.run(`INSERT INTO calendar_events 
+          (id, title, description, event_date, start_time, end_time, event_type, customer_id, job_id, all_day, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [eventId, title, description, event_date, start_time, end_time, event_type || 'business', 
+     customer_id, job_id, all_day || 0, now, now],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      res.json({
+        id: eventId,
+        title,
+        description,
+        event_date,
+        start_time,
+        end_time,
+        event_type: event_type || 'business',
+        customer_id,
+        job_id,
+        all_day: all_day || 0,
+        created_at: now
+      });
+    });
+});
+
+app.put('/api/calendar/events/:id', (req, res) => {
+  const { id } = req.params;
+  const { title, description, event_date, start_time, end_time, event_type, customer_id, job_id, all_day } = req.body;
+  
+  if (!title || !event_date) {
+    return res.status(400).json({ error: 'Title and event date are required' });
+  }
+  
+  const now = new Date().toISOString();
+  
+  db.run(`UPDATE calendar_events 
+          SET title = ?, description = ?, event_date = ?, start_time = ?, end_time = ?, 
+              event_type = ?, customer_id = ?, job_id = ?, all_day = ?, updated_at = ?
+          WHERE id = ?`,
+    [title, description, event_date, start_time, end_time, event_type, 
+     customer_id, job_id, all_day, now, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      
+      res.json({ message: 'Event updated' });
+    });
+});
+
+app.delete('/api/calendar/events/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM calendar_events WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    res.json({ message: 'Event deleted' });
+  });
+});
+
 // Catch-all for React Router
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -405,9 +528,9 @@ app.listen(PORT, HOST, () => {
   console.log('');
 });
 
-// Graceful shutdown
+// Graceful shutdown - with debug info
 process.on('SIGINT', () => {
-  console.log('\n📴 Shutting down server...');
+  console.log('\n📴 Received SIGINT - Shutting down server...');
   db.close((err) => {
     if (err) {
       console.error(err.message);
@@ -415,4 +538,24 @@ process.on('SIGINT', () => {
     console.log('Database connection closed.');
     process.exit(0);
   });
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n📴 Received SIGTERM - Shutting down server...');
+  db.close((err) => {
+    if (err) {
+      console.error(err.message);
+    }
+    console.log('Database connection closed.');
+    process.exit(0);
+  });
+});
+
+// Log any uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
