@@ -447,24 +447,45 @@ button {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.customer-header {
-  margin-bottom: 0px;
+/* CSS Grid Layout for Customer Cards - Zero spacing issues */
+.customer-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 80px;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "name buttons"
+    "info buttons";
+  gap: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 12px;
 }
 
-.customer-buttons {
-  /* Styles for absolute positioned buttons */
-  position: absolute;
-  top: 16px;
-  right: 16px;
+.customer-name-cell {
+  grid-area: name;
+  margin: 0;
+  padding: 0;
+  align-self: start;
+}
+
+.customer-buttons-cell {
+  grid-area: buttons;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  z-index: 2;
+  align-items: center;
+  justify-self: end;
+  margin: 0;
+  padding: 0;
 }
 
-.customer-main-content {
-  /* Main content area with padding to avoid button overlap */
-  padding-right: 90px;
+.customer-info-cell {
+  grid-area: info;
+  margin: 0;
+  padding: 0;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .customer-content {

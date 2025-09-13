@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacing Test</title>
+    <style>
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+        
+        .test-card {
+            background: white;
+            border: 2px solid red;
+            padding: 16px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .customer-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            background: yellow;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .customer-info {
+            background: lightblue;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .customer-info p {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: lightgreen;
+            font-size: 16px;
+        }
+        
+        .buttons {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: orange;
+        }
+    </style>
+</head>
+<body>
+    <h1>Spacing Debug Test</h1>
+    
+    <div class="test-card">
+        <div class="buttons">BUTTONS HERE</div>
+        <div class="customer-name">John Smith</div>
+        <div class="customer-info">
+            <p><strong>Email:</strong> john@example.com</p>
+            <p><strong>Phone:</strong> (555) 123-4567</p>
+        </div>
+    </div>
+    
+    <div class="test-card" style="padding-right: 90px;">
+        <div class="buttons">BUTTONS HERE</div>
+        <div class="customer-name">Jane Doe</div>
+        <div class="customer-info">
+            <p><strong>Email:</strong> jane@example.com</p>
+            <p><strong>Phone:</strong> (555) 987-6543</p>
+        </div>
+    </div>
+    
+</body>
+</html>
