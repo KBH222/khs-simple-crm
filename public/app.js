@@ -293,7 +293,7 @@ function renderCustomers() {
             <strong>Phone:</strong> 
             ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
           </p>
-          ${customer.address ? `<p style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none;">${escapeHtml(customer.address)}</a></p>` : ''}
+          ${customer.address ? `<p style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; display: inline-block;">${formatAddress(customer.address)}</a></p>` : ''}
           
           <div class="customer-jobs" id="jobs-${customer.id}">
             <div class="jobs-header" style="margin-top: 12px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
@@ -538,6 +538,45 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Format address into two lines: street, then city/state/zip
+function formatAddress(address) {
+  if (!address) return '';
+  
+  // Common address patterns to split on
+  const patterns = [
+    // Pattern: "123 Main St, Anytown, ST 12345"
+    /^(.+?),\s*([^,]+),\s*([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/,
+    // Pattern: "123 Main St, Anytown ST 12345"
+    /^(.+?),\s*([^,]+)\s+([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/,
+    // Pattern: "123 Main St Anytown, ST 12345"
+    /^(.+?)\s+([^,]+),\s*([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/,
+    // Pattern: "123 Main St Anytown ST 12345"
+    /^(.+?)\s+([A-Za-z\s]+)\s+([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = address.match(pattern);
+    if (match) {
+      const street = match[1].trim();
+      const city = match[2].trim();
+      const state = match[3].trim();
+      const zip = match[4].trim();
+      return `${escapeHtml(street)}<br>${escapeHtml(city)}, ${escapeHtml(state)} ${escapeHtml(zip)}`;
+    }
+  }
+  
+  // If no pattern matches, try to split on comma and assume last part has city/state/zip
+  const parts = address.split(',').map(p => p.trim());
+  if (parts.length >= 2) {
+    const street = parts.slice(0, -1).join(', ');
+    const cityStateZip = parts[parts.length - 1];
+    return `${escapeHtml(street)}<br>${escapeHtml(cityStateZip)}`;
+  }
+  
+  // Fallback: return as-is if can't parse
+  return escapeHtml(address);
 }
 
 // Placeholder functions for other sections
