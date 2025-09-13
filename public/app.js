@@ -22,24 +22,43 @@ function formatTime(date) {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM Content Loaded!');
   updateDateTime();
   setInterval(updateDateTime, 1000);
   loadCustomers();
   
   // Event listeners
   setupEventListeners();
+  
+  // Add click test for debugging
+  setTimeout(() => {
+    testNavigation();
+  }, 1000);
 });
 
 function setupEventListeners() {
+  console.log('Setting up event listeners...');
   
   // Navigation cards
-  document.querySelectorAll('.nav-card').forEach(card => {
-    card.addEventListener('click', function() {
-      const page = this.dataset.page;
+  const navCards = document.querySelectorAll('.nav-card');
+  console.log('Found nav cards:', navCards.length);
+  
+  navCards.forEach((card, index) => {
+    const page = card.dataset.page;
+    console.log(`Nav card ${index}: page = ${page}`);
+    
+    card.addEventListener('click', function(e) {
+      console.log('Nav card clicked:', page);
+      e.preventDefault();
       if (page) {
         showPage(page);
+      } else {
+        console.error('No page data attribute found!');
       }
     });
+    
+    // Also add cursor pointer style to make it clear it's clickable
+    card.style.cursor = 'pointer';
   });
   
   // Back buttons
@@ -92,15 +111,26 @@ function setupEventListeners() {
 
 
 function showPage(pageName) {
+  console.log('Showing page:', pageName);
+  
   // Hide all pages
-  document.querySelectorAll('.page').forEach(page => {
+  const allPages = document.querySelectorAll('.page');
+  console.log('Found pages:', allPages.length);
+  
+  allPages.forEach(page => {
     page.classList.remove('active');
+    console.log('Hiding page:', page.id);
   });
   
   // Show selected page
   const targetPage = document.getElementById(pageName);
+  console.log('Target page element:', targetPage);
+  
   if (targetPage) {
     targetPage.classList.add('active');
+    console.log('Showing page:', pageName);
+  } else {
+    console.error('Page not found:', pageName);
   }
   
   // Load page-specific data
@@ -234,7 +264,7 @@ function showCustomerModal(customer = null) {
     document.getElementById('customerType').value = customer.customer_type || 'CURRENT';
     document.getElementById('customerNotes').value = customer.notes || '';
     form.dataset.customerId = customer.id;
-  }
+  } else {
     // Add mode
     title.textContent = 'Add Customer';
     form.reset();
@@ -352,3 +382,39 @@ function showKHSInfo() {
 function showProfile() {
   alert('Profile section coming soon!');
 }
+
+// Debug function to test navigation
+function testNavigation() {
+  console.log('=== NAVIGATION TEST ===');
+  const navCards = document.querySelectorAll('.nav-card');
+  console.log('Nav cards found:', navCards.length);
+  
+  navCards.forEach((card, index) => {
+    console.log(`Card ${index}:`, {
+      element: card,
+      dataset: card.dataset,
+      page: card.dataset.page,
+      innerHTML: card.innerHTML.substring(0, 100)
+    });
+  });
+  
+  const pages = document.querySelectorAll('.page');
+  console.log('Pages found:', pages.length);
+  
+  pages.forEach((page, index) => {
+    console.log(`Page ${index}:`, {
+      id: page.id,
+      classList: Array.from(page.classList),
+      visible: page.classList.contains('active')
+    });
+  });
+  
+  console.log('=== END TEST ===');
+}
+
+// Make functions globally accessible
+window.showPage = showPage;
+window.editCustomer = editCustomer;
+window.deleteCustomer = deleteCustomer;
+window.showCustomerModal = showCustomerModal;
+window.testNavigation = testNavigation;
