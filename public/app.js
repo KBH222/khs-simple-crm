@@ -267,40 +267,44 @@ function renderCustomers() {
   }
   
   container.innerHTML = filteredCustomers.map(customer => `
-    <div class="customer-card">
-      <div class="customer-header" style="margin-bottom: 0px !important; padding-bottom: 0px !important;">
-        <div class="customer-left">
+    <div class="customer-card" style="position: relative;">
+      <!-- Separate button container positioned absolutely -->
+      <div class="customer-buttons" style="position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 2;">
+        <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Edit</button>
+        <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">+ Job</button>
+        <button onclick="sendText('${customer.phone}')" style="background: #8B5CF6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Text</button>
+        <div style="margin-top: 12px;"></div>
+        <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Del</button>
+      </div>
+      
+      <!-- Main content area without buttons -->
+      <div class="customer-main-content" style="padding-right: 90px;"> <!-- Add right padding to prevent text under buttons -->
+        <div class="customer-header" style="margin-bottom: 0px !important; padding-bottom: 0px !important;">
           <div class="customer-name" style="font-size: 20.7px;">${escapeHtml(customer.name)}</div>
-          <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px;">
+          <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; margin-top: 4px;">
             ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
           </div>
         </div>
-        <div class="customer-actions" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
-          <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Edit</button>
-          <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">+ Job</button>
-          <button onclick="sendText('${customer.phone}')" style="background: #8B5CF6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Text</button>
-          <div style="margin-top: 12px;"></div>
-          <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Del</button>
-        </div>
-      </div>
-      <div class="customer-content" style="margin-top: 0px !important; padding-top: 0px !important;">
-        <div class="customer-info" style="margin-top: 0px !important; padding-top: 0px !important;">
-          <p style="margin-bottom: 8px; margin-top: 0px !important; padding-top: 0px !important; font-size: 16.1px;">
-            <strong>Email:</strong>
-            ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
-          </p>
-          <p style="margin-bottom: 8px; font-size: 16.1px;">
-            <strong>Phone:</strong> 
-            ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
-          </p>
-          ${customer.address ? `<p style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; display: inline-block;">${formatAddress(customer.address)}</a></p>` : ''}
-          
-          <div class="customer-jobs" id="jobs-${customer.id}">
-            <div class="jobs-header" style="margin-top: 12px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
-              📋 Jobs 
-              <span class="jobs-loading" style="margin-left: 10px; font-size: 13.8px; color: #6B7280;">Loading...</span>
+        
+        <div class="customer-content" style="margin-top: 0px !important; padding-top: 0px !important;">
+          <div class="customer-info" style="margin-top: 0px !important; padding-top: 0px !important;">
+            <p style="margin-bottom: 8px; margin-top: 0px !important; padding-top: 0px !important; font-size: 16.1px;">
+              <strong>Email:</strong>
+              ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+            </p>
+            <p style="margin-bottom: 8px; font-size: 16.1px;">
+              <strong>Phone:</strong> 
+              ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+            </p>
+            ${customer.address ? `<p style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; display: inline-block;">${formatAddress(customer.address)}</a></p>` : ''}
+            
+            <div class="customer-jobs" id="jobs-${customer.id}">
+              <div class="jobs-header" style="margin-top: 12px; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
+                📋 Jobs 
+                <span class="jobs-loading" style="margin-left: 10px; font-size: 13.8px; color: #6B7280;">Loading...</span>
+              </div>
+              <div class="jobs-list"></div>
             </div>
-            <div class="jobs-list"></div>
           </div>
         </div>
       </div>

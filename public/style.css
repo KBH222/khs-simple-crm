@@ -448,27 +448,23 @@ button {
 }
 
 .customer-header {
-  display: flex;
-  align-items: flex-start;
   margin-bottom: 0px;
-  gap: 16px;
 }
 
-.customer-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
-.customer-actions {
+.customer-buttons {
+  /* Styles for absolute positioned buttons */
+  position: absolute;
+  top: 16px;
+  right: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-end;
-  flex-shrink: 0;
-  width: 70px;
+  z-index: 2;
+}
+
+.customer-main-content {
+  /* Main content area with padding to avoid button overlap */
+  padding-right: 90px;
 }
 
 .customer-content {
