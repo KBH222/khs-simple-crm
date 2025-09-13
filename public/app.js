@@ -268,7 +268,7 @@ function renderCustomers() {
   
   container.innerHTML = filteredCustomers.map(customer => `
     <div class="customer-card">
-      <div class="customer-header">
+      <div class="customer-header" style="margin-bottom: 0px;">
         <div class="customer-left">
           <div class="customer-name" style="font-size: 20.7px;">${escapeHtml(customer.name)}</div>
           <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px;">
@@ -283,8 +283,8 @@ function renderCustomers() {
           <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; min-width: 60px;">Del</button>
         </div>
       </div>
-      <div class="customer-content">
-        <div class="customer-info" style="margin-top: 2px;">
+      <div class="customer-content" style="margin-top: 0px;">
+        <div class="customer-info" style="margin-top: 0px;">
           <p style="margin-bottom: 8px; font-size: 16.1px;">
             <strong>Email:</strong> 
             ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
