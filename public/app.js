@@ -197,15 +197,15 @@ async function loadCustomerJobs(customerId) {
         `;
       } else {
         jobsContainer.innerHTML = data.map(job => `
-          <div class="job-item" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px 6px; margin: 2px 0; font-size: 10px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
+          <div class="job-item" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px 6px; margin: 2px 0; font-size: 12px; width: 200px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div onclick="viewJob('${job.id}')" style="cursor: pointer; flex: 1;">
+              <div onclick="viewJob('${job.id}')" style="cursor: pointer; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 <strong>${escapeHtml(job.title)}</strong>
                 ${job.total_cost > 0 ? `<span style="color: #6B7280; margin-left: 8px;">$${job.total_cost.toFixed(2)}</span>` : ''}
               </div>
-              <button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 14px; font-weight: bold; cursor: pointer; padding: 2px; line-height: 1;">×</button>
+              <button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 16px; font-weight: bold; cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0;">×</button>
             </div>
-            ${job.description ? `<div onclick="viewJob('${job.id}')" style="color: #6B7280; margin-top: 2px; cursor: pointer;">${escapeHtml(job.description.substring(0, 40))}${job.description.length > 40 ? '...' : ''}</div>` : ''}
+            ${job.description ? `<div onclick="viewJob('${job.id}')" style="color: #6B7280; margin-top: 2px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(job.description.substring(0, 30))}${job.description.length > 30 ? '...' : ''}</div>` : ''}
           </div>
         `).join('');
       }
