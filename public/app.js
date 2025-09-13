@@ -293,15 +293,23 @@ function renderCustomers() {
             ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
           </div>
           ${customer.address ? `<div style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; display: inline-block;">${formatAddress(customer.address)}</a></div>` : ''}
+          
+          <div class="customer-jobs" id="jobs-${customer.id}" style="margin: 0 !important; padding: 0 !important;">
+            <div class="jobs-header" style="margin: 0 !important; padding: 0 !important; margin-top: 8px !important; margin-bottom: 4px !important; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
+              📋 Jobs 
+              <span class="jobs-loading" style="margin-left: 10px; font-size: 13.8px; color: #6B7280;">Loading...</span>
+            </div>
+            <div class="jobs-list" style="margin: 0 !important; padding: 0 !important;"></div>
+          </div>
         </div>
       </div>
     </div>
   `).join('');
   
-  // Load jobs for each customer - DISABLED FOR SPACING TEST
-  // filteredCustomers.forEach(customer => {
-  //   loadCustomerJobs(customer.id);
-  // });
+  // Load jobs for each customer - NOW WITH ZERO SPACING
+  filteredCustomers.forEach(customer => {
+    loadCustomerJobs(customer.id);
+  });
 }
 
 function setFilter(filter) {
