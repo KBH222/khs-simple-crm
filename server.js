@@ -6,25 +6,37 @@ const { promisify } = require('util');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const HOST = '0.0.0.0';
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Database setup with error handling
 let db;
-try {
-  db = new sqlite3.Database('crm.db', (err) => {
-    if (err) {
-      console.error('Failed to connect to database:', err);
-      process.exit(1);
+let dbInitialized = false;
+
+// Promise-based database initialization
+const initializeDatabase = () => {
+  return new Promise((resolve, reject) => {
+    try {
+      db = new sqlite3.Database('crm.db', (err) => {
+        if (err) {
+          console.error('Failed to connect to database:', err);
+          reject(err);
+        } else {
+          console.log('✅ Connected to SQLite database');
+          dbInitialized = true;
+          resolve();
+        }
+      });
+    } catch (error) {
+      console.error('Database initialization error:', error);
+      reject(error);
     }
-    console.log('✅ Connected to SQLite database');
   });
-} catch (error) {
-  console.error('Database initialization error:', error);
-  process.exit(1);
-}
+};
 
 // Initialize database tables
-db.serialize(() => {
+const initializeTables = () => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
   // Users table
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -235,7 +247,12 @@ db.serialize(() => {
        worker.hire_date, worker.status, worker.notes, now, now]
     );
   });
-});
+    
+      // Resolve the promise after all tables are created
+      resolve();
+    });
+  });
+};
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -1043,52 +1060,76 @@ app.post('/api/backup/restore', async (req, res) => {
   }
 });
 
-// Auto backup on server start
-createBackup('startup').then(backup => {
-  console.log(`🔄 Startup backup created: ${backup.filename}`);
-}).catch(err => {
-  console.error('Failed to create startup backup:', err);
-});
-
-// Schedule daily backups
-let dailyBackupInterval;
-function scheduleDailyBackup() {
-  // Create backup every 24 hours (86400000 milliseconds)
-  dailyBackupInterval = setInterval(() => {
-    createBackup('daily').then(backup => {
-      console.log(`📅 Daily backup created: ${backup.filename}`);
-      cleanupOldBackups();
-    }).catch(err => {
-      console.error('Daily backup failed:', err);
-    });
-  }, 24 * 60 * 60 * 1000);
-}
-
-// Start daily backup scheduling
-scheduleDailyBackup();
-
 // Catch-all for React Router
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server with error handling
-const server = app.listen(PORT, HOST, () => {
-  console.log('');
-  console.log('🚀 KHS Simple CRM Server Started!');
-  console.log('=====================================');
-  console.log(`📍 URL: http://${HOST}:${PORT}`);
-  console.log(`🌐 Local: http://localhost:${PORT}`);
-  console.log('=====================================');
-  console.log('');
-});
-
-// Handle server startup errors
-server.on('error', (err) => {
-  console.error('🚫 Server startup error:', err);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use`);
+// Initialize server
+async function startServer() {
+  try {
+    console.log('🔍 Initializing database...');
+    await initializeDatabase();
+    
+    console.log('📋 Setting up database tables...');
+    await initializeTables();
+    
+    // Auto backup on server start
+    try {
+      const backup = await createBackup('startup');
+      console.log(`🔄 Startup backup created: ${backup.filename}`);
+    } catch (err) {
+      console.error('Failed to create startup backup:', err);
+    }
+    
+    // Schedule daily backups
+    let dailyBackupInterval;
+    function scheduleDailyBackup() {
+      // Create backup every 24 hours (86400000 milliseconds)
+      dailyBackupInterval = setInterval(() => {
+        createBackup('daily').then(backup => {
+          console.log(`📅 Daily backup created: ${backup.filename}`);
+          cleanupOldBackups();
+        }).catch(err => {
+          console.error('Daily backup failed:', err);
+        });
+      }, 24 * 60 * 60 * 1000);
+    }
+    
+    // Start daily backup scheduling
+    scheduleDailyBackup();
+    
+    // Start server with error handling
+    const server = app.listen(PORT, HOST, () => {
+      console.log('');
+      console.log('🚀 KHS Simple CRM Server Started!');
+      console.log('=====================================');
+      console.log(`📍 URL: http://${HOST}:${PORT}`);
+      console.log(`🌐 Local: http://localhost:${PORT}`);
+      console.log('=====================================');
+      console.log('');
+    });
+    
+    // Handle server startup errors
+    server.on('error', (err) => {
+      console.error('🚫 Server startup error:', err);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+      }
+      process.exit(1);
+    });
+    
+    return server;
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
+}
+
+// Start the server
+startServer().catch(error => {
+  console.error('❌ Server startup failed:', error);
   process.exit(1);
 });
 
