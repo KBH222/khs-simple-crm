@@ -56,13 +56,13 @@
               </div>
             </div>
 
-            <div class="nav-card" data-page="jobs" onclick="showPage('jobs')">
+            <div class="nav-card" data-page="settings" onclick="showPage('settings')">
               <div class="nav-card-header" style="background-color: #10B981;"></div>
               <div class="nav-card-content">
-                <div class="nav-card-icon">📅</div>
+                <div class="nav-card-icon">⚙️</div>
                 <div class="nav-card-info">
-                  <h3>Jobs</h3>
-                  <p>Manage jobs and schedules</p>
+                  <h3>Settings</h3>
+                  <p>App settings and data backup</p>
                 </div>
                 <div class="nav-card-arrow">→</div>
               </div>
@@ -110,11 +110,12 @@
                 <div class="nav-card-icon">⚙️</div>
                 <div class="nav-card-info">
                   <h3>Profile</h3>
-                  <p>Account settings</p>
+                  <p>User account and preferences</p>
                 </div>
                 <div class="nav-card-arrow">→</div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -501,13 +502,333 @@
         </div>
       </div>
 
+      <!-- Settings Page -->
+      <div id="settings" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Settings</h2>
+          </div>
+          
+          <!-- Settings Tabs -->
+          <div class="settings-tabs">
+            <button class="settings-tab active" data-tab="backup">Backup</button>
+            <button class="settings-tab" data-tab="general">General</button>
+            <button class="settings-tab" data-tab="about">About</button>
+          </div>
+          
+          <!-- Backup Tab -->
+          <div id="backupTab" class="settings-tab-content active">
+            <div class="settings-section">
+              <h3>Data Backup</h3>
+              <p class="settings-description">Protect your customer data and schedule information with regular backups.</p>
+              
+              <!-- Manual Backup -->
+              <div class="backup-section">
+                <div class="backup-card">
+                  <div class="backup-card-header">
+                    <div class="backup-icon">💾</div>
+                    <div class="backup-info">
+                      <h4>Manual Backup</h4>
+                      <p id="backupStatus">Create backup of your data</p>
+                    </div>
+                  </div>
+                  <button class="backup-btn" onclick="createBackup()">Create Backup Now</button>
+                </div>
+              </div>
+              
+              <!-- Backup History -->
+              <div class="backup-section">
+                <h4>Recent Backups</h4>
+                <div id="backupHistory" class="backup-history">
+                  <div class="backup-loading">Loading backup history...</div>
+                </div>
+              </div>
+              
+              <!-- Restore Backup -->
+              <div class="backup-section">
+                <div class="restore-backup-card">
+                  <div class="restore-card-header">
+                    <div class="restore-icon">🔄</div>
+                    <div class="restore-info">
+                      <h4>Restore from Backup</h4>
+                      <p>Restore your database from a previous backup file</p>
+                    </div>
+                  </div>
+                  <div class="restore-controls">
+                    <select id="backupSelect" class="restore-select">
+                      <option value="">Select backup to restore...</option>
+                    </select>
+                    <button class="restore-btn" onclick="showRestoreConfirmation()" disabled>Restore Database</button>
+                  </div>
+                  <div class="restore-warning">
+                    ⚠️ <strong>Warning:</strong> Restoring will replace all current data. A backup of current data will be created automatically before restoring.
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Auto Backup Info -->
+              <div class="backup-section">
+                <div class="backup-info-card">
+                  <h4>Automatic Backups</h4>
+                  <ul class="backup-features">
+                    <li>✅ Startup backup when server starts</li>
+                    <li>✅ Daily automatic backups</li>
+                    <li>✅ Keeps last 10 backups</li>
+                    <li>✅ Automatic cleanup of old backups</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- General Tab -->
+          <div id="generalTab" class="settings-tab-content">
+            <div class="settings-section">
+              <h3>General Settings</h3>
+              <p class="settings-description">Application preferences and configuration.</p>
+              <div class="setting-item">
+                <label>Company Name</label>
+                <input type="text" value="KHS Construction" class="setting-input">
+              </div>
+              <div class="setting-item">
+                <label>Default Customer Type</label>
+                <select class="setting-input">
+                  <option value="CURRENT">Current Customer</option>
+                  <option value="LEADS">Lead</option>
+                </select>
+              </div>
+              <p><em>More settings coming soon...</em></p>
+            </div>
+          </div>
+          
+          <!-- About Tab -->
+          <div id="aboutTab" class="settings-tab-content">
+            <div class="settings-section">
+              <h3>About KHS CRM</h3>
+              <div class="about-info">
+                <div class="about-item">
+                  <strong>Version:</strong> 1.0.0
+                </div>
+                <div class="about-item">
+                  <strong>Database:</strong> SQLite
+                </div>
+                <div class="about-item">
+                  <strong>Features:</strong> Customer Management, Job Tracking, Calendar Scheduling, Data Backup
+                </div>
+                <div class="about-item">
+                  <strong>Data Location:</strong> ./crm.db
+                </div>
+                <div class="about-item">
+                  <strong>Backup Location:</strong> ./backups/
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="workers" class="page">
         <div class="page-container">
           <div class="page-header">
             <button class="back-btn" data-target="dashboard">← Dashboard</button>
             <h2>Workers</h2>
+            <button class="add-btn" id="addWorkerBtn">+ Add Worker</button>
           </div>
-          <p>Workers management coming soon...</p>
+          
+          <!-- Workers Tabs -->
+          <div class="workers-tabs">
+            <button class="workers-tab active" data-tab="info">Info</button>
+            <button class="workers-tab" data-tab="hours">Hours</button>
+          </div>
+          
+          <!-- Info Tab -->
+          <div id="infoTab" class="workers-tab-content active">
+            <div class="workers-section">
+              <h3>Team Members</h3>
+              <div id="workersList" class="workers-list">
+                <div class="workers-loading">Loading workers...</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Hours Tab -->
+          <div id="hoursTab" class="workers-tab-content">
+            <div class="workers-section">
+              <div class="hours-header">
+                <h3>Time Tracking</h3>
+                <div class="week-navigation">
+                  <button id="prevWeek" class="week-nav-btn">‹</button>
+                  <span id="currentWeek">Week of Sept 14, 2025</span>
+                  <button id="nextWeek" class="week-nav-btn">›</button>
+                  <button id="thisWeek" class="week-today-btn">This Week</button>
+                </div>
+                <button class="add-btn" id="logHoursBtn">+ Log Hours</button>
+              </div>
+              
+              <!-- Hours Summary -->
+              <div id="hoursSummary" class="hours-summary">
+                <div class="summary-loading">Loading hours summary...</div>
+              </div>
+              
+              <!-- Detailed Hours List -->
+              <div id="hoursDetailsList" class="hours-details">
+                <div class="hours-loading">Loading detailed hours...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Restore Confirmation Modal -->
+      <div id="restoreModal" class="modal">
+        <div class="modal-content restore-modal-content">
+          <div class="modal-header">
+            <h3>Confirm Database Restore</h3>
+            <button class="close-btn">&times;</button>
+          </div>
+          <div class="restore-confirmation">
+            <div class="restore-warning-icon">⚠️</div>
+            <div class="restore-message">
+              <h4>Are you sure you want to restore from this backup?</h4>
+              <p><strong>Selected backup:</strong> <span id="selectedBackupName">-</span></p>
+              <p><strong>Backup date:</strong> <span id="selectedBackupDate">-</span></p>
+              <div class="restore-effects">
+                <h5>This will:</h5>
+                <ul>
+                  <li>✅ Create a backup of your current data first</li>
+                  <li>⚙️ Replace all current customers, jobs, and schedule data</li>
+                  <li>⚙️ Replace all worker and time tracking data</li>
+                  <li>🔄 Restart the server automatically</li>
+                </ul>
+              </div>
+              <div class="restore-recovery">
+                <p><strong>Recovery:</strong> If you need to undo this restore, you can restore from the "pre-restore" backup that will be created.</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="cancel-btn">Cancel</button>
+            <button type="button" class="restore-confirm-btn" onclick="executeRestore()">Yes, Restore Database</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Add/Edit Worker Modal -->
+      <div id="workerModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="workerModalTitle">Add Worker</h3>
+            <button class="close-btn">&times;</button>
+          </div>
+          <form id="workerForm">
+            <div class="form-group">
+              <label for="workerName">Name *</label>
+              <input type="text" id="workerName" required>
+            </div>
+            <div class="form-group">
+              <label for="workerRole">Role *</label>
+              <select id="workerRole" required>
+                <option value="">Select role...</option>
+                <option value="Foreman">Foreman</option>
+                <option value="Carpenter">Carpenter</option>
+                <option value="Apprentice">Apprentice</option>
+                <option value="Electrician">Electrician</option>
+                <option value="Plumber">Plumber</option>
+                <option value="General Labor">General Labor</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="workerHourlyRate">Hourly Rate</label>
+              <input type="number" id="workerHourlyRate" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="workerPhone">Phone</label>
+              <input type="tel" id="workerPhone">
+            </div>
+            <div class="form-group">
+              <label for="workerEmail">Email</label>
+              <input type="email" id="workerEmail">
+            </div>
+            <div class="form-group">
+              <label for="workerHireDate">Hire Date</label>
+              <input type="date" id="workerHireDate">
+            </div>
+            <div class="form-group">
+              <label for="workerNotes">Notes</label>
+              <textarea id="workerNotes" placeholder="Additional notes about this worker..."></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="submit" class="save-btn">Save Worker</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Log Hours Modal -->
+      <div id="hoursModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="hoursModalTitle">Log Work Hours</h3>
+            <button class="close-btn">&times;</button>
+          </div>
+          <form id="hoursForm">
+            <div class="form-group">
+              <label for="hoursWorker">Worker *</label>
+              <select id="hoursWorker" required>
+                <option value="">Select worker...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hoursJob">Job (Optional)</label>
+              <select id="hoursJob">
+                <option value="">Select job...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hoursDate">Date *</label>
+              <input type="date" id="hoursDate" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="hoursStartTime">Start Time *</label>
+                <input type="time" id="hoursStartTime" required>
+              </div>
+              <div class="form-group">
+                <label for="hoursEndTime">End Time *</label>
+                <input type="time" id="hoursEndTime" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="hoursBreakMinutes">Break Minutes</label>
+              <input type="number" id="hoursBreakMinutes" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label for="hoursWorkType">Work Type *</label>
+              <select id="hoursWorkType" required>
+                <option value="">Select work type...</option>
+                <option value="Framing">Framing</option>
+                <option value="Roofing">Roofing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Drywall">Drywall</option>
+                <option value="Flooring">Flooring</option>
+                <option value="Finish Carpentry">Finish Carpentry</option>
+                <option value="Site Prep">Site Prep</option>
+                <option value="General Labor">General Labor</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hoursDescription">Description</label>
+              <textarea id="hoursDescription" placeholder="Brief description of work performed..."></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="submit" class="save-btn">Save Hours</button>
+            </div>
+          </form>
         </div>
       </div>
 

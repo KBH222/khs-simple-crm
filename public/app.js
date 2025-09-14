@@ -4,6 +4,8 @@ let currentFilter = 'all';
 let currentDate = new Date();
 let calendarEvents = [];
 let selectedDate = null;
+let autoRefreshInterval = null;
+let isPageVisible = true;
 
 // Utility functions
 function formatDate(date) {
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateDateTime();
   setInterval(updateDateTime, 1000);
   loadCustomers();
+  loadBackupInfo(); // Load backup information on startup
   
   // Event listeners
   setupEventListeners();
@@ -116,6 +119,9 @@ function setupEventListeners() {
       }
     });
   });
+  
+  // Workers event listeners
+  setupWorkerEventListeners();
 }
 
 
@@ -147,6 +153,12 @@ function showPage(pageName) {
     loadCustomers();
   } else if (pageName === 'schedule') {
     initializeCalendar();
+  } else if (pageName === 'settings') {
+    setupSettingsTabs();
+    loadBackupHistory();
+  } else if (pageName === 'workers') {
+    setupWorkersTabs();
+    loadWorkers();
   }
 }
 
@@ -431,14 +443,14 @@ async function handleJobSubmit(e) {
   const customerId = form.dataset.customerId;
   
   if (!customerId) {
-    alert('Customer not selected');
+    console.error('Customer not selected');
     return;
   }
   
   // Get selected job type
   const selectedJobType = document.querySelector('input[name="jobType"]:checked');
   if (!selectedJobType) {
-    alert('Please select a job type');
+    console.error('Please select a job type');
     return;
   }
   
@@ -467,15 +479,14 @@ async function handleJobSubmit(e) {
     
     if (response.ok) {
       hideModals();
-      alert(`Job "${jobData.title}" created successfully!`);
+      console.log(`Job "${jobData.title}" created successfully!`);
       // Refresh the jobs for this customer
       loadCustomerJobs(customerId);
     } else {
-      alert(data.message || 'Failed to create job');
+      console.error(data.message || 'Failed to create job');
     }
   } catch (error) {
     console.error('Error creating job:', error);
-    alert('Connection error. Please try again.');
   }
 }
 
@@ -516,7 +527,7 @@ async function handleCustomerSubmit(e) {
       hideModals();
       loadCustomers(); // Reload the list
     } else {
-      alert(data.message || 'Failed to save customer');
+      console.error(data.message || 'Failed to save customer');
     }
   } catch (error) {
     console.error('Error saving customer:', error);
@@ -578,23 +589,23 @@ function formatAddress(address) {
 
 // Placeholder functions for other sections
 function showJobs() {
-  alert('Jobs section coming soon!');
+  console.log('Jobs section coming soon!');
 }
 
 function showWorkers() {
-  alert('Workers section coming soon!');
+  console.log('Workers section coming soon!');
 }
 
 function showMaterials() {
-  alert('Materials section coming soon!');
+  console.log('Materials section coming soon!');
 }
 
 function showKHSInfo() {
-  alert('Company Info section coming soon!');
+  console.log('Company Info section coming soon!');
 }
 
 function showProfile() {
-  alert('Profile section coming soon!');
+  console.log('Profile section coming soon!');
 }
 
 // Debug function to test navigation
@@ -1366,6 +1377,317 @@ async function deleteCalendarEvent(eventId) {
   }
 }
 
+// Backup functionality
+async function createBackup() {
+  const statusElement = document.getElementById('backupStatus');
+  
+  try {
+    statusElement.textContent = 'Creating backup...';
+    statusElement.style.color = '#059669';
+    
+    const response = await fetch('/api/backup/create', {
+      method: 'POST'
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      statusElement.textContent = 'Backup created successfully!';
+      statusElement.style.color = '#059669';
+      console.log('Backup created:', result.backup.filename);
+      
+      // Refresh backup history if on settings page
+      const settingsPage = document.getElementById('settings');
+      if (settingsPage && settingsPage.classList.contains('active')) {
+        loadBackupHistory();
+      }
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        statusElement.textContent = 'Create backup of your data';
+        statusElement.style.color = '';
+      }, 3000);
+    } else {
+      throw new Error(result.error || 'Backup failed');
+    }
+  } catch (error) {
+    console.error('Backup failed:', error);
+    statusElement.textContent = 'Backup failed - try again';
+    statusElement.style.color = '#DC2626';
+    
+    // Reset status after 5 seconds
+    setTimeout(() => {
+      statusElement.textContent = 'Create backup of your data';
+      statusElement.style.color = '';
+    }, 5000);
+  }
+}
+
+async function loadBackupInfo() {
+  try {
+    const response = await fetch('/api/backup/list');
+    const result = await response.json();
+    
+    if (result.success && result.backups.length > 0) {
+      const latestBackup = result.backups[0];
+      const backupDate = new Date(latestBackup.created);
+      const statusElement = document.getElementById('backupStatus');
+      
+      if (statusElement) {
+        const timeAgo = getTimeAgo(backupDate);
+        statusElement.textContent = `Last backup: ${timeAgo}`;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load backup info:', error);
+  }
+}
+
+function getTimeAgo(date) {
+  const now = new Date();
+  const diffMs = now - date;
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffDays > 0) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  } else if (diffHours > 0) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  } else {
+    return 'Less than an hour ago';
+  }
+}
+
+// Settings page functionality
+function setupSettingsTabs() {
+  // Remove existing listeners first
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.removeEventListener('click', handleSettingsTabClick);
+  });
+  
+  // Add new listeners
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.addEventListener('click', handleSettingsTabClick);
+  });
+}
+
+function handleSettingsTabClick(e) {
+  const targetTab = e.target.dataset.tab;
+  showSettingsTab(targetTab);
+}
+
+function showSettingsTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  
+  // Update tab content
+  document.querySelectorAll('.settings-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  
+  document.getElementById(`${tabName}Tab`).classList.add('active');
+}
+
+async function loadBackupHistory() {
+  const historyContainer = document.getElementById('backupHistory');
+  
+  try {
+    const response = await fetch('/api/backup/list');
+    const result = await response.json();
+    
+    if (result.success && result.backups.length > 0) {
+      const backupsHtml = result.backups.map(backup => {
+        const date = new Date(backup.created);
+        const formattedDate = date.toLocaleString();
+        const size = formatFileSize(backup.size);
+        const timeAgo = getTimeAgo(date);
+        
+        // Extract reason from filename
+        const reasonMatch = backup.filename.match(/crm-backup-(\w+)-/);
+        const reason = reasonMatch ? reasonMatch[1] : 'unknown';
+        const reasonText = reason.charAt(0).toUpperCase() + reason.slice(1);
+        
+        return `
+          <div class="backup-item">
+            <div class="backup-item-info">
+              <h5>${reasonText} Backup</h5>
+              <p>${formattedDate} (${timeAgo})</p>
+            </div>
+            <div class="backup-size">${size}</div>
+          </div>
+        `;
+      }).join('');
+      
+      historyContainer.innerHTML = backupsHtml;
+      
+      // Also populate the restore dropdown
+      populateRestoreDropdown(result.backups);
+    } else {
+      historyContainer.innerHTML = '<div class="backup-loading">No backups found</div>';
+    }
+  } catch (error) {
+    console.error('Failed to load backup history:', error);
+    historyContainer.innerHTML = '<div class="backup-loading">Failed to load backup history</div>';
+  }
+}
+
+// Populate restore dropdown with available backups
+function populateRestoreDropdown(backups) {
+  const selectElement = document.getElementById('backupSelect');
+  if (!selectElement) return;
+  
+  // Clear existing options except the first one
+  const firstOption = selectElement.querySelector('option[value=""]');
+  selectElement.innerHTML = '';
+  selectElement.appendChild(firstOption);
+  
+  // Add backup options
+  backups.forEach(backup => {
+    const date = new Date(backup.created);
+    const formattedDate = date.toLocaleString();
+    const timeAgo = getTimeAgo(date);
+    
+    // Extract reason from filename
+    const reasonMatch = backup.filename.match(/crm-backup-(\w+)-/);
+    const reason = reasonMatch ? reasonMatch[1] : 'unknown';
+    const reasonText = reason.charAt(0).toUpperCase() + reason.slice(1);
+    
+    const option = document.createElement('option');
+    option.value = backup.filename;
+    option.textContent = `${reasonText} - ${formattedDate} (${timeAgo})`;
+    option.dataset.created = backup.created;
+    selectElement.appendChild(option);
+  });
+  
+  // Enable/disable restore button based on selection
+  selectElement.addEventListener('change', function() {
+    const restoreBtn = document.querySelector('.restore-btn');
+    if (this.value) {
+      restoreBtn.disabled = false;
+    } else {
+      restoreBtn.disabled = true;
+    }
+  });
+}
+
+// Show restore confirmation modal
+function showRestoreConfirmation() {
+  const selectElement = document.getElementById('backupSelect');
+  const selectedOption = selectElement.options[selectElement.selectedIndex];
+  
+  if (!selectedOption.value) {
+    return;
+  }
+  
+  const modal = document.getElementById('restoreModal');
+  const backupName = selectedOption.value;
+  const backupDate = new Date(selectedOption.dataset.created).toLocaleString();
+  
+  // Update modal content
+  document.getElementById('selectedBackupName').textContent = backupName;
+  document.getElementById('selectedBackupDate').textContent = backupDate;
+  
+  // Store selected backup filename for restore
+  modal.dataset.selectedBackup = backupName;
+  
+  modal.classList.add('active');
+}
+
+// Execute the restore operation
+async function executeRestore() {
+  const modal = document.getElementById('restoreModal');
+  const backupFilename = modal.dataset.selectedBackup;
+  
+  if (!backupFilename) {
+    console.error('No backup selected for restore');
+    return;
+  }
+  
+  const confirmBtn = document.querySelector('.restore-confirm-btn');
+  const originalText = confirmBtn.textContent;
+  
+  try {
+    confirmBtn.textContent = 'Restoring...';
+    confirmBtn.disabled = true;
+    
+    const response = await fetch('/api/backup/restore', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename: backupFilename
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Show success message
+      confirmBtn.textContent = 'Restore Successful!';
+      confirmBtn.style.background = '#059669';
+      
+      // Show restoration status
+      const statusDiv = document.createElement('div');
+      statusDiv.className = 'restore-status-success';
+      statusDiv.innerHTML = `
+        <h4>✅ Database Restored Successfully!</h4>
+        <p>• Pre-restore backup created: ${result.preRestoreBackup}</p>
+        <p>• Database restored from: ${backupFilename}</p>
+        <p>• Server is restarting automatically...</p>
+        <p><strong>Page will reload in 5 seconds...</strong></p>
+      `;
+      
+      const modalContent = modal.querySelector('.restore-message');
+      modalContent.innerHTML = '';
+      modalContent.appendChild(statusDiv);
+      
+      // Reload page after server restarts
+      setTimeout(() => {
+        window.location.reload();
+      }, 5000);
+      
+    } else {
+      throw new Error(result.error || 'Restore failed');
+    }
+  } catch (error) {
+    console.error('Restore failed:', error);
+    
+    confirmBtn.textContent = 'Restore Failed';
+    confirmBtn.style.background = '#DC2626';
+    
+    // Show error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'restore-status-error';
+    errorDiv.innerHTML = `
+      <h4>❌ Restore Failed</h4>
+      <p>Error: ${error.message}</p>
+      <p>Please try again or contact support.</p>
+    `;
+    
+    const modalContent = modal.querySelector('.restore-message');
+    modalContent.appendChild(errorDiv);
+    
+    setTimeout(() => {
+      confirmBtn.textContent = originalText;
+      confirmBtn.disabled = false;
+      confirmBtn.style.background = '';
+    }, 3000);
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
@@ -1385,3 +1707,550 @@ window.testNavigation = testNavigation;
 window.selectDate = selectDate;
 window.viewEvent = viewEvent;
 window.deleteCalendarEvent = deleteCalendarEvent;
+window.createBackup = createBackup;
+
+// Workers Management
+let workers = [];
+let currentWeekStart = null;
+let workHours = [];
+
+// Workers tab management
+function setupWorkersTabs() {
+  document.querySelectorAll('.workers-tab').forEach(tab => {
+    tab.removeEventListener('click', handleWorkersTabClick);
+    tab.addEventListener('click', handleWorkersTabClick);
+  });
+}
+
+function handleWorkersTabClick(e) {
+  const targetTab = e.target.dataset.tab;
+  showWorkersTab(targetTab);
+}
+
+function showWorkersTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.workers-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  
+  // Update tab content
+  document.querySelectorAll('.workers-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  
+  document.getElementById(`${tabName}Tab`).classList.add('active');
+  
+  // Load tab-specific data
+  if (tabName === 'hours') {
+    initializeWeekNavigation();
+    loadWorkHours();
+    setupHoursEventListeners();
+  }
+}
+
+// Load workers from API
+async function loadWorkers() {
+  try {
+    const response = await fetch('/api/workers?status=ACTIVE');
+    const data = await response.json();
+    
+    if (response.ok) {
+      workers = data;
+      renderWorkers();
+    } else {
+      console.error('Failed to load workers:', data.error);
+    }
+  } catch (error) {
+    console.error('Error loading workers:', error);
+  }
+}
+
+// Render workers list
+function renderWorkers() {
+  const workersList = document.getElementById('workersList');
+  
+  if (workers.length === 0) {
+    workersList.innerHTML = '<div class="workers-loading">No workers found. Click "+ Add Worker" to get started.</div>';
+    return;
+  }
+  
+  const workersHtml = workers.map(worker => {
+    const hourlyRate = worker.hourly_rate > 0 ? `$${worker.hourly_rate.toFixed(2)}/hr` : 'Rate not set';
+    const totalHours = worker.total_hours_worked || 0;
+    const phone = worker.phone || 'Not provided';
+    const email = worker.email || 'Not provided';
+    
+    return `
+      <div class="worker-card">
+        <div class="worker-card-header">
+          <div class="worker-info">
+            <h4>${escapeHtml(worker.name)}</h4>
+            <span class="worker-role">${escapeHtml(worker.role)}</span>
+            <div class="worker-hourly-rate">${hourlyRate}</div>
+          </div>
+          <div class="worker-actions">
+            <button class="edit-worker-btn" onclick="editWorker('${worker.id}')">Edit</button>
+            <button class="delete-worker-btn" onclick="deleteWorker('${worker.id}')">Delete</button>
+          </div>
+        </div>
+        <div class="worker-details">
+          <div class="worker-contact">
+            <div><strong>Phone:</strong> ${escapeHtml(phone)}</div>
+            <div><strong>Email:</strong> ${escapeHtml(email)}</div>
+            <div><strong>Hire Date:</strong> ${worker.hire_date ? new Date(worker.hire_date).toLocaleDateString() : 'Not set'}</div>
+          </div>
+          <div class="worker-stats">
+            <div><strong>Total Hours:</strong> ${totalHours.toFixed(1)}</div>
+            <div><strong>Time Entries:</strong> ${worker.total_entries || 0}</div>
+            <div><strong>Status:</strong> ${worker.status}</div>
+          </div>
+        </div>
+        ${worker.notes ? `<div style="margin-top: 12px; font-size: 14px; color: #6B7280;"><strong>Notes:</strong> ${escapeHtml(worker.notes)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+  
+  workersList.innerHTML = workersHtml;
+}
+
+// Show worker modal
+function showWorkerModal(worker = null) {
+  const modal = document.getElementById('workerModal');
+  const form = document.getElementById('workerForm');
+  const title = modal.querySelector('.modal-header h3');
+  
+  if (worker) {
+    // Edit mode
+    title.textContent = 'Edit Worker';
+    document.getElementById('workerName').value = worker.name;
+    document.getElementById('workerRole').value = worker.role;
+    document.getElementById('workerHourlyRate').value = worker.hourly_rate || '';
+    document.getElementById('workerPhone').value = worker.phone || '';
+    document.getElementById('workerEmail').value = worker.email || '';
+    document.getElementById('workerHireDate').value = worker.hire_date || '';
+    document.getElementById('workerNotes').value = worker.notes || '';
+    form.dataset.workerId = worker.id;
+  } else {
+    // Add mode
+    title.textContent = 'Add Worker';
+    form.reset();
+    delete form.dataset.workerId;
+  }
+  
+  modal.classList.add('active');
+}
+
+function editWorker(workerId) {
+  const worker = workers.find(w => w.id === workerId);
+  if (worker) {
+    showWorkerModal(worker);
+  }
+}
+
+async function deleteWorker(workerId) {
+  if (!confirm('Are you sure you want to delete this worker? This will also delete all their work hours.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/workers/${workerId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      loadWorkers(); // Reload the list
+    } else {
+      console.error('Failed to delete worker');
+    }
+  } catch (error) {
+    console.error('Error deleting worker:', error);
+  }
+}
+
+// Handle worker form submission
+async function handleWorkerSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const workerId = form.dataset.workerId;
+  const isEdit = !!workerId;
+  
+  const workerData = {
+    name: document.getElementById('workerName').value,
+    role: document.getElementById('workerRole').value,
+    hourly_rate: parseFloat(document.getElementById('workerHourlyRate').value) || 0,
+    phone: document.getElementById('workerPhone').value,
+    email: document.getElementById('workerEmail').value,
+    hire_date: document.getElementById('workerHireDate').value,
+    notes: document.getElementById('workerNotes').value
+  };
+  
+  try {
+    const url = isEdit ? `/api/workers/${workerId}` : '/api/workers';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(workerData),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      hideModals();
+      loadWorkers(); // Reload the list
+      // Also reload work hours dropdowns if on hours tab
+      loadWorkersForDropdowns();
+    } else {
+      console.error(data.error || 'Failed to save worker');
+    }
+  } catch (error) {
+    console.error('Error saving worker:', error);
+  }
+}
+
+// Week navigation for hours tracking
+function initializeWeekNavigation() {
+  if (!currentWeekStart) {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday
+    currentWeekStart = new Date(today);
+    currentWeekStart.setDate(today.getDate() - dayOfWeek); // Go back to Sunday
+  }
+  updateWeekDisplay();
+}
+
+function navigateWeek(direction) {
+  currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+  updateWeekDisplay();
+  loadWorkHours();
+}
+
+function goToThisWeek() {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  currentWeekStart = new Date(today);
+  currentWeekStart.setDate(today.getDate() - dayOfWeek);
+  updateWeekDisplay();
+  loadWorkHours();
+}
+
+function updateWeekDisplay() {
+  const weekEnd = new Date(currentWeekStart);
+  weekEnd.setDate(currentWeekStart.getDate() + 6);
+  
+  const weekText = `Week of ${currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  
+  document.getElementById('currentWeek').textContent = weekText;
+}
+
+// Setup hours event listeners
+function setupHoursEventListeners() {
+  // Week navigation
+  document.getElementById('prevWeek').onclick = () => navigateWeek(-1);
+  document.getElementById('nextWeek').onclick = () => navigateWeek(1);
+  document.getElementById('thisWeek').onclick = goToThisWeek;
+  
+  // Log hours button
+  document.getElementById('logHoursBtn').onclick = () => showHoursModal();
+}
+
+// Load work hours for current week
+async function loadWorkHours() {
+  if (!currentWeekStart) return;
+  
+  try {
+    const weekStartStr = currentWeekStart.toISOString().split('T')[0];
+    const response = await fetch(`/api/work-hours?week_start=${weekStartStr}`);
+    const data = await response.json();
+    
+    if (response.ok) {
+      workHours = data;
+      renderHoursSummary();
+      renderHoursDetails();
+    } else {
+      console.error('Failed to load work hours:', data.error);
+    }
+  } catch (error) {
+    console.error('Error loading work hours:', error);
+  }
+}
+
+// Render hours summary
+function renderHoursSummary() {
+  const summaryContainer = document.getElementById('hoursSummary');
+  
+  // Calculate summary statistics
+  let totalHours = 0;
+  let totalOvertimeHours = 0;
+  let totalEntries = workHours.length;
+  const uniqueWorkers = new Set();
+  
+  workHours.forEach(entry => {
+    totalHours += entry.hours_worked || 0;
+    totalOvertimeHours += entry.overtime_hours || 0;
+    uniqueWorkers.add(entry.worker_id);
+  });
+  
+  const summaryHtml = `
+    <div class="summary-card">
+      <h4>Total Hours</h4>
+      <div class="hours">${totalHours.toFixed(1)}</div>
+      <div class="label">This Week</div>
+    </div>
+    <div class="summary-card">
+      <h4>Overtime Hours</h4>
+      <div class="hours">${totalOvertimeHours.toFixed(1)}</div>
+      <div class="label">Over 8/day</div>
+    </div>
+    <div class="summary-card">
+      <h4>Active Workers</h4>
+      <div class="hours">${uniqueWorkers.size}</div>
+      <div class="label">Workers</div>
+    </div>
+    <div class="summary-card">
+      <h4>Time Entries</h4>
+      <div class="hours">${totalEntries}</div>
+      <div class="label">Entries</div>
+    </div>
+  `;
+  
+  summaryContainer.innerHTML = summaryHtml;
+}
+
+// Render detailed hours
+function renderHoursDetails() {
+  const detailsContainer = document.getElementById('hoursDetailsList');
+  
+  if (workHours.length === 0) {
+    detailsContainer.innerHTML = '<div class="hours-loading">No hours logged for this week.</div>';
+    return;
+  }
+  
+  const headerHtml = `
+    <div class="hours-table-header">
+      <div>Worker</div>
+      <div>Job</div>
+      <div>Date</div>
+      <div>Time</div>
+      <div>Hours</div>
+      <div>Work Type</div>
+      <div>Description</div>
+      <div>Actions</div>
+    </div>
+  `;
+  
+  const entriesHtml = workHours.map(entry => {
+    const workDate = new Date(entry.work_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const jobInfo = entry.job_title ? `${entry.customer_name} - ${entry.job_title}` : 'No job assigned';
+    const timeRange = `${entry.start_time} - ${entry.end_time}`;
+    const description = entry.description || 'No description';
+    
+    return `
+      <div class="hours-entry">
+        <div class="worker-name">${escapeHtml(entry.worker_name)}</div>
+        <div class="job-info">${escapeHtml(jobInfo)}</div>
+        <div class="work-date">${workDate}</div>
+        <div class="time-range">${timeRange}</div>
+        <div class="hours-worked">${entry.hours_worked.toFixed(1)}h</div>
+        <div class="work-type">${escapeHtml(entry.work_type)}</div>
+        <div>${escapeHtml(description)}</div>
+        <div class="hours-actions">
+          <button class="edit-hours-btn" onclick="editHours('${entry.id}')">Edit</button>
+          <button class="delete-hours-btn" onclick="deleteHours('${entry.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  detailsContainer.innerHTML = headerHtml + entriesHtml;
+}
+
+// Hours modal functions
+function showHoursModal(hours = null) {
+  const modal = document.getElementById('hoursModal');
+  const form = document.getElementById('hoursForm');
+  const title = modal.querySelector('.modal-header h3');
+  
+  // Load workers and jobs in dropdowns
+  loadWorkersForDropdowns();
+  loadJobsForDropdowns();
+  
+  if (hours) {
+    // Edit mode
+    title.textContent = 'Edit Work Hours';
+    document.getElementById('hoursWorker').value = hours.worker_id;
+    document.getElementById('hoursJob').value = hours.job_id || '';
+    document.getElementById('hoursDate').value = hours.work_date;
+    document.getElementById('hoursStartTime').value = hours.start_time;
+    document.getElementById('hoursEndTime').value = hours.end_time;
+    document.getElementById('hoursBreakMinutes').value = hours.break_minutes || 0;
+    document.getElementById('hoursWorkType').value = hours.work_type;
+    document.getElementById('hoursDescription').value = hours.description || '';
+    form.dataset.hoursId = hours.id;
+  } else {
+    // Add mode
+    title.textContent = 'Log Work Hours';
+    form.reset();
+    // Set default date to today
+    document.getElementById('hoursDate').value = new Date().toISOString().split('T')[0];
+    delete form.dataset.hoursId;
+  }
+  
+  modal.classList.add('active');
+}
+
+function editHours(hoursId) {
+  const hours = workHours.find(h => h.id === hoursId);
+  if (hours) {
+    showHoursModal(hours);
+  }
+}
+
+async function deleteHours(hoursId) {
+  if (!confirm('Are you sure you want to delete this time entry?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/work-hours/${hoursId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      loadWorkHours(); // Reload the hours
+    } else {
+      console.error('Failed to delete hours');
+    }
+  } catch (error) {
+    console.error('Error deleting hours:', error);
+  }
+}
+
+// Load workers for dropdown
+async function loadWorkersForDropdowns() {
+  const workerSelect = document.getElementById('hoursWorker');
+  if (!workerSelect) return;
+  
+  // Clear existing options except the first one
+  const firstOption = workerSelect.querySelector('option[value=""]');
+  workerSelect.innerHTML = '';
+  workerSelect.appendChild(firstOption);
+  
+  workers.forEach(worker => {
+    const option = document.createElement('option');
+    option.value = worker.id;
+    option.textContent = `${worker.name} - ${worker.role}`;
+    workerSelect.appendChild(option);
+  });
+}
+
+// Load jobs for dropdown
+async function loadJobsForDropdowns() {
+  const jobSelect = document.getElementById('hoursJob');
+  if (!jobSelect) return;
+  
+  try {
+    const response = await fetch('/api/jobs');
+    const jobs = await response.json();
+    
+    // Clear existing options except the first one
+    const firstOption = jobSelect.querySelector('option[value=""]');
+    jobSelect.innerHTML = '';
+    jobSelect.appendChild(firstOption);
+    
+    if (response.ok) {
+      jobs.forEach(job => {
+        const option = document.createElement('option');
+        option.value = job.id;
+        option.textContent = `${job.customer_name} - ${job.title}`;
+        jobSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error loading jobs:', error);
+  }
+}
+
+// Handle hours form submission
+async function handleHoursSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const hoursId = form.dataset.hoursId;
+  const isEdit = !!hoursId;
+  
+  const hoursData = {
+    worker_id: document.getElementById('hoursWorker').value,
+    job_id: document.getElementById('hoursJob').value || null,
+    work_date: document.getElementById('hoursDate').value,
+    start_time: document.getElementById('hoursStartTime').value,
+    end_time: document.getElementById('hoursEndTime').value,
+    break_minutes: parseInt(document.getElementById('hoursBreakMinutes').value) || 0,
+    work_type: document.getElementById('hoursWorkType').value,
+    description: document.getElementById('hoursDescription').value
+  };
+  
+  if (!hoursData.worker_id || !hoursData.work_date || !hoursData.start_time || !hoursData.end_time || !hoursData.work_type) {
+    console.error('Please fill in all required fields');
+    return;
+  }
+  
+  try {
+    const url = isEdit ? `/api/work-hours/${hoursId}` : '/api/work-hours';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(hoursData),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      hideModals();
+      loadWorkHours(); // Reload the hours
+    } else {
+      console.error(data.error || 'Failed to save hours');
+    }
+  } catch (error) {
+    console.error('Error saving hours:', error);
+  }
+}
+
+// Setup worker event listeners in main setup
+function setupWorkerEventListeners() {
+  // Add worker button
+  const addWorkerBtn = document.getElementById('addWorkerBtn');
+  if (addWorkerBtn) {
+    addWorkerBtn.addEventListener('click', () => showWorkerModal());
+  }
+  
+  // Worker form
+  const workerForm = document.getElementById('workerForm');
+  if (workerForm) {
+    workerForm.addEventListener('submit', handleWorkerSubmit);
+  }
+  
+  // Hours form
+  const hoursForm = document.getElementById('hoursForm');
+  if (hoursForm) {
+    hoursForm.addEventListener('submit', handleHoursSubmit);
+  }
+}
+
+// Make functions globally accessible
+window.editWorker = editWorker;
+window.deleteWorker = deleteWorker;
+window.editHours = editHours;
+window.deleteHours = deleteHours;
+window.showRestoreConfirmation = showRestoreConfirmation;
+window.executeRestore = executeRestore;

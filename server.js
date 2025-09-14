@@ -1,6 +1,8 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
+const { promisify } = require('util');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -89,6 +91,41 @@ db.serialize(() => {
     FOREIGN KEY (job_id) REFERENCES jobs (id)
   )`);
   
+  // Workers table
+  db.run(`CREATE TABLE IF NOT EXISTS workers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    hourly_rate REAL DEFAULT 0,
+    phone TEXT,
+    email TEXT,
+    address TEXT,
+    hire_date DATE,
+    status TEXT DEFAULT 'ACTIVE',
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  
+  // Work hours tracking table
+  db.run(`CREATE TABLE IF NOT EXISTS work_hours (
+    id TEXT PRIMARY KEY,
+    worker_id TEXT NOT NULL,
+    job_id TEXT,
+    work_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    break_minutes INTEGER DEFAULT 0,
+    hours_worked REAL NOT NULL,
+    work_type TEXT NOT NULL,
+    description TEXT,
+    overtime_hours REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (worker_id) REFERENCES workers (id),
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
   // Create default admin user (simplified)
   const adminId = 'admin-' + Date.now();
   
@@ -138,6 +175,52 @@ db.serialize(() => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [customer.id, customer.name, customer.phone, customer.email, customer.address, 
        customer.notes, customer.reference, customer.customer_type, now, now]
+    );
+  });
+  
+  // Add sample workers
+  const sampleWorkers = [
+    {
+      id: 'worker-1',
+      name: 'Mike Johnson',
+      role: 'Foreman',
+      hourly_rate: 35.00,
+      phone: '(555) 111-2222',
+      email: 'mike.j@khsconstruction.com',
+      hire_date: '2023-01-15',
+      status: 'ACTIVE',
+      notes: 'Lead carpenter, 15+ years experience'
+    },
+    {
+      id: 'worker-2',
+      name: 'Carlos Rodriguez',
+      role: 'Carpenter',
+      hourly_rate: 28.00,
+      phone: '(555) 333-4444',
+      email: 'carlos.r@khsconstruction.com',
+      hire_date: '2023-03-20',
+      status: 'ACTIVE',
+      notes: 'Specialized in finish work'
+    },
+    {
+      id: 'worker-3',
+      name: 'David Thompson',
+      role: 'Apprentice',
+      hourly_rate: 18.00,
+      phone: '(555) 555-6666',
+      email: 'david.t@khsconstruction.com',
+      hire_date: '2024-01-08',
+      status: 'ACTIVE',
+      notes: 'New hire, eager to learn'
+    }
+  ];
+  
+  sampleWorkers.forEach(worker => {
+    db.run(`INSERT OR IGNORE INTO workers 
+            (id, name, role, hourly_rate, phone, email, hire_date, status, notes, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [worker.id, worker.name, worker.role, worker.hourly_rate, worker.phone, worker.email, 
+       worker.hire_date, worker.status, worker.notes, now, now]
     );
   });
 });
@@ -511,6 +594,450 @@ app.delete('/api/calendar/events/:id', (req, res) => {
     res.json({ message: 'Event deleted' });
   });
 });
+
+// Workers API
+app.get('/api/workers', (req, res) => {
+  const { status } = req.query;
+  let query = `SELECT w.*, 
+               COUNT(DISTINCT wh.id) as total_entries,
+               COALESCE(SUM(wh.hours_worked), 0) as total_hours_worked
+               FROM workers w 
+               LEFT JOIN work_hours wh ON w.id = wh.worker_id 
+               WHERE 1=1`;
+  const params = [];
+  
+  if (status) {
+    query += ' AND w.status = ?';
+    params.push(status);
+  }
+  
+  query += ' GROUP BY w.id ORDER BY w.name';
+  
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/workers', (req, res) => {
+  const { name, role, hourly_rate, phone, email, address, hire_date, notes } = req.body;
+  
+  if (!name || !role) {
+    return res.status(400).json({ error: 'Name and role are required' });
+  }
+  
+  const workerId = generateId('worker');
+  const now = new Date().toISOString();
+  
+  db.run(`INSERT INTO workers 
+          (id, name, role, hourly_rate, phone, email, address, hire_date, status, notes, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [workerId, name, role, hourly_rate || 0, phone, email, address, hire_date, 'ACTIVE', notes, now, now],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      res.json({
+        id: workerId,
+        name,
+        role,
+        hourly_rate: hourly_rate || 0,
+        phone,
+        email,
+        address,
+        hire_date,
+        status: 'ACTIVE',
+        notes,
+        created_at: now
+      });
+    });
+});
+
+app.put('/api/workers/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, role, hourly_rate, phone, email, address, hire_date, status, notes } = req.body;
+  
+  if (!name || !role) {
+    return res.status(400).json({ error: 'Name and role are required' });
+  }
+  
+  const now = new Date().toISOString();
+  
+  db.run(`UPDATE workers 
+          SET name = ?, role = ?, hourly_rate = ?, phone = ?, email = ?, address = ?, 
+              hire_date = ?, status = ?, notes = ?, updated_at = ?
+          WHERE id = ?`,
+    [name, role, hourly_rate, phone, email, address, hire_date, status, notes, now, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Worker not found' });
+      }
+      
+      res.json({ message: 'Worker updated' });
+    });
+});
+
+app.delete('/api/workers/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM workers WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Worker not found' });
+    }
+    
+    res.json({ message: 'Worker deleted' });
+  });
+});
+
+// Work Hours API
+app.get('/api/work-hours', (req, res) => {
+  const { worker_id, week_start } = req.query;
+  let query = `SELECT wh.*, w.name as worker_name, j.title as job_title, c.name as customer_name
+               FROM work_hours wh
+               LEFT JOIN workers w ON wh.worker_id = w.id
+               LEFT JOIN jobs j ON wh.job_id = j.id 
+               LEFT JOIN customers c ON j.customer_id = c.id
+               WHERE 1=1`;
+  const params = [];
+  
+  if (worker_id) {
+    query += ' AND wh.worker_id = ?';
+    params.push(worker_id);
+  }
+  
+  if (week_start) {
+    // Get records for the week starting from week_start
+    query += ' AND wh.work_date >= ? AND wh.work_date <= date(?, "+6 days")';
+    params.push(week_start, week_start);
+  }
+  
+  query += ' ORDER BY wh.work_date DESC, wh.start_time';
+  
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/work-hours', (req, res) => {
+  const { worker_id, job_id, work_date, start_time, end_time, break_minutes, work_type, description } = req.body;
+  
+  if (!worker_id || !work_date || !start_time || !end_time || !work_type) {
+    return res.status(400).json({ error: 'Worker, date, times, and work type are required' });
+  }
+  
+  // Calculate hours worked
+  const startDateTime = new Date(`${work_date}T${start_time}`);
+  const endDateTime = new Date(`${work_date}T${end_time}`);
+  const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
+  const hoursWorked = Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100;
+  
+  // Calculate overtime (over 8 hours per day)
+  const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
+  
+  const hoursId = generateId('hours');
+  const now = new Date().toISOString();
+  
+  db.run(`INSERT INTO work_hours 
+          (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, 
+           hours_worked, work_type, description, overtime_hours, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [hoursId, worker_id, job_id, work_date, start_time, end_time, break_minutes || 0, 
+     hoursWorked, work_type, description, overtimeHours, now, now],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      res.json({
+        id: hoursId,
+        worker_id,
+        job_id,
+        work_date,
+        start_time,
+        end_time,
+        break_minutes: break_minutes || 0,
+        hours_worked: hoursWorked,
+        work_type,
+        description,
+        overtime_hours: overtimeHours,
+        created_at: now
+      });
+    });
+});
+
+app.put('/api/work-hours/:id', (req, res) => {
+  const { id } = req.params;
+  const { worker_id, job_id, work_date, start_time, end_time, break_minutes, work_type, description } = req.body;
+  
+  if (!worker_id || !work_date || !start_time || !end_time || !work_type) {
+    return res.status(400).json({ error: 'Worker, date, times, and work type are required' });
+  }
+  
+  // Recalculate hours worked
+  const startDateTime = new Date(`${work_date}T${start_time}`);
+  const endDateTime = new Date(`${work_date}T${end_time}`);
+  const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
+  const hoursWorked = Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100;
+  const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
+  
+  const now = new Date().toISOString();
+  
+  db.run(`UPDATE work_hours 
+          SET worker_id = ?, job_id = ?, work_date = ?, start_time = ?, end_time = ?, 
+              break_minutes = ?, hours_worked = ?, work_type = ?, description = ?, 
+              overtime_hours = ?, updated_at = ?
+          WHERE id = ?`,
+    [worker_id, job_id, work_date, start_time, end_time, break_minutes || 0, 
+     hoursWorked, work_type, description, overtimeHours, now, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Work hours entry not found' });
+      }
+      
+      res.json({ message: 'Work hours updated' });
+    });
+});
+
+app.delete('/api/work-hours/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM work_hours WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Work hours entry not found' });
+    }
+    
+    res.json({ message: 'Work hours deleted' });
+  });
+});
+
+// Backup Functions
+function createBackup(reason = 'manual') {
+  return new Promise((resolve, reject) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const backupName = `crm-backup-${reason}-${timestamp}.db`;
+    const backupPath = path.join(__dirname, 'backups', backupName);
+    
+    // Create backup directory if it doesn't exist
+    const backupDir = path.join(__dirname, 'backups');
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+    
+    // Copy database file
+    const sourcePath = path.join(__dirname, 'crm.db');
+    
+    if (!fs.existsSync(sourcePath)) {
+      return reject(new Error('Source database file not found'));
+    }
+    
+    fs.copyFile(sourcePath, backupPath, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      console.log(`✅ Backup created: ${backupName}`);
+      resolve({
+        filename: backupName,
+        path: backupPath,
+        timestamp: new Date().toISOString(),
+        reason: reason,
+        size: fs.statSync(backupPath).size
+      });
+    });
+  });
+}
+
+function listBackups() {
+  return new Promise((resolve, reject) => {
+    const backupDir = path.join(__dirname, 'backups');
+    
+    if (!fs.existsSync(backupDir)) {
+      return resolve([]);
+    }
+    
+    fs.readdir(backupDir, (err, files) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      const backups = files
+        .filter(file => file.endsWith('.db'))
+        .map(file => {
+          const filePath = path.join(backupDir, file);
+          const stats = fs.statSync(filePath);
+          return {
+            filename: file,
+            size: stats.size,
+            created: stats.birthtime.toISOString(),
+            modified: stats.mtime.toISOString()
+          };
+        })
+        .sort((a, b) => new Date(b.created) - new Date(a.created));
+      
+      resolve(backups);
+    });
+  });
+}
+
+function cleanupOldBackups() {
+  listBackups().then(backups => {
+    // Keep last 10 backups, delete older ones
+    const toDelete = backups.slice(10);
+    
+    toDelete.forEach(backup => {
+      const backupPath = path.join(__dirname, 'backups', backup.filename);
+      fs.unlink(backupPath, (err) => {
+        if (err) {
+          console.error(`Failed to delete old backup ${backup.filename}:`, err);
+        } else {
+          console.log(`🗑️ Deleted old backup: ${backup.filename}`);
+        }
+      });
+    });
+  }).catch(err => {
+    console.error('Error cleaning up old backups:', err);
+  });
+}
+
+// Backup API Routes
+app.post('/api/backup/create', async (req, res) => {
+  try {
+    const backup = await createBackup('manual');
+    cleanupOldBackups(); // Clean up old backups in background
+    res.json({
+      success: true,
+      backup: backup
+    });
+  } catch (error) {
+    console.error('Backup creation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/backup/list', async (req, res) => {
+  try {
+    const backups = await listBackups();
+    res.json({
+      success: true,
+      backups: backups
+    });
+  } catch (error) {
+    console.error('Failed to list backups:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/backup/restore', async (req, res) => {
+  const { filename } = req.body;
+  
+  if (!filename) {
+    return res.status(400).json({
+      success: false,
+      error: 'Backup filename is required'
+    });
+  }
+  
+  try {
+    const backupPath = path.join(__dirname, 'backups', filename);
+    const mainDbPath = path.join(__dirname, 'crm.db');
+    
+    // Check if backup file exists
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Backup file not found'
+      });
+    }
+    
+    // Create a pre-restore backup
+    const preRestoreBackup = await createBackup('pre-restore');
+    console.log(`🔄 Pre-restore backup created: ${preRestoreBackup.filename}`);
+    
+    // Close the current database connection
+    db.close((err) => {
+      if (err) {
+        console.error('Error closing database:', err);
+      }
+    });
+    
+    // Copy backup file to main database file
+    fs.copyFileSync(backupPath, mainDbPath);
+    
+    console.log(`✅ Database restored from: ${filename}`);
+    
+    // The server will need to restart to reconnect to the restored database
+    res.json({
+      success: true,
+      message: 'Database restored successfully. Please restart the server to complete the restoration.',
+      preRestoreBackup: preRestoreBackup.filename
+    });
+    
+    // Graceful shutdown to allow PM2 to restart
+    setTimeout(() => {
+      console.log('🔄 Restarting server after database restore...');
+      process.exit(0);
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Restore failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Auto backup on server start
+createBackup('startup').then(backup => {
+  console.log(`🔄 Startup backup created: ${backup.filename}`);
+}).catch(err => {
+  console.error('Failed to create startup backup:', err);
+});
+
+// Schedule daily backups
+let dailyBackupInterval;
+function scheduleDailyBackup() {
+  // Create backup every 24 hours (86400000 milliseconds)
+  dailyBackupInterval = setInterval(() => {
+    createBackup('daily').then(backup => {
+      console.log(`📅 Daily backup created: ${backup.filename}`);
+      cleanupOldBackups();
+    }).catch(err => {
+      console.error('Daily backup failed:', err);
+    });
+  }, 24 * 60 * 60 * 1000);
+}
+
+// Start daily backup scheduling
+scheduleDailyBackup();
 
 // Catch-all for React Router
 app.get('*', (req, res) => {
