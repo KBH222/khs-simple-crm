@@ -1022,33 +1022,48 @@ app.post('/api/backup/restore', async (req, res) => {
     
     console.log(`✅ Database restored from: ${filename}`);
     
-    // Check if we're in a cloud environment (like Render, Heroku, etc.)
-    const isCloudEnvironment = process.env.RENDER || process.env.HEROKU || process.env.NODE_ENV === 'production';
-    
-    if (isCloudEnvironment) {
-      // For cloud deployments, we can't restart the server safely
-      // Simply inform the user that the restore was successful and they should refresh
-      console.log('✅ Database restored in cloud environment');
-      
-      res.json({
-        success: true,
-        message: 'Database restored successfully! Please refresh the page to see the restored data.',
-        preRestoreBackup: preRestoreBackup.filename,
-        requiresRefresh: true
+    // Reinitialize database connection with the restored data
+    try {
+      db = new sqlite3.Database('crm.db', (err) => {
+        if (err) {
+          console.error('Failed to reconnect to restored database:', err);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to reconnect to restored database'
+          });
+        }
+        
+        console.log('✅ Reconnected to restored database');
+        
+        // Check if we're in a cloud environment (like Render, Heroku, etc.)
+        const isCloudEnvironment = process.env.RENDER || process.env.HEROKU || (process.env.NODE_ENV === 'production' && !process.env.PM2_HOME);
+        
+        if (isCloudEnvironment) {
+          // For cloud deployments, database is reconnected, just inform user
+          console.log('✅ Database restored in cloud environment');
+          
+          res.json({
+            success: true,
+            message: 'Database restored successfully! Please refresh the page to see the restored data.',
+            preRestoreBackup: preRestoreBackup.filename,
+            requiresRefresh: true
+          });
+        } else {
+          // Local development - database reconnected, no restart needed
+          res.json({
+            success: true,
+            message: 'Database restored and reconnected successfully!',
+            preRestoreBackup: preRestoreBackup.filename,
+            requiresRefresh: false
+          });
+        }
       });
-    } else {
-      // Local development with PM2 - safe to restart
-      res.json({
-        success: true,
-        message: 'Database restored successfully. Server will restart automatically.',
-        preRestoreBackup: preRestoreBackup.filename
+    } catch (error) {
+      console.error('Failed to reinitialize database:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to reinitialize database connection'
       });
-      
-      // Graceful shutdown to allow PM2 to restart
-      setTimeout(() => {
-        console.log('🔄 Restarting server after database restore...');
-        process.exit(0);
-      }, 2000);
     }
     
   } catch (error) {
