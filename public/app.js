@@ -1634,22 +1634,47 @@ async function executeRestore() {
       // Show restoration status
       const statusDiv = document.createElement('div');
       statusDiv.className = 'restore-status-success';
-      statusDiv.innerHTML = `
-        <h4>✅ Database Restored Successfully!</h4>
-        <p>• Pre-restore backup created: ${result.preRestoreBackup}</p>
-        <p>• Database restored from: ${backupFilename}</p>
-        <p>• Server is restarting automatically...</p>
-        <p><strong>Page will reload in 5 seconds...</strong></p>
-      `;
+      
+      if (result.cloudMode) {
+        // Cloud environment - no restart needed
+        statusDiv.innerHTML = `
+          <h4>✅ Database Restored Successfully!</h4>
+          <p>• Pre-restore backup created: ${result.preRestoreBackup}</p>
+          <p>• Database restored from: ${backupFilename}</p>
+          <p>• Application updated with restored data</p>
+          <p><strong>Page will reload in 3 seconds...</strong></p>
+        `;
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      } else if (result.requiresRefresh) {
+        // Cloud environment - manual refresh needed
+        statusDiv.innerHTML = `
+          <h4>✅ Database Restored Successfully!</h4>
+          <p>• Pre-restore backup created: ${result.preRestoreBackup}</p>
+          <p>• Database restored from: ${backupFilename}</p>
+          <p><strong>Please refresh the page to see restored data</strong></p>
+          <button onclick="window.location.reload()" class="backup-btn" style="margin-top: 10px;">Refresh Page Now</button>
+        `;
+      } else {
+        // Local development - server restart
+        statusDiv.innerHTML = `
+          <h4>✅ Database Restored Successfully!</h4>
+          <p>• Pre-restore backup created: ${result.preRestoreBackup}</p>
+          <p>• Database restored from: ${backupFilename}</p>
+          <p>• Server is restarting automatically...</p>
+          <p><strong>Page will reload in 5 seconds...</strong></p>
+        `;
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 5000);
+      }
       
       const modalContent = modal.querySelector('.restore-message');
       modalContent.innerHTML = '';
       modalContent.appendChild(statusDiv);
-      
-      // Reload page after server restarts
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
       
     } else {
       throw new Error(result.error || 'Restore failed');

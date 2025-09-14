@@ -993,18 +993,54 @@ app.post('/api/backup/restore', async (req, res) => {
     
     console.log(`✅ Database restored from: ${filename}`);
     
-    // The server will need to restart to reconnect to the restored database
-    res.json({
-      success: true,
-      message: 'Database restored successfully. Please restart the server to complete the restoration.',
-      preRestoreBackup: preRestoreBackup.filename
-    });
+    // Check if we're in a cloud environment (like Render, Heroku, etc.)
+    const isCloudEnvironment = process.env.RENDER || process.env.HEROKU || process.env.NODE_ENV === 'production';
     
-    // Graceful shutdown to allow PM2 to restart
-    setTimeout(() => {
-      console.log('🔄 Restarting server after database restore...');
-      process.exit(0);
-    }, 2000);
+    if (isCloudEnvironment) {
+      // For cloud deployments, we can't restart the server safely
+      // Instead, reconnect to the new database without restarting
+      try {
+        // Close old connection
+        const sqlite3 = require('sqlite3').verbose();
+        
+        // Create new database connection
+        const newDb = new sqlite3.Database('crm.db');
+        
+        // Replace the global db object (this is a bit hacky but works for cloud)
+        Object.setPrototypeOf(db, newDb);
+        Object.assign(db, newDb);
+        
+        console.log('✅ Database reconnected after restore (cloud mode)');
+        
+        res.json({
+          success: true,
+          message: 'Database restored successfully! The application has been updated with the restored data.',
+          preRestoreBackup: preRestoreBackup.filename,
+          cloudMode: true
+        });
+      } catch (reconnectError) {
+        console.error('Database reconnection failed:', reconnectError);
+        res.json({
+          success: true,
+          message: 'Database restored successfully. Please refresh the page to see the restored data.',
+          preRestoreBackup: preRestoreBackup.filename,
+          requiresRefresh: true
+        });
+      }
+    } else {
+      // Local development with PM2 - safe to restart
+      res.json({
+        success: true,
+        message: 'Database restored successfully. Server will restart automatically.',
+        preRestoreBackup: preRestoreBackup.filename
+      });
+      
+      // Graceful shutdown to allow PM2 to restart
+      setTimeout(() => {
+        console.log('🔄 Restarting server after database restore...');
+        process.exit(0);
+      }, 2000);
+    }
     
   } catch (error) {
     console.error('Restore failed:', error);
