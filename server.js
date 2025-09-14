@@ -8,8 +8,20 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const HOST = '0.0.0.0';
 
-// Database setup
-const db = new sqlite3.Database('crm.db');
+// Database setup with error handling
+let db;
+try {
+  db = new sqlite3.Database('crm.db', (err) => {
+    if (err) {
+      console.error('Failed to connect to database:', err);
+      process.exit(1);
+    }
+    console.log('✅ Connected to SQLite database');
+  });
+} catch (error) {
+  console.error('Database initialization error:', error);
+  process.exit(1);
+}
 
 // Initialize database tables
 db.serialize(() => {
@@ -998,35 +1010,15 @@ app.post('/api/backup/restore', async (req, res) => {
     
     if (isCloudEnvironment) {
       // For cloud deployments, we can't restart the server safely
-      // Instead, reconnect to the new database without restarting
-      try {
-        // Close old connection
-        const sqlite3 = require('sqlite3').verbose();
-        
-        // Create new database connection
-        const newDb = new sqlite3.Database('crm.db');
-        
-        // Replace the global db object (this is a bit hacky but works for cloud)
-        Object.setPrototypeOf(db, newDb);
-        Object.assign(db, newDb);
-        
-        console.log('✅ Database reconnected after restore (cloud mode)');
-        
-        res.json({
-          success: true,
-          message: 'Database restored successfully! The application has been updated with the restored data.',
-          preRestoreBackup: preRestoreBackup.filename,
-          cloudMode: true
-        });
-      } catch (reconnectError) {
-        console.error('Database reconnection failed:', reconnectError);
-        res.json({
-          success: true,
-          message: 'Database restored successfully. Please refresh the page to see the restored data.',
-          preRestoreBackup: preRestoreBackup.filename,
-          requiresRefresh: true
-        });
-      }
+      // Simply inform the user that the restore was successful and they should refresh
+      console.log('✅ Database restored in cloud environment');
+      
+      res.json({
+        success: true,
+        message: 'Database restored successfully! Please refresh the page to see the restored data.',
+        preRestoreBackup: preRestoreBackup.filename,
+        requiresRefresh: true
+      });
     } else {
       // Local development with PM2 - safe to restart
       res.json({
@@ -1080,8 +1072,8 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-app.listen(PORT, HOST, () => {
+// Start server with error handling
+const server = app.listen(PORT, HOST, () => {
   console.log('');
   console.log('🚀 KHS Simple CRM Server Started!');
   console.log('=====================================');
@@ -1089,6 +1081,15 @@ app.listen(PORT, HOST, () => {
   console.log(`🌐 Local: http://localhost:${PORT}`);
   console.log('=====================================');
   console.log('');
+});
+
+// Handle server startup errors
+server.on('error', (err) => {
+  console.error('🚫 Server startup error:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
+  }
+  process.exit(1);
 });
 
 // Graceful shutdown - with debug info
