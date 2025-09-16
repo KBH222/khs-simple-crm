@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Worker Timesheet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .timesheet-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .worker-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .worker-info label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .worker-info input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            width: 200px;
+        }
+        
+        .timesheet-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .timesheet-table th,
+        .timesheet-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .timesheet-table th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .day-header {
+            background-color: #34495e !important;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .timesheet-table input,
+        .timesheet-table select {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        
+        .time-input {
+            width: 80px !important;
+        }
+        
+        .lunch-input {
+            width: 60px !important;
+        }
+        
+        .job-input {
+            width: 150px !important;
+        }
+        
+        .work-type-select {
+            width: 120px !important;
+        }
+        
+        .hours-cell {
+            background-color: #e8f5e8;
+        }
+        
+        .lunch-cell {
+            background-color: #fff3cd;
+        }
+        
+        .job-cell {
+            background-color: #e3f2fd;
+        }
+        
+        .work-type-cell {
+            background-color: #f3e5f5;
+        }
+        
+        .total-row {
+            background-color: #d4edda;
+            font-weight: bold;
+        }
+        
+        .total-row td {
+            border-top: 2px solid #28a745;
+        }
+        
+        .buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                background-color: white;
+            }
+            
+            .timesheet-container {
+                box-shadow: none;
+                padding: 10px;
+            }
+            
+            .buttons {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="timesheet-container">
+        <div class="header">
+            <h1>Weekly Worker Timesheet</h1>
+            <div class="worker-info">
+                <div>
+                    <label for="workerName">Worker Name:</label>
+                    <input type="text" id="workerName" placeholder="Enter worker name">
+                </div>
+                <div>
+                    <label for="weekEnding">Week Ending:</label>
+                    <input type="date" id="weekEnding">
+                </div>
+            </div>
+        </div>
+        
+        <table class="timesheet-table">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Total Hours</th>
+                    <th>Lunch (mins)</th>
+                    <th>Job Location</th>
+                    <th>Work Type</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="day-header">Monday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('monday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('monday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr>
+                    <td class="day-header">Tuesday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('tuesday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('tuesday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr>
+                    <td class="day-header">Wednesday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('wednesday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('wednesday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr>
+                    <td class="day-header">Thursday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('thursday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('thursday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr>
+                    <td class="day-header">Friday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('friday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('friday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr>
+                    <td class="day-header">Saturday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('saturday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('saturday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr>
+                    <td class="day-header">Sunday</td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('sunday')"></td>
+                    <td><input type="time" class="time-input" onchange="calculateHours('sunday')"></td>
+                    <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="time-input" readonly></td>
+                    <td class="lunch-cell"><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                    <td class="job-cell"><input type="text" class="job-input" placeholder="Job site/location"></td>
+                    <td class="work-type-cell">
+                        <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="HVAC">HVAC</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Cleanup">Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </td>
+                    <td><input type="text" placeholder="Notes"></td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>TOTAL HOURS</strong></td>
+                    <td colspan="2"></td>
+                    <td><strong id="totalHours">0.00</strong></td>
+                    <td><strong id="totalLunch">0</strong></td>
+                    <td colspan="3"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="calculateTotals()">Calculate Totals</button>
+            <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+            <button class="btn btn-success" onclick="window.print()">Print Timesheet</button>
+        </div>
+    </div>
+    
+    <script>
+        // Set current date as week ending date
+        window.onload = function() {
+            const today = new Date();
+            const weekEnding = new Date(today);
+            weekEnding.setDate(today.getDate() + (6 - today.getDay())); // Next Sunday
+            document.getElementById('weekEnding').value = weekEnding.toISOString().split('T')[0];
+        };
+        
+        function calculateHours(day) {
+            const rows = document.querySelectorAll('tbody tr');
+            let dayRow;
+            
+            // Find the row for the specific day
+            rows.forEach(row => {
+                const dayCell = row.querySelector('.day-header');
+                if (dayCell && dayCell.textContent.toLowerCase() === day) {
+                    dayRow = row;
+                }
+            });
+            
+            if (!dayRow) return;
+            
+            const startTime = dayRow.cells[1].querySelector('input').value;
+            const endTime = dayRow.cells[2].querySelector('input').value;
+            const hoursInput = dayRow.cells[3].querySelector('input');
+            
+            if (startTime && endTime) {
+                const start = new Date(`1970-01-01T${startTime}:00`);
+                const end = new Date(`1970-01-01T${endTime}:00`);
+                
+                if (end > start) {
+                    const diffMs = end - start;
+                    const diffHours = diffMs / (1000 * 60 * 60);
+                    hoursInput.value = diffHours.toFixed(2);
+                } else {
+                    hoursInput.value = '0.00';
+                }
+            } else {
+                hoursInput.value = '0.00';
+            }
+            
+            calculateTotals();
+        }
+        
+        function calculateTotals() {
+            const hoursInputs = document.querySelectorAll('.hours-cell input[type="number"]');
+            const lunchInputs = document.querySelectorAll('.lunch-cell input[type="number"]');
+            
+            let totalHours = 0;
+            let totalLunch = 0;
+            
+            hoursInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                totalHours += value;
+            });
+            
+            lunchInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                totalLunch += value;
+            });
+            
+            document.getElementById('totalHours').textContent = totalHours.toFixed(2);
+            document.getElementById('totalLunch').textContent = totalLunch.toString();
+        }
+        
+        function clearForm() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                const inputs = document.querySelectorAll('input[type="text"], input[type="time"], input[type="number"]');
+                const selects = document.querySelectorAll('select');
+                
+                inputs.forEach(input => {
+                    if (input.id !== 'weekEnding') { // Keep the week ending date
+                        input.value = '';
+                    }
+                });
+                
+                selects.forEach(select => {
+                    select.selectedIndex = 0;
+                });
+                
+                document.getElementById('totalHours').textContent = '0.00';
+                document.getElementById('totalLunch').textContent = '0';
+            }
+        }
+        
+        // Auto-calculate totals when lunch minutes change
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('lunch-input')) {
+                calculateTotals();
+            }
+        });
+    </script>
+</body>
+</html>

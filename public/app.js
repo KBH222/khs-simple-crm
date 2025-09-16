@@ -45,6 +45,23 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupEventListeners() {
   console.log('Setting up event listeners...');
   
+  // Setup customer phone formatting on modal open
+  const customerModal = document.getElementById('customerModal');
+  if (customerModal) {
+    // When customer modal is shown, setup formatting
+    const observer = new MutationObserver(() => {
+      if (customerModal.classList.contains('active')) {
+        // Use setTimeout to ensure DOM is ready
+        setTimeout(() => {
+          setupCustomerPhoneFormatting();
+          setupCityAutoComplete();
+          setupAddressAutoComplete();
+        }, 10);
+      }
+    });
+    observer.observe(customerModal, { attributes: true, attributeFilter: ['class'] });
+  }
+  
   // Navigation cards
   const navCards = document.querySelectorAll('.nav-card');
   console.log('Found nav cards:', navCards.length);
@@ -157,8 +174,7 @@ function showPage(pageName) {
     setupSettingsTabs();
     loadBackupHistory();
   } else if (pageName === 'workers') {
-    setupWorkersTabs();
-    loadWorkers();
+    initializeTeamMembers();
   }
 }
 
@@ -214,15 +230,15 @@ async function loadCustomerJobs(customerId) {
         `;
       } else {
         jobsContainer.innerHTML = data.map(job => `
-          <div class="job-item" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px 6px; margin: 2px 0; font-size: 12px; width: 200px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="job-item job-${job.title.toLowerCase()}" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; padding: 12px 10px; margin: 8px 0; font-size: 14px; width: 220px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='#F9FAFB'">
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 24px;">
               <div onclick="viewJob('${job.id}')" style="cursor: pointer; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <strong>${escapeHtml(job.title)}</strong>
-                ${job.total_cost > 0 ? `<span style="color: #6B7280; margin-left: 8px;">$${job.total_cost.toFixed(2)}</span>` : ''}
+                <strong class="job-title" style="font-size: 14px;">${escapeHtml(job.title)}</strong>
+                ${job.total_cost > 0 ? `<span style="color: #6B7280; margin-left: 8px; font-size: 13px;">$${job.total_cost.toFixed(2)}</span>` : ''}
               </div>
-              <button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 16px; font-weight: bold; cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0;">×</button>
+              <button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 20px; font-weight: bold; cursor: pointer; padding: 4px; line-height: 1; flex-shrink: 0; min-width: 28px; min-height: 28px; display: flex; align-items: center; justify-content: center;">×</button>
             </div>
-            ${job.description ? `<div onclick="viewJob('${job.id}')" style="color: #6B7280; margin-top: 2px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(job.description.substring(0, 30))}${job.description.length > 30 ? '...' : ''}</div>` : ''}
+            ${job.description ? `<div onclick="viewJob('${job.id}')" style="color: #6B7280; margin-top: 6px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">${escapeHtml(job.description.substring(0, 30))}${job.description.length > 30 ? '...' : ''}</div>` : ''}
           </div>
         `).join('');
       }
@@ -286,30 +302,39 @@ function renderCustomers() {
   container.innerHTML = filteredCustomers.map(customer => `
     <div class="customer-card-grid">
       <div class="customer-name-cell">
-        <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
-        <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; margin-top: 4px;">
-          ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+        <div style="display: flex; align-items: center; gap: 12px; margin: 0; padding: 0;">
+          <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
+          <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 2px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0;">
+            ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+          </div>
         </div>
       </div>
       
       <div class="customer-buttons-cell">
-        <button onclick="editCustomer('${customer.id}')" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; width: 60px; margin-bottom: 8px;">Edit</button>
-        <button onclick="createJob('${customer.id}')" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; width: 60px; margin-bottom: 8px;">+ Job</button>
-        <button onclick="sendText('${customer.phone}')" style="background: #8B5CF6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; width: 60px; margin-bottom: 16px;">Text</button>
-        <button onclick="deleteCustomer('${customer.id}')" style="background: #EF4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13.8px; width: 60px;">Del</button>
+        <div class="customer-buttons-top">
+          <button onclick="editCustomer('${customer.id}')" style="background: #DBEAFE; border: 1px solid #3B82F6; color: #1E40AF; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; margin-bottom: 12px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden;" onmouseover="this.style.backgroundColor='#3B82F6'; this.style.color='white'; this.style.borderColor='#3B82F6';" onmouseout="this.style.backgroundColor='#DBEAFE'; this.style.color='#1E40AF'; this.style.borderColor='#3B82F6';">Edit</button>
+          <button onclick="createJob('${customer.id}')" style="background: #DCFCE7; border: 1px solid #10B981; color: #065F46; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden;" onmouseover="this.style.backgroundColor='#10B981'; this.style.color='white'; this.style.borderColor='#10B981';" onmouseout="this.style.backgroundColor='#DCFCE7'; this.style.color='#065F46'; this.style.borderColor='#10B981';">+Job</button>
+        </div>
+        
+        <div class="customer-buttons-bottom">
+          <button onclick="deleteCustomer('${customer.id}')" style="background: #DC2626; border: 1px solid #991B1B; color: #FFFFFF; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden; font-weight: 600;" onmouseover="this.style.backgroundColor='#B91C1C'; this.style.color='#FFFFFF'; this.style.borderColor='#7F1D1D';" onmouseout="this.style.backgroundColor='#DC2626'; this.style.color='#FFFFFF'; this.style.borderColor='#991B1B';">Del</button>
+        </div>
       </div>
       
       <div class="customer-info-cell">
         <div style="margin: 0; padding: 0; line-height: 1.4;">
-          <div style="margin-bottom: 8px; font-size: 16.1px; margin-top: 0; padding-top: 0;">
+          <div style="margin-bottom: 8px; font-size: 16.1px; margin-top: 16px; padding-top: 0;">
             <strong>Email:</strong>
             ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
           </div>
-          <div style="margin-bottom: 8px; font-size: 16.1px;">
-            <strong>Phone:</strong> 
-            ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+          <div style="margin-bottom: 8px; font-size: 16.1px; display: flex; align-items: center; gap: 12px;">
+            <div>
+              <strong>Phone:</strong> 
+              ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${formatPhoneNumber(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+            </div>
+            ${customer.phone ? `<button onclick="sendText('${customer.phone}')" style="background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; padding: 0; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; min-width: 40px;" onmouseover="this.style.backgroundColor='#F59E0B'; this.style.color='white'; this.style.borderColor='#F59E0B';" onmouseout="this.style.backgroundColor='#FEF3C7'; this.style.color='#92400E'; this.style.borderColor='#F59E0B';">Text</button>` : ''}
           </div>
-          ${customer.address ? `<div style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><strong>Address:</strong><br><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #F59E0B; text-decoration: none; display: inline-block;">${formatAddress(customer.address)}</a></div>` : ''}
+          ${customer.address ? `<div style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><div style="display: flex; align-items: flex-start;"><strong style="margin-right: 4px; flex-shrink: 0;">Site:</strong><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #3B82F6; text-decoration: none; flex: 1;">${formatAddress(customer.address)}</a></div></div>` : ''}
           
           <div class="customer-jobs" id="jobs-${customer.id}" style="margin: 0 !important; padding: 0 !important;">
             <div class="jobs-header" style="margin: 0 !important; padding: 0 !important; margin-top: 8px !important; margin-bottom: 4px !important; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
@@ -363,8 +388,22 @@ function showCustomerModal(customer = null) {
     title.textContent = 'Edit Customer';
     document.getElementById('customerName').value = customer.name;
     document.getElementById('customerEmail').value = customer.email || '';
-    document.getElementById('customerPhone').value = customer.phone || '';
-    document.getElementById('customerAddress').value = customer.address || '';
+    document.getElementById('customerPhone').value = formatPhoneNumber(customer.phone || '');
+    
+    // Parse existing address or set defaults
+    if (customer.address) {
+      const addressParts = parseAddress(customer.address);
+      document.getElementById('customerStreet').value = addressParts.street;
+      document.getElementById('customerCity').value = addressParts.city;
+      document.getElementById('customerState').value = addressParts.state || 'Hawaii';
+      document.getElementById('customerZip').value = addressParts.zip;
+    } else {
+      document.getElementById('customerStreet').value = '';
+      document.getElementById('customerCity').value = '';
+      document.getElementById('customerState').value = 'HI';
+      document.getElementById('customerZip').value = '';
+    }
+    
     document.getElementById('customerReference').value = customer.reference || '';
     document.getElementById('customerType').value = customer.customer_type || 'CURRENT';
     document.getElementById('customerNotes').value = customer.notes || '';
@@ -373,10 +412,21 @@ function showCustomerModal(customer = null) {
     // Add mode
     title.textContent = 'Add Customer';
     form.reset();
+    // Set HI as default state for new customers (after reset)
+    setTimeout(() => {
+      document.getElementById('customerState').value = 'HI';
+    }, 10);
     delete form.dataset.customerId;
   }
   
   modal.classList.add('active');
+  
+  // Setup phone formatting, city auto-completion, and address validation
+  setTimeout(() => {
+    setupCustomerPhoneFormatting();
+    setupCityAutoComplete();
+    setupAddressAutoComplete();
+  }, 50);
 }
 
 function editCustomer(customerId) {
@@ -496,11 +546,31 @@ async function handleCustomerSubmit(e) {
   const form = e.target;
   const formData = new FormData(form);
   
+  // Get and clean phone number (remove formatting)
+  const phoneValue = document.getElementById('customerPhone').value.trim();
+  const cleanPhone = phoneValue.replace(/\D/g, ''); // Remove all non-digits
+  
+  // Combine address fields into single address string
+  const street = document.getElementById('customerStreet').value.trim();
+  const city = document.getElementById('customerCity').value.trim();
+  const state = document.getElementById('customerState').value.trim(); // Should be 'HI'
+  const zip = document.getElementById('customerZip').value.trim();
+  
+  let fullAddress = '';
+  if (street) {
+    fullAddress = street;
+    if (city && zip) {
+      fullAddress += `, ${city}, ${state} ${zip}`;
+    } else if (city) {
+      fullAddress += `, ${city}, ${state}`;
+    }
+  }
+  
   const customerData = {
     name: document.getElementById('customerName').value,
     email: document.getElementById('customerEmail').value,
-    phone: document.getElementById('customerPhone').value,
-    address: document.getElementById('customerAddress').value,
+    phone: cleanPhone, // Store clean digits only
+    address: fullAddress,
     reference: document.getElementById('customerReference').value,
     customer_type: document.getElementById('customerType').value,
     notes: document.getElementById('customerNotes').value
@@ -538,6 +608,9 @@ function hideModals() {
   document.querySelectorAll('.modal').forEach(modal => {
     modal.classList.remove('active');
   });
+  
+  // Reset file drop zones setup flag so they can be set up for next job
+  fileDropZonesSetup = false;
 }
 
 // Utility functions
@@ -794,33 +867,87 @@ function switchJobTab(tabName) {
   if (targetTab) {
     targetTab.classList.add('active');
   }
+  
+// Load data for specific tabs
+  if (currentJob && currentJob.id) {
+    if (tabName === 'tasks') {
+      console.log('Loading tasks for job:', currentJob.id);
+      loadJobTasks(currentJob.id);
+    } else if (tabName === 'extra') {
+      console.log('Loading extra costs for job:', currentJob.id);
+      loadExtraCosts(currentJob.id);
+    } else if (tabName === 'pics' || tabName === 'plans') {
+      console.log(`Setting up file drop zones for ${tabName} tab`);
+      // Re-setup file drop zones to ensure they're working
+      setTimeout(() => setupFileDropZones(), 100);
+    }
+  } else {
+    console.log('No currentJob set or no ID:', { currentJob });
+  }
 }
 
 // File handling functions
+let fileDropZonesSetup = false;
+
 function setupFileDropZones() {
+  console.log('Setting up file drop zones...');
+  
+  // Prevent duplicate setup
+  if (fileDropZonesSetup) {
+    console.log('File drop zones already set up, skipping...');
+    return;
+  }
+  
   // Setup pictures drop zone
   const picsDropZone = document.getElementById('picsDropZone');
   const picsFileInput = document.getElementById('picsFileInput');
   
+  console.log('Pics drop zone elements:', { picsDropZone, picsFileInput });
+  
   if (picsDropZone && picsFileInput) {
-    picsDropZone.onclick = () => picsFileInput.click();
+    console.log('Setting up pics drop zone event listeners');
     
-    picsFileInput.addEventListener('change', (e) => handleFileSelect(e, 'pics'));
+    picsDropZone.onclick = () => {
+      console.log('Pics drop zone clicked - opening file dialog');
+      picsFileInput.click();
+    };
     
-    picsDropZone.addEventListener('dragover', (e) => {
+    picsFileInput.addEventListener('change', (e) => {
+      console.log('File input changed:', e.target.files);
+      handleFileSelect(e, 'pics');
+    });
+    
+    picsDropZone.addEventListener('dragenter', (e) => {
+      console.log('Dragenter on pics zone');
       e.preventDefault();
       picsDropZone.classList.add('dragover');
     });
     
-    picsDropZone.addEventListener('dragleave', () => {
-      picsDropZone.classList.remove('dragover');
+    picsDropZone.addEventListener('dragover', (e) => {
+      console.log('Dragover on pics zone');
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      picsDropZone.classList.add('dragover');
+    });
+    
+    picsDropZone.addEventListener('dragleave', (e) => {
+      console.log('Dragleave on pics zone');
+      // Only remove class if we're actually leaving the drop zone (not entering a child)
+      if (!picsDropZone.contains(e.relatedTarget)) {
+        picsDropZone.classList.remove('dragover');
+      }
     });
     
     picsDropZone.addEventListener('drop', (e) => {
+      console.log('Drop on pics zone:', e.dataTransfer.files);
       e.preventDefault();
       picsDropZone.classList.remove('dragover');
       handleFileDrop(e, 'pics');
     });
+    
+    console.log('Pics drop zone setup complete');
+  } else {
+    console.error('Could not find pics drop zone elements:', { picsDropZone, picsFileInput });
   }
   
   // Setup plans drop zone
@@ -847,47 +974,1690 @@ function setupFileDropZones() {
       handleFileDrop(e, 'plans');
     });
   }
+  
+  fileDropZonesSetup = true;
 }
 
 function handleFileSelect(event, type) {
+  console.log(`handleFileSelect called for type: ${type}`);
   const files = Array.from(event.target.files);
+  console.log('Selected files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
   uploadFiles(files, type);
 }
 
 function handleFileDrop(event, type) {
+  console.log(`handleFileDrop called for type: ${type}`);
   const files = Array.from(event.dataTransfer.files);
+  console.log('Dropped files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
   uploadFiles(files, type);
 }
 
-function uploadFiles(files, type) {
-  console.log(`Uploading ${files.length} files to ${type}`);
-  // TODO: Implement file upload to server
-  console.log(`File upload functionality coming soon! Selected ${files.length} ${type} files.`);
+async function uploadFiles(files, type) {
+  console.log(`uploadFiles called: ${files.length} files to ${type}`);
+  
+  if (files.length === 0) {
+    console.warn('No files provided to upload');
+    return;
+  }
+  
+  if (!currentJob || !currentJob.id) {
+    console.error('No current job selected for upload');
+    alert('Please select a job first before uploading photos');
+    return;
+  }
+  
+  // Show immediate feedback to user
+  console.log(`Uploading ${files.length} ${type} files to job ${currentJob.id}`);
+  
+  // Create FormData for upload
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append('photos', file);
+  });
+  formData.append('photoType', type);
+  
+  try {
+    // Show loading state
+    const uploadStatus = document.createElement('div');
+    uploadStatus.innerHTML = `<p>Uploading ${files.length} ${type} files...</p>`;
+    uploadStatus.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #EBF8FF; border: 1px solid #3B82F6; padding: 10px; border-radius: 4px; z-index: 1000;';
+    document.body.appendChild(uploadStatus);
+    
+    const response = await fetch(`/api/jobs/${currentJob.id}/photos`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    // Remove loading status
+    document.body.removeChild(uploadStatus);
+    
+    if (response.ok) {
+      console.log('Upload successful:', result);
+      
+      // Show success message
+      const successMsg = document.createElement('div');
+      successMsg.innerHTML = `<p>✅ ${result.message}</p>`;
+      successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #F0FDF4; border: 1px solid #22C55E; color: #166534; padding: 10px; border-radius: 4px; z-index: 1000;';
+      document.body.appendChild(successMsg);
+      setTimeout(() => document.body.removeChild(successMsg), 5000);
+      
+      // Reload photos for this job
+      await loadJobFiles(currentJob.id);
+    } else {
+      console.error('Upload failed:', result);
+      alert(`Upload failed: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert(`Upload error: ${error.message}`);
+  }
 }
 
-// Placeholder functions for tab features
-function loadJobTasks(jobId) {
-  console.log('Loading tasks for job:', jobId);
-  // TODO: Load tasks from server
+// Keep track of uploaded files for management
+let currentJobPics = [];
+
+// Task management variables
+let currentJobTasks = [];
+let currentJobExtraCosts = [];
+let taskDraggedElement = null;
+
+// Load and display tasks
+async function loadJobTasks(jobId) {
+  console.log('loadJobTasks called with jobId:', jobId);
+  try {
+    const url = `/api/jobs/${jobId}/tasks`;
+    console.log('Fetching:', url);
+    const response = await fetch(url);
+    const tasks = await response.json();
+    
+    console.log('API Response:', { status: response.status, tasks });
+    
+    if (response.ok) {
+      currentJobTasks = tasks;
+      console.log('About to render tasks:', tasks);
+      renderTasks();
+    } else {
+      console.error('Failed to load tasks:', tasks.error);
+    }
+  } catch (error) {
+    console.error('Error loading tasks:', error);
+  }
 }
 
-function loadJobFiles(jobId) {
+function renderTasks() {
+  const tasksList = document.getElementById('tasksList');
+  
+  if (!currentJobTasks || currentJobTasks.length === 0) {
+    tasksList.innerHTML = `
+      <div class="task-input-container">
+        <input type="text" id="newTaskInput" placeholder="Add a task and press Enter..." class="task-input">
+      </div>
+      <p style="color: #6B7280; text-align: center; padding: 20px;">No tasks yet. Add your first task above!</p>
+    `;
+  } else {
+    tasksList.innerHTML = `
+      <div class="task-input-container">
+        <input type="text" id="newTaskInput" placeholder="Add a task and press Enter..." class="task-input">
+      </div>
+      <div class="tasks-container" id="tasksContainer">
+        ${currentJobTasks.map(task => `
+          <div class="task-item" data-task-id="${task.id}" draggable="true">
+            <div class="task-content">
+              <input type="checkbox" class="task-checkbox" 
+                     ${task.completed ? 'checked' : ''} 
+                     onchange="toggleTask('${task.id}', this.checked)">
+              <span class="task-description ${task.completed ? 'completed' : ''}">${escapeHtml(task.description)}</span>
+            </div>
+            <button class="task-delete-btn" onclick="deleteTask('${task.id}')" title="Delete task">×</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    setupTaskDragAndDrop();
+  }
+  
+  setupTaskInput();
+}
+
+function setupTaskInput() {
+  const taskInput = document.getElementById('newTaskInput');
+  if (taskInput) {
+    taskInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter' && taskInput.value.trim()) {
+        await addTask(taskInput.value.trim());
+        taskInput.value = '';
+        // Keep focus in the input for continuous task adding
+        taskInput.focus();
+      }
+    });
+    // Auto-focus when the input is created
+    taskInput.focus();
+  }
+}
+
+async function addTask(description) {
+  if (!currentJob || !description) return;
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ description }),
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      await loadJobTasks(currentJob.id); // Reload tasks
+      // Auto-scroll to show the newly added task - iPhone keyboard compatible
+      setTimeout(() => {
+        const tasksContainer = document.getElementById('tasksContainer');
+        if (tasksContainer) {
+          const lastTask = tasksContainer.lastElementChild;
+          
+          // Detect if we're on iPhone and keyboard might be open
+          const isIPhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const inputFocused = document.activeElement && document.activeElement.tagName.toLowerCase() === 'input';
+          
+          if (isIPhone && inputFocused && lastTask) {
+            // iPhone with keyboard open - scroll more aggressively
+            // Scroll to show the task above the keyboard area
+            const taskRect = lastTask.getBoundingClientRect();
+            const containerRect = tasksContainer.getBoundingClientRect();
+            const keyboardHeight = window.innerHeight * 0.4; // Estimate keyboard height
+            const visibleAreaBottom = window.innerHeight - keyboardHeight;
+            
+            // Calculate how much to scroll to keep task visible above keyboard
+            const scrollOffset = taskRect.bottom - visibleAreaBottom + 50; // 50px padding
+            
+            if (scrollOffset > 0) {
+              tasksContainer.scrollTop = tasksContainer.scrollTop + scrollOffset;
+            }
+            
+            // Also try scrollIntoView with custom positioning
+            lastTask.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center', // Center in viewport instead of end
+              inline: 'nearest'
+            });
+          } else {
+            // Desktop or keyboard not open - use normal scrolling
+            tasksContainer.scrollTop = tasksContainer.scrollHeight;
+            
+            tasksContainer.scrollTo({
+              top: tasksContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+            
+            if (lastTask) {
+              lastTask.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'end',
+                inline: 'nearest'
+              });
+            }
+          }
+        }
+      }, 300);
+    } else {
+      console.error('Failed to add task:', result.error);
+    }
+  } catch (error) {
+    console.error('Error adding task:', error);
+  }
+}
+
+async function toggleTask(taskId, completed) {
+  try {
+    const response = await fetch(`/api/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ completed }),
+    });
+    
+    if (response.ok) {
+      // Update local state
+      const task = currentJobTasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = completed;
+        renderTasks();
+      }
+    } else {
+      console.error('Failed to update task');
+    }
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+}
+
+async function deleteTask(taskId) {
+  try {
+    const response = await fetch(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.ok) {
+      await loadJobTasks(currentJob.id); // Reload tasks
+    } else {
+      console.error('Failed to delete task');
+    }
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+}
+
+// Drag and drop for task reordering
+function setupTaskDragAndDrop() {
+  const taskItems = document.querySelectorAll('.task-item');
+  const tasksContainer = document.getElementById('tasksContainer');
+  
+  taskItems.forEach(item => {
+    item.addEventListener('dragstart', handleTaskDragStart);
+    item.addEventListener('dragend', handleTaskDragEnd);
+  });
+  
+  if (tasksContainer) {
+    tasksContainer.addEventListener('dragover', handleTaskDragOver);
+    tasksContainer.addEventListener('drop', handleTaskDrop);
+  }
+}
+
+function handleTaskDragStart(e) {
+  taskDraggedElement = e.target;
+  e.target.classList.add('dragging');
+}
+
+function handleTaskDragEnd(e) {
+  e.target.classList.remove('dragging');
+  taskDraggedElement = null;
+}
+
+function handleTaskDragOver(e) {
+  e.preventDefault();
+  const container = e.currentTarget;
+  const afterElement = getDragAfterElement(container, e.clientY);
+  const draggable = document.querySelector('.dragging');
+  
+  if (afterElement == null) {
+    container.appendChild(draggable);
+  } else {
+    container.insertBefore(draggable, afterElement);
+  }
+}
+
+function handleTaskDrop(e) {
+  e.preventDefault();
+  updateTaskOrder();
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function updateTaskOrder() {
+  const taskItems = document.querySelectorAll('.task-item');
+  const taskIds = Array.from(taskItems).map(item => item.dataset.taskId);
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/tasks/reorder`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ taskIds }),
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to update task order');
+      // Reload tasks to revert to original order
+      await loadJobTasks(currentJob.id);
+    }
+  } catch (error) {
+    console.error('Error updating task order:', error);
+  }
+}
+
+async function loadJobFiles(jobId) {
   console.log('Loading files for job:', jobId);
-  // TODO: Load files from server
+  
+  if (!jobId) {
+    console.warn('No job ID provided to loadJobFiles');
+    clearPicsDisplay();
+    clearPlansDisplay();
+    return;
+  }
+  
+  try {
+    // Load pics
+    const picsResponse = await fetch(`/api/jobs/${jobId}/photos?type=pics`);
+    if (picsResponse.ok) {
+      const picsData = await picsResponse.json();
+      console.log(`Loaded ${picsData.length} pics for job ${jobId}`);
+      displayServerPhotos(picsData, 'pics');
+    } else {
+      console.error('Failed to load pics:', picsResponse.status);
+      clearPicsDisplay();
+    }
+    
+    // Load plans
+    const plansResponse = await fetch(`/api/jobs/${jobId}/photos?type=plans`);
+    if (plansResponse.ok) {
+      const plansData = await plansResponse.json();
+      console.log(`Loaded ${plansData.length} plans for job ${jobId}`);
+      displayServerPhotos(plansData, 'plans');
+    } else {
+      console.error('Failed to load plans:', plansResponse.status);
+      clearPlansDisplay();
+    }
+  } catch (error) {
+    console.error('Error loading job files:', error);
+    clearPicsDisplay();
+    clearPlansDisplay();
+  }
 }
 
-function loadExtraCosts(jobId) {
-  console.log('Loading extra costs for job:', jobId);
-  // TODO: Load extra costs from server
+async function createSharpThumbnail(file, container) {
+  const TARGET = 120; // CSS size for square thumbs
+  const DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1)); // cap to keep memory sane
+  const PIXELS = TARGET * DPR; // actual canvas pixel size
+  
+  try {
+    // Use createImageBitmap for faster decode than <img>
+    const bmp = await createImageBitmap(file);
+    const blob = await makeThumb(bmp, PIXELS);
+    
+    // Create image element for display
+    const img = document.createElement('img');
+    img.style.width = TARGET + 'px';
+    img.style.height = TARGET + 'px';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '6px';
+    img.src = URL.createObjectURL(blob);
+    
+    // Clean up blob URL when image loads
+    img.onload = () => URL.revokeObjectURL(img.src);
+    
+    container.appendChild(img);
+    
+    // Click to enlarge
+    container.addEventListener('click', () => {
+      enlargeImage(file, img.src);
+    });
+    
+    console.log(`Sharp thumbnail created for: ${file.name} (DPR: ${DPR}, Canvas: ${PIXELS}x${PIXELS}, CSS: ${TARGET}x${TARGET})`);
+    return Promise.resolve(); // Explicitly return resolved promise
+  } catch (err) {
+    console.error('Thumbnail creation error:', err);
+    // Fallback to simple image display
+    const img = document.createElement('img');
+    img.style.width = TARGET + 'px';
+    img.style.height = TARGET + 'px';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '6px';
+    img.src = URL.createObjectURL(file);
+    container.appendChild(img);
+    
+    container.addEventListener('click', () => {
+      enlargeImage(file, img.src);
+    });
+    
+    return Promise.reject(err); // Return rejected promise for error handling
+  }
 }
 
-function addTask() {
-  console.log('Add task functionality coming soon!');
+async function makeThumb(bmp, pixels) {
+  // center-crop to square, then downscale to crisp pixels size
+  const srcSize = Math.min(bmp.width, bmp.height);
+  const sx = (bmp.width  - srcSize) / 2;
+  const sy = (bmp.height - srcSize) / 2;
+
+  // draw to a high-DPR canvas to avoid blur on Retina/HiDPI
+  const canvas = document.createElement('canvas');
+  canvas.width  = pixels;
+  canvas.height = pixels;
+  const ctx = canvas.getContext('2d');
+
+  // high quality resample
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bmp, sx, sy, srcSize, srcSize, 0, 0, pixels, pixels);
+
+  // export as WebP for small + sharp. Use JPEG if you prefer: 'image/jpeg', 0.85
+  return await new Promise(res => canvas.toBlob(res, 'image/webp', 0.9));
 }
 
-function addExtraCost() {
-  console.log('Add extra cost functionality coming soon!');
+
+function createSimpleImagePreview(file, container) {
+  // Simple approach: just show file info and let user click to download
+  const preview = document.createElement('div');
+  preview.style.cssText = `
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #F3F4F6;
+    color: #374151;
+    text-align: center;
+    font-size: 11px;
+    cursor: pointer;
+    border: 2px dashed #D1D5DB;
+  `;
+  
+  const fileExt = file.name.split('.').pop().toUpperCase();
+  const fileSize = (file.size / 1024 / 1024).toFixed(1);
+  
+  preview.innerHTML = `
+    <div style="font-size: 32px; margin-bottom: 8px;">🖼️</div>
+    <div style="font-weight: bold; margin-bottom: 4px;">${fileExt}</div>
+    <div style="font-size: 9px; opacity: 0.8;">${fileSize} MB</div>
+    <div style="font-size: 8px; opacity: 0.6; margin-top: 4px;">Click to view</div>
+  `;
+  
+  preview.addEventListener('click', () => {
+    // Try to open the file in a new tab - browser will handle what it can
+    const url = URL.createObjectURL(file);
+    const newWindow = window.open(url, '_blank');
+    // Clean up URL after a delay
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  
+  container.appendChild(preview);
 }
+
+// OLD displaySelectedPics function removed - now using displayServerPics instead
+
+function enlargeImage(file, currentSrc) {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    cursor: zoom-out;
+  `;
+  
+  // Create image container
+  const container = document.createElement('div');
+  container.style.cssText = `
+    text-align: center;
+    max-width: 95%;
+    max-height: 95%;
+    cursor: default;
+  `;
+  
+  // Create close button
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '×';
+  
+  // Detect mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // Bottom right for mobile
+    closeBtn.style.cssText = `
+      position: fixed !important; 
+      bottom: 30px !important; 
+      right: 30px !important;
+      transform: none !important;
+      background: rgba(239, 68, 68, 0.9) !important; 
+      color: white !important;
+      border: none !important; 
+      font-size: 50px !important; 
+      cursor: pointer !important;
+      width: 70px !important; 
+      height: 70px !important; 
+      border-radius: 35px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+      transition: all 0.2s ease !important;
+      z-index: 10001 !important;
+    `;
+  } else {
+    // Vertically centered for desktop
+    closeBtn.style.cssText = `
+      position: fixed !important; 
+      top: 50% !important; 
+      right: 15px !important;
+      transform: translateY(-50%) !important;
+      background: rgba(239, 68, 68, 0.9) !important; 
+      color: white !important;
+      border: none !important; 
+      font-size: 60px !important; 
+      cursor: pointer !important;
+      width: 80px !important; 
+      height: 80px !important; 
+      border-radius: 40px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+      transition: all 0.2s ease !important;
+      z-index: 10001 !important;
+    `;
+  }
+  
+  // Add hover effect
+  closeBtn.addEventListener('mouseenter', () => {
+    closeBtn.style.setProperty('background', 'rgba(220, 38, 38, 1)', 'important');
+    if (isMobile) {
+      closeBtn.style.setProperty('transform', 'scale(1.1)', 'important');
+    } else {
+      closeBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important');
+    }
+  });
+  closeBtn.addEventListener('mouseleave', () => {
+    closeBtn.style.setProperty('background', 'rgba(239, 68, 68, 0.9)', 'important');
+    if (isMobile) {
+      closeBtn.style.setProperty('transform', 'scale(1)', 'important');
+    } else {
+      closeBtn.style.setProperty('transform', 'translateY(-50%) scale(1)', 'important');
+    }
+  });
+  
+  // Create resizable image container
+  const imgContainer = document.createElement('div');
+  imgContainer.style.cssText = `
+    position: relative;
+    width: 60vw;
+    height: 60vh;
+    min-width: 300px;
+    min-height: 200px;
+    max-width: 95vw;
+    max-height: 90vh;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    cursor: move;
+    resize: both;
+    overflow: hidden;
+  `;
+  
+  // Create image element
+  const img = document.createElement('img');
+  img.style.cssText = `
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  `;
+  
+  // Create filename label
+  const filename = document.createElement('div');
+  filename.textContent = file.name;
+  filename.style.cssText = `
+    color: white;
+    margin-top: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  `;
+  
+  // Create file info
+  const fileInfo = document.createElement('div');
+  fileInfo.textContent = `${file.type} • ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+  fileInfo.style.cssText = `
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 8px;
+    font-size: 12px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  `;
+  
+  // Load high-quality image
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    img.src = e.target.result;
+    img.onload = () => {
+      img.style.opacity = '1';
+    };
+  };
+  reader.onerror = function() {
+    img.src = currentSrc;
+    img.onload = () => {
+      img.style.opacity = '1';
+    };
+  };
+  
+  // Assemble modal
+  imgContainer.appendChild(img);
+  container.appendChild(imgContainer);
+  container.appendChild(filename);
+  container.appendChild(fileInfo);
+  modal.appendChild(container);
+  modal.appendChild(closeBtn);
+  document.body.appendChild(modal);
+  
+  // Add drag functionality for moving the image around
+  let isDragging = false;
+  let dragStartX, dragStartY, initialX, initialY;
+  
+  imgContainer.addEventListener('mousedown', (e) => {
+    // Only start dragging if not on resize handle
+    if (e.target === imgContainer || e.target === img) {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      const rect = imgContainer.getBoundingClientRect();
+      initialX = rect.left;
+      initialY = rect.top;
+      imgContainer.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const deltaX = e.clientX - dragStartX;
+      const deltaY = e.clientY - dragStartY;
+      imgContainer.style.position = 'absolute';
+      imgContainer.style.left = (initialX + deltaX) + 'px';
+      imgContainer.style.top = (initialY + deltaY) + 'px';
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      imgContainer.style.cursor = 'move';
+    }
+  });
+  
+  // Close modal handlers
+  const closeModal = () => {
+    // Clean up event listeners
+    document.removeEventListener('keydown', handleKeydown);
+    document.body.removeChild(modal);
+  };
+  
+  closeBtn.onclick = closeModal;
+  modal.onclick = (e) => {
+    if (e.target === modal) closeModal();
+  };
+  
+  // ESC key to close
+  const handleKeydown = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  };
+  document.addEventListener('keydown', handleKeydown);
+  
+  // Start loading the image
+  reader.readAsDataURL(file);
+}
+
+function createHighQualityThumbnail(file, imgElement, containerElement) {
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const tempImg = new Image();
+    tempImg.onload = function() {
+      // Create a canvas for high-quality thumbnail
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas size (thumbnail size)
+      const size = 200; // High resolution thumbnail
+      canvas.width = size;
+      canvas.height = size;
+      
+      // Enable high-quality rendering
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Calculate aspect ratio and draw
+      const aspectRatio = tempImg.width / tempImg.height;
+      let drawWidth, drawHeight, drawX, drawY;
+      
+      if (aspectRatio > 1) {
+        // Landscape
+        drawHeight = size;
+        drawWidth = size * aspectRatio;
+        drawX = -(drawWidth - size) / 2;
+        drawY = 0;
+      } else {
+        // Portrait
+        drawWidth = size;
+        drawHeight = size / aspectRatio;
+        drawX = 0;
+        drawY = -(drawHeight - size) / 2;
+      }
+      
+      ctx.drawImage(tempImg, drawX, drawY, drawWidth, drawHeight);
+      
+      // Convert canvas to high-quality data URL
+      const highQualityDataUrl = canvas.toDataURL('image/png', 1.0);
+      
+      // Set the high-quality thumbnail
+      imgElement.src = highQualityDataUrl;
+      imgElement.alt = file.name;
+      
+      containerElement.appendChild(imgElement);
+    };
+    
+    tempImg.src = e.target.result;
+  };
+  
+  reader.onerror = function() {
+    // Fallback to regular blob URL if FileReader fails
+    imgElement.src = URL.createObjectURL(file);
+    imgElement.alt = file.name;
+    containerElement.appendChild(imgElement);
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+function createSharpThumbnail(file, container) {
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Simple approach: exact 120px canvas
+      canvas.width = 120;
+      canvas.height = 120;
+      canvas.style.width = '120px';
+      canvas.style.height = '120px';
+      
+      // High quality settings
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Center crop calculation
+      const size = Math.min(img.width, img.height);
+      const x = (img.width - size) / 2;
+      const y = (img.height - size) / 2;
+      
+      // Draw with high quality
+      ctx.drawImage(img, x, y, size, size, 0, 0, 120, 120);
+      
+      container.appendChild(canvas);
+      
+      // Click to enlarge
+      container.addEventListener('click', () => {
+        enlargeImage(file, e.target.result);
+      });
+      
+      console.log(`Sharp thumbnail created for: ${file.name}`);
+    };
+    img.src = e.target.result;
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+function createPixelPerfectThumbnail_OLD(file, container) {
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const tempImg = new Image();
+    tempImg.onload = function() {
+      // Get device pixel ratio for crisp rendering
+      const dpr = window.devicePixelRatio || 1;
+      const cssSize = 120; // CSS size in pixels
+      const canvasSize = Math.floor(cssSize * dpr); // Canvas size for device pixels
+      
+      // Create canvas at device pixel resolution
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas size to device pixels
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      
+      // Set CSS size (this prevents browser scaling blur)
+      canvas.style.width = cssSize + 'px';
+      canvas.style.height = cssSize + 'px';
+      canvas.style.objectFit = 'cover';
+      
+      // Enable high-quality smoothing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Multi-step downscale for huge images (reduces blur)
+      let sourceWidth = tempImg.width;
+      let sourceHeight = tempImg.height;
+      let tempCanvas = null;
+      let tempCtx = null;
+      
+      // If image is more than 4x larger, do multi-step resize
+      while (sourceWidth > canvasSize * 4 || sourceHeight > canvasSize * 4) {
+        tempCanvas = document.createElement('canvas');
+        tempCtx = tempCanvas.getContext('2d');
+        
+        // Halve the size
+        tempCanvas.width = Math.floor(sourceWidth / 2);
+        tempCanvas.height = Math.floor(sourceHeight / 2);
+        
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        
+        // Draw at half size
+        if (tempImg.width === sourceWidth) {
+          // First iteration - draw from original image
+          tempCtx.drawImage(tempImg, 0, 0, tempCanvas.width, tempCanvas.height);
+        } else {
+          // Subsequent iterations - draw from previous canvas
+          tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+        }
+        
+        sourceWidth = tempCanvas.width;
+        sourceHeight = tempCanvas.height;
+        
+        // Use this as source for next iteration
+        canvas.width = tempCanvas.width;
+        canvas.height = tempCanvas.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(tempCanvas, 0, 0);
+      }
+      
+      // Final resize to exact thumbnail size
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Calculate crop coordinates for center crop
+      const sourceAspect = sourceWidth / sourceHeight;
+      let drawWidth, drawHeight, drawX, drawY;
+      
+      if (sourceAspect > 1) {
+        // Landscape - fit height, crop width
+        drawHeight = canvasSize;
+        drawWidth = canvasSize * sourceAspect;
+        drawX = -(drawWidth - canvasSize) / 2;
+        drawY = 0;
+      } else {
+        // Portrait - fit width, crop height  
+        drawWidth = canvasSize;
+        drawHeight = canvasSize / sourceAspect;
+        drawX = 0;
+        drawY = -(drawHeight - canvasSize) / 2;
+      }
+      
+      // Draw final thumbnail
+      if (tempCanvas) {
+        ctx.drawImage(canvas, drawX, drawY, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(tempImg, drawX, drawY, drawWidth, drawHeight);
+      }
+      
+      // Add to container
+      container.appendChild(canvas);
+      
+      // Click to enlarge
+      container.addEventListener('click', () => {
+        enlargeImage(file, canvas.toDataURL('image/png', 1.0));
+      });
+      
+      console.log(`Created pixel-perfect thumbnail: ${file.name} (DPR: ${dpr}, Canvas: ${canvasSize}x${canvasSize}, CSS: ${cssSize}x${cssSize})`);
+    };
+    
+    tempImg.src = e.target.result;
+  };
+  
+  reader.onerror = function() {
+    console.error('Failed to create thumbnail for:', file.name);
+    // Fallback to simple img element
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+    container.appendChild(img);
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+function downloadFile(file) {
+  // Create download link for HEIF/HEIC files since browsers can't preview them
+  const url = URL.createObjectURL(file);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  link.style.display = 'none';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Clean up the URL after a short delay
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 100);
+  
+  console.log(`Downloaded HEIF/HEIC file: ${file.name}`);
+}
+
+// Method 1: Native Size (No Scale) - Show image at actual pixels
+function renderMethodNative1(file, container) {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.onload = () => {
+    console.log(`Image natural size: ${img.naturalWidth}x${img.naturalHeight}`);
+    // Show at actual size, cropped to container
+    img.style.cssText = `
+      width: ${img.naturalWidth}px;
+      height: ${img.naturalHeight}px;
+      max-width: none;
+      max-height: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      image-rendering: pixelated;
+    `;
+  };
+  container.appendChild(img);
+}
+
+// Method 2: CSS Reset + Device Pixel Ratio
+function renderMethodNative2(file, container) {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  const dpr = window.devicePixelRatio || 1;
+  const size = Math.floor(120 * dpr);
+  img.style.cssText = `
+    width: ${size}px;
+    height: ${size}px;
+    transform: scale(${1/dpr});
+    transform-origin: top left;
+    object-fit: cover;
+    image-rendering: pixelated;
+  `;
+  container.appendChild(img);
+}
+
+// Method 3: Canvas High-Quality
+function renderMethod3(file, container) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 120;
+      canvas.height = 120;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      const aspectRatio = tempImg.width / tempImg.height;
+      let drawWidth, drawHeight, drawX, drawY;
+      if (aspectRatio > 1) {
+        drawHeight = 120;
+        drawWidth = 120 * aspectRatio;
+        drawX = -(drawWidth - 120) / 2;
+        drawY = 0;
+      } else {
+        drawWidth = 120;
+        drawHeight = 120 / aspectRatio;
+        drawX = 0;
+        drawY = -(drawHeight - 120) / 2;
+      }
+      
+      ctx.drawImage(tempImg, drawX, drawY, drawWidth, drawHeight);
+      canvas.style.cssText = 'width: 100%; height: 100%;';
+      container.appendChild(canvas);
+    };
+    tempImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Method 4: Canvas Nearest-Neighbor
+function renderMethod4(file, container) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 120;
+      canvas.height = 120;
+      ctx.imageSmoothingEnabled = false;
+      
+      const aspectRatio = tempImg.width / tempImg.height;
+      let drawWidth, drawHeight, drawX, drawY;
+      if (aspectRatio > 1) {
+        drawHeight = 120;
+        drawWidth = 120 * aspectRatio;
+        drawX = -(drawWidth - 120) / 2;
+        drawY = 0;
+      } else {
+        drawWidth = 120;
+        drawHeight = 120 / aspectRatio;
+        drawX = 0;
+        drawY = -(drawHeight - 120) / 2;
+      }
+      
+      ctx.drawImage(tempImg, drawX, drawY, drawWidth, drawHeight);
+      canvas.style.cssText = 'width: 100%; height: 100%;';
+      container.appendChild(canvas);
+    };
+    tempImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Method 5: Direct File + Auto
+function renderMethod5(file, container) {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.style.cssText = `
+    width: 100%; height: 100%; object-fit: cover;
+    image-rendering: auto;
+  `;
+  container.appendChild(img);
+}
+
+// Method 6: Base64 + Optimize-Contrast
+function renderMethod6(file, container) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    img.style.cssText = `
+      width: 100%; height: 100%; object-fit: cover;
+      image-rendering: -webkit-optimize-contrast;
+    `;
+    container.appendChild(img);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Method 7: Canvas Sharp (No Smoothing)
+function renderMethod7(file, container) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 240; // Higher resolution
+      canvas.height = 240;
+      ctx.imageSmoothingEnabled = false;
+      
+      const aspectRatio = tempImg.width / tempImg.height;
+      let drawWidth, drawHeight, drawX, drawY;
+      if (aspectRatio > 1) {
+        drawHeight = 240;
+        drawWidth = 240 * aspectRatio;
+        drawX = -(drawWidth - 240) / 2;
+        drawY = 0;
+      } else {
+        drawWidth = 240;
+        drawHeight = 240 / aspectRatio;
+        drawX = 0;
+        drawY = -(drawHeight - 240) / 2;
+      }
+      
+      ctx.drawImage(tempImg, drawX, drawY, drawWidth, drawHeight);
+      canvas.style.cssText = 'width: 120px; height: 120px;';
+      container.appendChild(canvas);
+    };
+    tempImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Method 8: No Smoothing + Transform
+function renderMethod8(file, container) {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.style.cssText = `
+    width: 100%; height: 100%; object-fit: cover;
+    image-rendering: crisp-edges;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    filter: none;
+  `;
+  container.appendChild(img);
+}
+
+// Method 9: SVG Wrapper
+function renderMethod9(file, container) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '120');
+    svg.setAttribute('height', '120');
+    svg.setAttribute('viewBox', '0 0 120 120');
+    svg.style.cssText = 'width: 100%; height: 100%;';
+    
+    const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    image.setAttribute('href', e.target.result);
+    image.setAttribute('x', '0');
+    image.setAttribute('y', '0');
+    image.setAttribute('width', '120');
+    image.setAttribute('height', '120');
+    image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    image.style.cssText = 'image-rendering: crisp-edges;';
+    
+    svg.appendChild(image);
+    container.appendChild(svg);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Method 10: ImageBitmap (Modern browsers)
+function renderMethod10(file, container) {
+  if ('createImageBitmap' in window) {
+    createImageBitmap(file).then(bitmap => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 120;
+      canvas.height = 120;
+      
+      const aspectRatio = bitmap.width / bitmap.height;
+      let drawWidth, drawHeight, drawX, drawY;
+      if (aspectRatio > 1) {
+        drawHeight = 120;
+        drawWidth = 120 * aspectRatio;
+        drawX = -(drawWidth - 120) / 2;
+        drawY = 0;
+      } else {
+        drawWidth = 120;
+        drawHeight = 120 / aspectRatio;
+        drawX = 0;
+        drawY = -(drawHeight - 120) / 2;
+      }
+      
+      ctx.drawImage(bitmap, drawX, drawY, drawWidth, drawHeight);
+      canvas.style.cssText = 'width: 100%; height: 100%;';
+      container.appendChild(canvas);
+    }).catch(() => {
+      // Fallback to method 1
+      renderMethod1(file, container);
+    });
+  } else {
+    // Fallback to method 1
+    renderMethod1(file, container);
+  }
+}
+
+// Method 3: Background Image (No IMG tag scaling)
+function renderMethodNative3(file, container) {
+  const url = URL.createObjectURL(file);
+  container.style.cssText += `
+    background-image: url('${url}');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+  `;
+}
+
+// Method 4: Viewport Units
+function renderMethodNative4(file, container) {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.style.cssText = `
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    image-rendering: crisp-edges;
+    min-width: 120px;
+    min-height: 120px;
+  `;
+  container.appendChild(img);
+}
+
+// Method 5: CSS Zoom (IE/Edge approach)
+function renderMethodNative5(file, container) {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.style.cssText = `
+    zoom: 1;
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    -ms-interpolation-mode: nearest-neighbor;
+  `;
+  container.appendChild(img);
+}
+
+function clearPicsDisplay() {
+  const picsList = document.getElementById('picsList');
+  if (picsList) {
+    picsList.innerHTML = '';
+  }
+  
+  // Clean up object URLs and reset tracking array
+  currentJobPics.forEach(pic => {
+    URL.revokeObjectURL(pic.url);
+  });
+  currentJobPics = [];
+}
+
+function clearPlansDisplay() {
+  const plansList = document.getElementById('plansList');
+  if (plansList) {
+    plansList.innerHTML = '';
+  }
+}
+
+function displayServerPhotos(photos, type) {
+  console.log(`displayServerPhotos called with ${photos.length} ${type} photos`);
+  
+  if (type === 'pics') {
+    displayServerPics(photos, type);
+  } else if (type === 'plans') {
+    displayServerPlans(photos, type);
+  }
+}
+
+function displayServerPics(photos, type) {
+  const picsList = document.getElementById('picsList');
+  if (!picsList) {
+    console.error('picsList element not found');
+    return;
+  }
+  
+  // Clear existing content
+  picsList.innerHTML = '';
+  currentJobPics = [];
+  
+  photos.forEach(photo => {
+    const fileElement = document.createElement('div');
+    fileElement.className = 'pic-item';
+    fileElement.dataset.photoId = photo.id;
+    fileElement.style.cssText = `
+      width: 120px; height: 120px;
+      background: #F9FAFB; border: 1px solid #E5E7EB;
+      border-radius: 8px; overflow: hidden;
+      position: relative; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    `;
+    
+    // Add image
+    const img = document.createElement('img');
+    img.src = `/api/photos/${photo.id}`;
+    img.style.cssText = `
+      width: 100%; height: 100%;
+      object-fit: cover;
+    `;
+    
+    img.onerror = function() {
+      // If image fails to load, show file info instead
+      this.style.display = 'none';
+      const fileInfo = document.createElement('div');
+      fileInfo.style.cssText = 'text-align: center; color: #6B7280; font-size: 11px;';
+      fileInfo.innerHTML = `
+        <div style="font-size: 32px; margin-bottom: 8px;">🖼️</div>
+        <div>${photo.original_name.split('.').pop().toUpperCase()}</div>
+        <div>${(photo.file_size / 1024 / 1024).toFixed(1)} MB</div>
+      `;
+      fileElement.appendChild(fileInfo);
+    };
+    
+    // Add delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.innerHTML = '×';
+    deleteBtn.style.cssText = `
+      position: absolute; top: 5px; right: 5px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(239, 68, 68, 0.9); color: white;
+      border: none; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    `;
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteServerPhoto(photo.id, type);
+    };
+    
+    fileElement.appendChild(img);
+    fileElement.appendChild(deleteBtn);
+    
+    // Click to enlarge
+    fileElement.onclick = () => {
+      enlargeServerImage(photo);
+    };
+    
+    picsList.appendChild(fileElement);
+    
+    // Track for management
+    currentJobPics.push({
+      id: photo.id,
+      serverPhoto: photo
+    });
+  });
+}
+
+function displayServerPlans(photos, type) {
+  const plansList = document.getElementById('plansList');
+  if (!plansList) {
+    console.error('plansList element not found');
+    return;
+  }
+  
+  // Clear existing content
+  plansList.innerHTML = '';
+  
+  photos.forEach(photo => {
+    const fileElement = document.createElement('div');
+    fileElement.className = 'plan-item';
+    fileElement.dataset.photoId = photo.id;
+    fileElement.style.cssText = `
+      width: 120px; height: 120px;
+      background: #F9FAFB; border: 1px solid #E5E7EB;
+      border-radius: 8px; overflow: hidden;
+      position: relative; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    `;
+    
+    // Show file icon and info for plans (usually PDFs or documents)
+    const fileInfo = document.createElement('div');
+    fileInfo.style.cssText = 'text-align: center; color: #6B7280; font-size: 11px; padding: 10px;';
+    const ext = photo.original_name.split('.').pop().toUpperCase();
+    const icon = ext === 'PDF' ? '📄' : ext.match(/^(JPG|JPEG|PNG|GIF|BMP|WEBP)$/i) ? '🖼️' : '📋';
+    
+    fileInfo.innerHTML = `
+      <div style="font-size: 32px; margin-bottom: 8px;">${icon}</div>
+      <div style="font-weight: bold; margin-bottom: 4px;">${ext}</div>
+      <div style="font-size: 9px; opacity: 0.8;">${(photo.file_size / 1024 / 1024).toFixed(1)} MB</div>
+      <div style="font-size: 8px; opacity: 0.6; margin-top: 4px; word-break: break-all;">${photo.original_name}</div>
+    `;
+    
+    // Add delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.innerHTML = '×';
+    deleteBtn.style.cssText = `
+      position: absolute; top: 5px; right: 5px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(239, 68, 68, 0.9); color: white;
+      border: none; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    `;
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteServerPhoto(photo.id, type);
+    };
+    
+    fileElement.appendChild(fileInfo);
+    fileElement.appendChild(deleteBtn);
+    
+    // Click to open/download
+    fileElement.onclick = () => {
+      window.open(`/api/photos/${photo.id}`, '_blank');
+    };
+    
+    plansList.appendChild(fileElement);
+  });
+}
+
+async function deleteServerPhoto(photoId, type) {
+  try {
+    const response = await fetch(`/api/photos/${photoId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      console.log('Photo deleted successfully');
+      // Reload the photos for current job
+      if (currentJob && currentJob.id) {
+        await loadJobFiles(currentJob.id);
+      }
+    } else {
+      const error = await response.json();
+      alert(`Failed to delete photo: ${error.error}`);
+    }
+  } catch (error) {
+    console.error('Error deleting photo:', error);
+    alert('Error deleting photo');
+  }
+}
+
+function enlargeServerImage(photo) {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.9); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  `;
+  
+  const img = document.createElement('img');
+  img.src = `/api/photos/${photo.id}`;
+  img.style.cssText = `
+    max-width: 90vw; max-height: 90vh;
+    object-fit: contain;
+  `;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '×';
+  
+  // Detect mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // Bottom right for mobile
+    closeBtn.style.cssText = `
+      position: fixed !important; 
+      bottom: 30px !important; 
+      right: 30px !important;
+      transform: none !important;
+      background: rgba(239, 68, 68, 0.9) !important; 
+      color: white !important;
+      border: none !important; 
+      font-size: 50px !important; 
+      cursor: pointer !important;
+      width: 70px !important; 
+      height: 70px !important; 
+      border-radius: 35px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+      transition: all 0.2s ease !important;
+      z-index: 10001 !important;
+    `;
+  } else {
+    // Vertically centered for desktop
+    closeBtn.style.cssText = `
+      position: fixed !important; 
+      top: 50% !important; 
+      right: 15px !important;
+      transform: translateY(-50%) !important;
+      background: rgba(239, 68, 68, 0.9) !important; 
+      color: white !important;
+      border: none !important; 
+      font-size: 60px !important; 
+      cursor: pointer !important;
+      width: 80px !important; 
+      height: 80px !important; 
+      border-radius: 40px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+      transition: all 0.2s ease !important;
+      z-index: 10001 !important;
+    `;
+  }
+  
+  // Add hover effect
+  closeBtn.addEventListener('mouseenter', () => {
+    closeBtn.style.setProperty('background', 'rgba(220, 38, 38, 1)', 'important');
+    if (isMobile) {
+      closeBtn.style.setProperty('transform', 'scale(1.1)', 'important');
+    } else {
+      closeBtn.style.setProperty('transform', 'translateY(-50%) scale(1.1)', 'important');
+    }
+  });
+  closeBtn.addEventListener('mouseleave', () => {
+    closeBtn.style.setProperty('background', 'rgba(239, 68, 68, 0.9)', 'important');
+    if (isMobile) {
+      closeBtn.style.setProperty('transform', 'scale(1)', 'important');
+    } else {
+      closeBtn.style.setProperty('transform', 'translateY(-50%) scale(1)', 'important');
+    }
+  });
+  
+  modal.appendChild(img);
+  modal.appendChild(closeBtn);
+  
+  // Close on click
+  modal.onclick = () => document.body.removeChild(modal);
+  closeBtn.onclick = () => document.body.removeChild(modal);
+  
+  document.body.appendChild(modal);
+}
+
+// Extra Work Notes Management
+async function loadExtraCosts(jobId) {
+  try {
+    const response = await fetch(`/api/jobs/${jobId}/extra-costs`);
+    const notes = await response.json();
+    
+    if (response.ok) {
+      currentJobExtraCosts = notes;
+      renderExtraNotes();
+    } else {
+      console.error('Failed to load extra notes:', notes.error);
+    }
+  } catch (error) {
+    console.error('Error loading extra notes:', error);
+  }
+}
+
+function renderExtraNotes() {
+  const notesContainer = document.getElementById('extraCostsList');
+  
+  if (!currentJobExtraCosts || currentJobExtraCosts.length === 0) {
+    notesContainer.innerHTML = `
+      <div class="extra-notes-input-container">
+        <textarea id="newExtraNote" placeholder="Enter extra work notes and press Enter to add..." class="extra-note-input" rows="3"></textarea>
+        <div class="extra-notes-actions">
+          <button onclick="addExtraNote()" class="add-note-btn">Add Note</button>
+          <button onclick="clearAllExtraNotes()" class="clear-all-btn">Clear All</button>
+        </div>
+      </div>
+      <p style="color: #6B7280; text-align: center; padding: 20px;">No extra work notes yet. Add notes above to track additional work not in the original proposal.</p>
+    `;
+  } else {
+    notesContainer.innerHTML = `
+      <div class="extra-notes-input-container">
+        <textarea id="newExtraNote" placeholder="Enter extra work notes and press Enter to add..." class="extra-note-input" rows="3"></textarea>
+        <div class="extra-notes-actions">
+          <button onclick="addExtraNote()" class="add-note-btn">Add Note</button>
+          <button onclick="clearAllExtraNotes()" class="clear-all-btn">Clear All</button>
+        </div>
+      </div>
+      <div class="extra-notes-container">
+        ${currentJobExtraCosts.map((note, index) => `
+          <div class="extra-note-item">
+            <div class="note-number">${index + 1}.</div>
+            <div class="note-content">${escapeHtml(note.description).replace(/\n/g, '<br>')}</div>
+            <button class="note-delete-btn" onclick="deleteExtraNote('${note.id}')" title="Delete note">×</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  setupExtraNotesInput();
+}
+
+function setupExtraNotesInput() {
+  const noteInput = document.getElementById('newExtraNote');
+  
+  if (noteInput) {
+    noteInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        addExtraNote();
+      }
+    });
+    // Auto-focus on the textarea
+    noteInput.focus();
+  }
+}
+
+async function addExtraNote() {
+  const noteInput = document.getElementById('newExtraNote');
+  if (!noteInput) return;
+  
+  const noteText = noteInput.value.trim();
+  if (!noteText || !currentJob) return;
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/extra-costs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ description: noteText, amount: 0 }),
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      await loadExtraCosts(currentJob.id); // Reload notes
+      // Clear input and focus back
+      noteInput.value = '';
+      noteInput.focus();
+    } else {
+      console.error('Failed to add extra note:', result.error);
+    }
+  } catch (error) {
+    console.error('Error adding extra note:', error);
+  }
+}
+
+async function deleteExtraNote(noteId) {
+  try {
+    const response = await fetch(`/api/extra-costs/${noteId}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.ok) {
+      await loadExtraCosts(currentJob.id); // Reload notes
+    } else {
+      console.error('Failed to delete extra note');
+    }
+  } catch (error) {
+    console.error('Error deleting extra note:', error);
+  }
+}
+
+async function clearAllExtraNotes() {
+  if (!currentJob || currentJobExtraCosts.length === 0) return;
+  
+  if (confirm('Clear all extra work notes? This cannot be undone.')) {
+    try {
+      // Delete all notes for this job
+      const deletePromises = currentJobExtraCosts.map(note => 
+        fetch(`/api/extra-costs/${note.id}`, { method: 'DELETE' })
+      );
+      
+      await Promise.all(deletePromises);
+      await loadExtraCosts(currentJob.id); // Reload (should be empty)
+    } catch (error) {
+      console.error('Error clearing all extra notes:', error);
+    }
+  }
+}
+
 
 // Communication functions
 function sendText(phoneNumber) {
@@ -1712,7 +3482,11 @@ window.deleteJobFromTile = deleteJobFromTile;
 window.sendText = sendText;
 window.switchJobTab = switchJobTab;
 window.addTask = addTask;
-window.addExtraCost = addExtraCost;
+window.toggleTask = toggleTask;
+window.deleteTask = deleteTask;
+window.addExtraNote = addExtraNote;
+window.deleteExtraNote = deleteExtraNote;
+window.clearAllExtraNotes = clearAllExtraNotes;
 window.showCustomerModal = showCustomerModal;
 window.showJobModal = showJobModal;
 window.testNavigation = testNavigation;
@@ -1759,6 +3533,8 @@ function showWorkersTab(tabName) {
     initializeWeekNavigation();
     loadWorkHours();
     setupHoursEventListeners();
+  } else if (tabName === 'timesheet') {
+    initializeTimesheet();
   }
 }
 
@@ -1783,13 +3559,18 @@ async function loadWorkers() {
 function renderWorkers() {
   const workersList = document.getElementById('workersList');
   
+  // Check if element exists (we might be on a different page)
+  if (!workersList) {
+    console.log('workersList element not found, skipping render');
+    return;
+  }
+  
   if (workers.length === 0) {
     workersList.innerHTML = '<div class="workers-loading">No workers found. Click "+ Add Worker" to get started.</div>';
     return;
   }
   
   const workersHtml = workers.map(worker => {
-    const hourlyRate = worker.hourly_rate > 0 ? `$${worker.hourly_rate.toFixed(2)}/hr` : 'Rate not set';
     const totalHours = worker.total_hours_worked || 0;
     const phone = worker.phone || 'Not provided';
     const email = worker.email || 'Not provided';
@@ -1800,7 +3581,6 @@ function renderWorkers() {
           <div class="worker-info">
             <h4>${escapeHtml(worker.name)}</h4>
             <span class="worker-role">${escapeHtml(worker.role)}</span>
-            <div class="worker-hourly-rate">${hourlyRate}</div>
           </div>
           <div class="worker-actions">
             <button class="edit-worker-btn" onclick="editWorker('${worker.id}')">Edit</button>
@@ -1811,7 +3591,6 @@ function renderWorkers() {
           <div class="worker-contact">
             <div><strong>Phone:</strong> ${escapeHtml(phone)}</div>
             <div><strong>Email:</strong> ${escapeHtml(email)}</div>
-            <div><strong>Hire Date:</strong> ${worker.hire_date ? new Date(worker.hire_date).toLocaleDateString() : 'Not set'}</div>
           </div>
           <div class="worker-stats">
             <div><strong>Total Hours:</strong> ${totalHours.toFixed(1)}</div>
@@ -1835,15 +3614,27 @@ function showWorkerModal(worker = null) {
   
   if (worker) {
     // Edit mode
+    console.log('Setting up edit mode for worker:', worker);
     title.textContent = 'Edit Worker';
+    document.getElementById('workerInitials').value = worker.initials || '';
     document.getElementById('workerName').value = worker.name;
-    document.getElementById('workerRole').value = worker.role;
-    document.getElementById('workerHourlyRate').value = worker.hourly_rate || '';
-    document.getElementById('workerPhone').value = worker.phone || '';
+    
+    // Set the radio button for role
+    const roleRadio = document.querySelector(`input[name="workerRole"][value="${worker.role}"]`);
+    if (roleRadio) {
+      roleRadio.checked = true;
+    } else {
+      console.warn('No matching role radio found for:', worker.role);
+    }
+    
+    const phoneValue = worker.phone || '';
+    document.getElementById('workerPhone').value = formatPhoneNumber(phoneValue);
     document.getElementById('workerEmail').value = worker.email || '';
-    document.getElementById('workerHireDate').value = worker.hire_date || '';
     document.getElementById('workerNotes').value = worker.notes || '';
+    
+    // Ensure worker ID is properly set
     form.dataset.workerId = worker.id;
+    console.log('Set form workerId to:', worker.id);
   } else {
     // Add mode
     title.textContent = 'Add Worker';
@@ -1852,6 +3643,9 @@ function showWorkerModal(worker = null) {
   }
   
   modal.classList.add('active');
+  
+  // Setup phone formatting for this modal instance
+  setupPhoneFormatting();
 }
 
 function editWorker(workerId) {
@@ -1862,17 +3656,14 @@ function editWorker(workerId) {
 }
 
 async function deleteWorker(workerId) {
-  if (!confirm('Are you sure you want to delete this worker? This will also delete all their work hours.')) {
-    return;
-  }
-  
   try {
     const response = await fetch(`/api/workers/${workerId}`, {
       method: 'DELETE'
     });
     
     if (response.ok) {
-      loadWorkers(); // Reload the list
+      loadWorkers(); // Reload the old list
+      loadActiveWorkers(); // Reload the team members grid
     } else {
       console.error('Failed to delete worker');
     }
@@ -1889,19 +3680,64 @@ async function handleWorkerSubmit(e) {
   const workerId = form.dataset.workerId;
   const isEdit = !!workerId;
   
+  console.log('Worker submit:', { workerId, isEdit, formData: form.dataset });
+  
+  // Get selected role from radio buttons
+  const selectedRole = document.querySelector('input[name="workerRole"]:checked');
+  
+  if (!selectedRole) {
+    console.error('No role selected');
+    alert('Please select a role');
+    return;
+  }
+  
+  // Validate required fields
+  const initials = document.getElementById('workerInitials').value.trim();
+  const name = document.getElementById('workerName').value.trim();
+  
+  if (!initials) {
+    console.error('Initials are required');
+    alert('Please enter worker initials');
+    return;
+  }
+  
+  if (!name) {
+    console.error('Name is required');
+    alert('Please enter worker name');
+    return;
+  }
+  
+  // Get and clean phone number (remove formatting)
+  const phoneValue = document.getElementById('workerPhone').value.trim();
+  const cleanPhone = phoneValue.replace(/\D/g, ''); // Remove all non-digits
+  
   const workerData = {
-    name: document.getElementById('workerName').value,
-    role: document.getElementById('workerRole').value,
-    hourly_rate: parseFloat(document.getElementById('workerHourlyRate').value) || 0,
-    phone: document.getElementById('workerPhone').value,
-    email: document.getElementById('workerEmail').value,
-    hire_date: document.getElementById('workerHireDate').value,
-    notes: document.getElementById('workerNotes').value
+    name: name,
+    role: selectedRole.value,
+    hourly_rate: 0, // Default value since we removed the field
+    phone: cleanPhone, // Store clean digits only
+    email: document.getElementById('workerEmail').value.trim(),
+    address: '', // Default empty since we don't have this field
+    hire_date: '', // Default empty since we removed this field
+    status: 'ACTIVE', // Default status
+    notes: document.getElementById('workerNotes').value.trim(),
+    initials: initials.toUpperCase()
   };
+  
+  console.log('Worker data to save:', workerData);
+  
+  // Safety check for edit operations
+  if (isEdit && !workerId) {
+    console.error('Edit mode but no workerId found!');
+    alert('Error: Cannot edit worker - missing worker ID');
+    return;
+  }
   
   try {
     const url = isEdit ? `/api/workers/${workerId}` : '/api/workers';
     const method = isEdit ? 'PUT' : 'POST';
+    
+    console.log('Making request:', { url, method, isEdit, workerId });
     
     const response = await fetch(url, {
       method,
@@ -1912,17 +3748,40 @@ async function handleWorkerSubmit(e) {
     });
     
     const data = await response.json();
+    console.log('Server response:', { status: response.status, data });
     
     if (response.ok) {
+      console.log('Worker save successful, reloading data...');
       hideModals();
-      loadWorkers(); // Reload the list
-      // Also reload work hours dropdowns if on hours tab
-      loadWorkersForDropdowns();
+      
+      try {
+        // Primary reload: team members grid (this is what's visible)
+        await loadActiveWorkers();
+        
+        // Secondary reloads: only if elements exist
+        const workersList = document.getElementById('workersList');
+        if (workersList) {
+          await loadWorkers();
+        }
+        
+        // Reload work hours dropdowns if hours modal exists
+        const hoursWorker = document.getElementById('hoursWorker');
+        if (hoursWorker) {
+          loadWorkersForDropdowns();
+        }
+        
+        console.log('Data reload complete successfully');
+      } catch (reloadError) {
+        console.error('Error during data reload:', reloadError);
+        alert('Worker saved successfully, but there was an issue refreshing the display. Please refresh the page.');
+      }
     } else {
-      console.error(data.error || 'Failed to save worker');
+      console.error('Server error:', data.error || 'Failed to save worker');
+      alert(`Failed to save worker: ${data.error || 'Unknown error'}`);
     }
   } catch (error) {
     console.error('Error saving worker:', error);
+    alert(`Error saving worker: ${error.message}`);
   }
 }
 
@@ -2238,6 +4097,311 @@ async function handleHoursSubmit(e) {
   }
 }
 
+// Phone number formatting function
+function formatPhoneNumber(value) {
+  // Remove all non-digit characters
+  const phoneNumber = value.replace(/\D/g, '');
+  
+  // Format based on length
+  if (phoneNumber.length <= 3) {
+    return phoneNumber;
+  } else if (phoneNumber.length <= 6) {
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+  } else {
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+  }
+}
+
+// Setup phone number formatting
+function setupPhoneFormatting() {
+  const phoneInput = document.getElementById('workerPhone');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', function(e) {
+      const cursorPosition = e.target.selectionStart;
+      const formatted = formatPhoneNumber(e.target.value);
+      const oldLength = e.target.value.length;
+      
+      e.target.value = formatted;
+      
+      // Maintain cursor position after formatting
+      const newLength = formatted.length;
+      const lengthDiff = newLength - oldLength;
+      const newCursorPosition = cursorPosition + lengthDiff;
+      
+      // Set cursor position after formatting
+      requestAnimationFrame(() => {
+        e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+      });
+    });
+    
+    // Also format on paste
+    phoneInput.addEventListener('paste', function(e) {
+      setTimeout(() => {
+        e.target.value = formatPhoneNumber(e.target.value);
+      }, 10);
+    });
+  }
+}
+
+// Parse address string into components
+function parseAddress(addressString) {
+  if (!addressString) return { street: '', city: '', state: 'HI', zip: '' };
+  
+  console.log('Parsing address:', addressString);
+  
+  // Try to parse various address formats
+  const patterns = [
+    // "123 Main St, Honolulu, Hawaii 96815" (full state name)
+    /^(.+?),\s*([^,]+),\s*(Hawaii)\s*(\d{5}(-\d{4})?)\s*$/i,
+    // "123 Main St, Honolulu, HI 96815"
+    /^(.+?),\s*([^,]+),\s*([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/,
+    // "123 Main St, Honolulu HI 96815"
+    /^(.+?),\s*([^,]+)\s+([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/,
+    // "123 Main St Honolulu, HI 96815"
+    /^(.+?)\s+([^,]+),\s*([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/,
+    // "123 Main St Honolulu HI 96815"
+    /^(.+?)\s+([A-Za-z\s]+)\s+([A-Z]{2})\s*(\d{5}(-\d{4})?)\s*$/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = addressString.match(pattern);
+    if (match) {
+      // Always use HI for Hawaii-based CRM, regardless of what's in the address
+      const result = {
+        street: match[1].trim(),
+        city: match[2].trim(),
+        state: 'HI', // Always Hawaii for this CRM
+        zip: match[4].trim()
+      };
+      
+      console.log('Parsed address result:', result);
+      return result;
+    }
+  }
+  
+  // Fallback: treat entire string as street address
+  const result = {
+    street: addressString.trim(),
+    city: '',
+    state: 'HI',
+    zip: ''
+  };
+  
+  console.log('Fallback address result:', result);
+  return result;
+}
+
+// Hawaiian cities for auto-completion
+const HAWAIIAN_CITIES = [
+  'Honolulu', 'Hilo', 'Kailua-Kona', 'Kaneohe', 'Waipahu', 'Pearl City', 'Hanalei', 'Kailua',
+  'Mililani', 'Kahului', 'Kihei', 'Lahaina', 'Wailuku', 'Kapaa', 'Lihue', 'Schofield Barracks',
+  'Wahiawa', 'Haleiwa', 'Waimanalo', 'Kaunakakai', 'Lanai City', 'Volcano', 'Pahoa', 'Waimea',
+  'Kamuela', 'Captain Cook', 'Holualoa', 'Kealakekua', 'Naalehu', 'Ocean View'
+];
+
+// Setup city auto-completion
+function setupCityAutoComplete() {
+  const cityInput = document.getElementById('customerCity');
+  if (!cityInput) {
+    console.log('City input not found for auto-completion');
+    return;
+  }
+  
+  console.log('Setting up city auto-completion');
+  let currentSuggestions = null;
+  
+  cityInput.addEventListener('input', function(e) {
+    const value = e.target.value.toLowerCase();
+    console.log('City input changed:', value);
+    
+    // Remove existing suggestions
+    if (currentSuggestions) {
+      currentSuggestions.remove();
+      currentSuggestions = null;
+    }
+    
+    if (value.length < 2) return;
+    
+    // Find matching cities
+    const matches = HAWAIIAN_CITIES.filter(city => 
+      city.toLowerCase().includes(value)
+    ).slice(0, 5); // Limit to 5 suggestions
+    
+    console.log('Found city matches:', matches);
+    
+    if (matches.length === 0) {
+      console.log('No city matches found for:', value);
+      return;
+    }
+    
+    // Create suggestions dropdown
+    currentSuggestions = document.createElement('div');
+    currentSuggestions.style.cssText = `
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #D1D5DB;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    `;
+    
+    matches.forEach(city => {
+      const suggestion = document.createElement('div');
+      suggestion.textContent = city;
+      suggestion.style.cssText = `
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #F3F4F6;
+      `;
+      
+      suggestion.addEventListener('mouseenter', () => {
+        suggestion.style.backgroundColor = '#F3F4F6';
+      });
+      
+      suggestion.addEventListener('mouseleave', () => {
+        suggestion.style.backgroundColor = 'white';
+      });
+      
+      suggestion.addEventListener('click', () => {
+        cityInput.value = city;
+        currentSuggestions.remove();
+        currentSuggestions = null;
+        cityInput.focus();
+      });
+      
+      currentSuggestions.appendChild(suggestion);
+    });
+    
+    // Position the suggestions relative to the input
+    const inputRect = cityInput.getBoundingClientRect();
+    cityInput.parentElement.style.position = 'relative';
+    cityInput.parentElement.appendChild(currentSuggestions);
+  });
+  
+  // Hide suggestions when clicking outside
+  document.addEventListener('click', (e) => {
+    if (currentSuggestions && !cityInput.contains(e.target) && !currentSuggestions.contains(e.target)) {
+      currentSuggestions.remove();
+      currentSuggestions = null;
+    }
+  });
+}
+
+// Address validation using USPS API
+async function validateAddress(street, city = '', state = 'HI', zip = '') {
+  try {
+    console.log('Validating address:', { street, city, state, zip });
+    
+    const response = await fetch('/api/validate-address', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ street, city, state, zip })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok && result.valid) {
+      console.log('Address validation successful:', result.address);
+      return result.address;
+    } else {
+      console.error('Address validation failed:', result.error);
+      return null;
+    }
+  } catch (error) {
+    console.error('Address validation error:', error);
+    return null;
+  }
+}
+
+// Setup address auto-completion
+function setupAddressAutoComplete() {
+  const streetInput = document.getElementById('customerStreet');
+  const cityInput = document.getElementById('customerCity');
+  const zipInput = document.getElementById('customerZip');
+  
+  if (!streetInput) {
+    console.log('Street input not found for address validation');
+    return;
+  }
+  
+  console.log('Setting up address auto-completion');
+  
+  // Validate address when street input loses focus
+  streetInput.addEventListener('blur', async function() {
+    const streetValue = streetInput.value.trim();
+    
+    if (streetValue.length < 5) return; // Too short to be a valid address
+    
+    console.log('Street input lost focus, validating:', streetValue);
+    
+    // Show loading state
+    if (cityInput) cityInput.placeholder = 'Loading...';
+    if (zipInput) zipInput.placeholder = 'Loading...';
+    
+    const validatedAddress = await validateAddress(
+      streetValue,
+      cityInput?.value || '',
+      'HI',
+      zipInput?.value || ''
+    );
+    
+    if (validatedAddress) {
+      // Auto-fill city and ZIP if they're empty
+      if (cityInput && !cityInput.value) {
+        cityInput.value = validatedAddress.city;
+        console.log('Auto-filled city:', validatedAddress.city);
+      }
+      
+      if (zipInput && !zipInput.value) {
+        zipInput.value = validatedAddress.zip;
+        console.log('Auto-filled ZIP:', validatedAddress.zip);
+      }
+    }
+    
+    // Restore placeholders
+    if (cityInput) cityInput.placeholder = 'Honolulu';
+    if (zipInput) zipInput.placeholder = '96815';
+  });
+}
+
+// Setup customer phone formatting
+function setupCustomerPhoneFormatting() {
+  const phoneInput = document.getElementById('customerPhone');
+  if (!phoneInput) return;
+  
+  // Format existing value on load (edit mode)
+  phoneInput.value = formatPhoneNumber(phoneInput.value || '');
+  
+  phoneInput.addEventListener('input', function(e) {
+    const cursorPosition = e.target.selectionStart;
+    const formatted = formatPhoneNumber(e.target.value);
+    const oldLength = e.target.value.length;
+    
+    e.target.value = formatted;
+    
+    const newLength = formatted.length;
+    const lengthDiff = newLength - oldLength;
+    const newCursorPosition = cursorPosition + lengthDiff;
+    requestAnimationFrame(() => {
+      e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+  });
+  
+  phoneInput.addEventListener('paste', function(e) {
+    setTimeout(() => {
+      e.target.value = formatPhoneNumber(e.target.value);
+    }, 10);
+  });
+}
+
 // Setup worker event listeners in main setup
 function setupWorkerEventListeners() {
   // Add worker button
@@ -2257,6 +4421,559 @@ function setupWorkerEventListeners() {
   if (hoursForm) {
     hoursForm.addEventListener('submit', handleHoursSubmit);
   }
+  
+  // Setup phone formatting
+  setupPhoneFormatting();
+}
+
+// Team Members / Worker Management Functions
+async function initializeTeamMembers() {
+  console.log('Initializing team members...');
+  await loadActiveWorkers();
+  setupWorkerEventListeners();
+}
+
+async function loadActiveWorkers() {
+  try {
+    console.log('Loading active workers...');
+    const response = await fetch('/api/workers?status=ACTIVE');
+    const workersData = await response.json();
+    
+    if (response.ok) {
+      console.log('Loaded workers:', workersData.length, 'workers');
+      workers = workersData;
+      renderWorkerTiles();
+    } else {
+      console.error('Failed to load workers:', workersData);
+      showLoadingMessage('Failed to load team members');
+    }
+  } catch (error) {
+    console.error('Error loading workers:', error);
+    showLoadingMessage('Error loading team members');
+    throw error; // Re-throw so caller knows about the error
+  }
+}
+
+function renderWorkerTiles() {
+  console.log('renderWorkerTiles called with', workers.length, 'workers:', workers);
+  
+  const container = document.getElementById('teamMembersGrid');
+  if (!container) {
+    console.error('Team members grid container not found');
+    return;
+  }
+  
+  const loadingElement = document.querySelector('.team-members-loading');
+  if (loadingElement) {
+    loadingElement.style.display = 'none';
+  }
+  
+  if (workers.length === 0) {
+    console.log('No workers to display, showing empty state');
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>No team members found</p>
+        <p style="font-size: 14px; color: #6B7280; margin-top: 8px;">Click the "+ Add Worker" button above to get started.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const colors = [
+    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
+    '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
+  ];
+  
+  const tilesHtml = workers.map((worker, index) => {
+    const color = colors[index % colors.length];
+    const initials = worker.initials || worker.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    
+    return `
+      <div class="team-member-tile" data-worker-id="${worker.id}" style="background-color: ${color};">
+        <button class="tile-delete-btn" onclick="deleteWorkerFromTile('${worker.id}'); event.stopPropagation();" title="Delete ${escapeHtml(worker.name)}">
+          ×
+        </button>
+        <div class="tile-content" onclick="openWorkerDetailModal('${worker.id}')">
+          <div class="member-avatar">${initials}</div>
+          <div class="member-info">
+            <div class="member-name">${escapeHtml(worker.name)}</div>
+            <div class="member-role">${escapeHtml(worker.role)}</div>
+            <div class="member-hours">${worker.total_hours_worked || 0}h logged</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = tilesHtml;
+}
+
+function showLoadingMessage(message) {
+  const loadingElement = document.querySelector('.team-members-loading');
+  if (loadingElement) {
+    loadingElement.textContent = message;
+    loadingElement.style.display = 'block';
+  }
+}
+
+function openWorkerDetailModal(workerId) {
+  const worker = workers.find(w => w.id === workerId);
+  if (!worker) {
+    console.error('Worker not found:', workerId);
+    return;
+  }
+  
+  // Set current worker
+  window.currentWorker = worker;
+  
+  // Update avatar with correct initials
+  const avatarEl = document.getElementById('workerAvatar');
+  if (avatarEl) {
+    const initials = worker.initials || worker.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    avatarEl.textContent = initials;
+  }
+  
+  // Populate worker info
+  document.getElementById('workerDisplayName').textContent = worker.name;
+  document.getElementById('workerDisplayRole').textContent = worker.role;
+  document.getElementById('workerDisplayEmail').textContent = worker.email || 'Not provided';
+  document.getElementById('workerDisplayPhone').textContent = worker.phone || 'Not provided';
+  document.getElementById('workerTotalHours').textContent = `${worker.total_hours_worked || 0}`;
+  
+  // Show modal and default to Info tab
+  const modal = document.getElementById('workerDetailModal');
+  modal.classList.add('active');
+  
+  // Set default tab
+  showWorkerTab('info');
+  
+  // Setup tab click handlers
+  document.querySelectorAll('.worker-detail-tab').forEach(tab => {
+    tab.onclick = () => showWorkerTab(tab.dataset.tab);
+  });
+  
+  // Setup close button
+  const closeBtn = modal.querySelector('.close-btn');
+  if (closeBtn) {
+    closeBtn.onclick = () => modal.classList.remove('active');
+  }
+}
+
+function showWorkerTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.worker-detail-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+  
+  // Update content - hide all tabs first
+  document.querySelectorAll('.worker-detail-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  
+  // Show the selected tab content
+  const tabMap = {
+    'info': 'workerInfoTab',
+    'hours': 'workerHoursTab',
+    'tasks': 'workerTasksTab',
+    'notes': 'workerNotesTab'
+  };
+  
+  const targetTabId = tabMap[tabName];
+  if (targetTabId) {
+    const targetTab = document.getElementById(targetTabId);
+    if (targetTab) {
+      targetTab.classList.add('active');
+    }
+  }
+  
+  // Load specific content if needed
+  if (tabName === 'hours' && window.currentWorker) {
+    loadWorkerTimesheet(window.currentWorker.id);
+  } else if (tabName === 'tasks' && window.currentWorker) {
+    loadWorkerTasks(window.currentWorker.id);
+  } else if (tabName === 'notes' && window.currentWorker) {
+    loadWorkerNotes(window.currentWorker.id);
+  }
+}
+
+async function loadWorkerTimesheet(workerId) {
+  console.log('Loading timesheet for worker:', workerId);
+  
+  // Initialize timesheet with current week
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  
+  window.currentWeekStart = startOfWeek;
+  updateTimesheetWeekDisplay();
+  
+  // Setup week navigation
+  setupTimesheetNavigation();
+  
+  // Setup timesheet calculation event listeners
+  setupTimesheetCalculationListeners();
+  
+  // Load timesheet data
+  await loadTimesheetData();
+}
+
+function updateTimesheetWeekDisplay() {
+  const weekDisplayEl = document.getElementById('workerCurrentWeek');
+  if (!weekDisplayEl) return;
+  
+  const endOfWeek = new Date(window.currentWeekStart);
+  endOfWeek.setDate(window.currentWeekStart.getDate() + 6);
+  
+  const startStr = formatDate(window.currentWeekStart);
+  const endStr = formatDate(endOfWeek);
+  
+  weekDisplayEl.textContent = `Week of ${startStr} - ${endStr}`;
+}
+
+function setupTimesheetNavigation() {
+  const prevBtn = document.getElementById('workerPrevWeek');
+  const nextBtn = document.getElementById('workerNextWeek');
+  const thisWeekBtn = document.getElementById('workerThisWeek');
+  
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      window.currentWeekStart.setDate(window.currentWeekStart.getDate() - 7);
+      updateTimesheetWeekDisplay();
+      loadTimesheetData();
+    };
+  }
+  
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      window.currentWeekStart.setDate(window.currentWeekStart.getDate() + 7);
+      updateTimesheetWeekDisplay();
+      loadTimesheetData();
+    };
+  }
+  
+  if (thisWeekBtn) {
+    thisWeekBtn.onclick = () => {
+      const today = new Date();
+      window.currentWeekStart = new Date(today);
+      window.currentWeekStart.setDate(today.getDate() - today.getDay());
+      updateTimesheetWeekDisplay();
+      loadTimesheetData();
+    };
+  }
+  
+  // Save hours button
+  const saveBtn = document.getElementById('saveWorkerHoursBtn');
+  if (saveBtn) {
+    saveBtn.onclick = saveWorkerTimesheet;
+  }
+  
+  // Load hours button
+  const loadBtn = document.getElementById('loadWorkerHoursBtn');
+  if (loadBtn) {
+    loadBtn.onclick = loadTimesheetData;
+  }
+}
+
+async function loadTimesheetData() {
+  if (!window.currentWorker || !window.currentWeekStart) return;
+  
+  const loadingEl = document.getElementById('workerHoursLoading');
+  const messageEl = document.getElementById('workerHoursMessage');
+  
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (messageEl) messageEl.style.display = 'none';
+  
+  try {
+    const weekStartStr = window.currentWeekStart.toISOString().split('T')[0];
+    const response = await fetch(`/api/work-hours?worker_id=${window.currentWorker.id}&week_start=${weekStartStr}`);
+    const hoursData = await response.json();
+    
+    if (response.ok) {
+      populateTimesheetGrid(hoursData);
+      showMessage('Timesheet loaded', 'success');
+    } else {
+      console.error('Failed to load timesheet:', hoursData);
+      showMessage('Failed to load timesheet', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading timesheet:', error);
+    showMessage('Error loading timesheet', 'error');
+  } finally {
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+}
+
+function populateTimesheetGrid(hoursData) {
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  // Clear all inputs first
+  days.forEach(day => {
+    const row = document.querySelector(`tr[data-day="${day}"]`);
+    if (row) {
+      row.querySelector('.start-time').value = '';
+      row.querySelector('.end-time').value = '';
+      row.querySelector('.hours-input').value = '';
+      row.querySelector('.lunch-input').value = '';
+      row.querySelector('.location-input').value = '';
+      row.querySelector('.work-type-select').value = '';
+      row.querySelector('.notes-input').value = '';
+    }
+  });
+  
+  // Populate with data
+  hoursData.forEach(entry => {
+    const workDate = new Date(entry.work_date);
+    const dayIndex = workDate.getDay();
+    const dayName = days[dayIndex];
+    
+    const row = document.querySelector(`tr[data-day="${dayName}"]`);
+    if (row) {
+      row.querySelector('.start-time').value = entry.start_time || '';
+      row.querySelector('.end-time').value = entry.end_time || '';
+      row.querySelector('.hours-input').value = entry.hours_worked || '';
+      row.querySelector('.lunch-input').value = entry.break_minutes || '';
+      row.querySelector('.location-input').value = entry.job_location || '';
+      row.querySelector('.work-type-select').value = entry.work_type || '';
+      row.querySelector('.notes-input').value = entry.description || '';
+    }
+  });
+  
+  // Trigger calculations for all days with data to ensure consistency
+  days.forEach(day => {
+    const row = document.querySelector(`tr[data-day="${day}"]`);
+    if (row && row.querySelector('.start-time').value && row.querySelector('.end-time').value) {
+      calculateDayHours(day);
+    }
+  });
+  
+  // Recalculate totals
+  calculateWeeklyTotals();
+}
+
+function calculateWeeklyTotals() {
+  let totalHours = 0;
+  let totalLunch = 0;
+  
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  days.forEach(day => {
+    const row = document.querySelector(`tr[data-day="${day}"]`);
+    if (row) {
+      const hoursInput = row.querySelector('.hours-input');
+      const lunchInput = row.querySelector('.lunch-input');
+      
+      const hours = parseFloat(hoursInput?.value) || 0;
+      const lunch = parseInt(lunchInput?.value) || 0;
+      
+      totalHours += hours;
+      totalLunch += lunch;
+    }
+  });
+  
+  const totalHoursEl = document.getElementById('workerTotalHoursWeek');
+  const totalLunchEl = document.getElementById('workerTotalLunchWeek');
+  
+  if (totalHoursEl) totalHoursEl.textContent = totalHours.toFixed(2);
+  if (totalLunchEl) totalLunchEl.textContent = totalLunch.toString();
+}
+
+async function saveWorkerTimesheet() {
+  if (!window.currentWorker || !window.currentWeekStart) {
+    showMessage('No worker or week selected', 'error');
+    return;
+  }
+  
+  const timesheetEntries = [];
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  days.forEach((day, index) => {
+    const row = document.querySelector(`tr[data-day="${day}"]`);
+    if (row) {
+      const startTime = row.querySelector('.start-time').value;
+      const endTime = row.querySelector('.end-time').value;
+      const lunch = row.querySelector('.lunch-input').value;
+      const location = row.querySelector('.location-input').value;
+      const workType = row.querySelector('.work-type-select').value;
+      const notes = row.querySelector('.notes-input').value;
+      
+      if (startTime && endTime && workType) {
+        const workDate = new Date(window.currentWeekStart);
+        workDate.setDate(window.currentWeekStart.getDate() + index);
+        
+        timesheetEntries.push({
+          worker_id: window.currentWorker.id,
+          work_date: workDate.toISOString().split('T')[0],
+          start_time: startTime,
+          end_time: endTime,
+          break_minutes: parseInt(lunch) || 0,
+          work_type: workType,
+          description: `${location ? 'Location: ' + location + '. ' : ''}${notes || ''}`
+        });
+      }
+    }
+  });
+  
+  if (timesheetEntries.length === 0) {
+    showMessage('Please fill in at least one complete day', 'warning');
+    return;
+  }
+  
+  let savedCount = 0;
+  let hasError = false;
+  
+  try {
+    // Save each entry using the existing work-hours API
+    for (const entry of timesheetEntries) {
+      try {
+        const response = await fetch('/api/work-hours', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(entry)
+        });
+        
+        if (response.ok) {
+          savedCount++;
+        } else {
+          hasError = true;
+          console.error('Failed to save entry:', entry);
+        }
+      } catch (entryError) {
+        hasError = true;
+        console.error('Error saving entry:', entryError, entry);
+      }
+    }
+    
+    if (savedCount > 0 && !hasError) {
+      showMessage('Timesheet saved successfully', 'success');
+    } else if (savedCount > 0) {
+      showMessage(`Partially saved: ${savedCount} of ${timesheetEntries.length} entries`, 'warning');
+    } else {
+      showMessage('Failed to save timesheet', 'error');
+    }
+  } catch (error) {
+    console.error('Error saving timesheet:', error);
+    showMessage('Error saving timesheet', 'error');
+  }
+}
+
+function showMessage(message, type) {
+  const messageEl = document.getElementById('workerHoursMessage');
+  if (!messageEl) return;
+  
+  messageEl.textContent = message;
+  messageEl.className = `message ${type}`;
+  messageEl.style.display = 'block';
+  
+  // Hide after 3 seconds
+  setTimeout(() => {
+    messageEl.style.display = 'none';
+  }, 3000);
+}
+
+async function loadWorkerTasks(workerId) {
+  console.log('Loading tasks for worker:', workerId);
+  // TODO: Implement task loading
+}
+
+async function loadWorkerNotes(workerId) {
+  console.log('Loading notes for worker:', workerId);
+  // TODO: Implement notes loading
+}
+
+function deleteWorkerFromTile(workerId) {
+  const worker = workers.find(w => w.id === workerId);
+  if (!worker) {
+    console.error('Worker not found:', workerId);
+    return;
+  }
+  
+  deleteWorker(workerId);
+}
+
+function setupTimesheetCalculationListeners() {
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  
+  days.forEach(day => {
+    const row = document.querySelector(`tr[data-day="${day}"]`);
+    if (row) {
+      const startTimeInput = row.querySelector('.start-time');
+      const endTimeInput = row.querySelector('.end-time');
+      const lunchInput = row.querySelector('.lunch-input');
+      const hoursInput = row.querySelector('.hours-input');
+      
+      if (startTimeInput && endTimeInput && hoursInput) {
+        // Add event listeners for automatic calculation
+        startTimeInput.addEventListener('input', () => calculateDayHours(day));
+        startTimeInput.addEventListener('change', () => calculateDayHours(day));
+        endTimeInput.addEventListener('input', () => calculateDayHours(day));
+        endTimeInput.addEventListener('change', () => calculateDayHours(day));
+        
+        if (lunchInput) {
+          lunchInput.addEventListener('input', () => calculateDayHours(day));
+          lunchInput.addEventListener('change', () => calculateDayHours(day));
+        }
+      }
+    }
+  });
+}
+
+function calculateDayHours(day) {
+  const row = document.querySelector(`tr[data-day="${day}"]`);
+  if (!row) return;
+  
+  const startTimeInput = row.querySelector('.start-time');
+  const endTimeInput = row.querySelector('.end-time');
+  const lunchInput = row.querySelector('.lunch-input');
+  const hoursInput = row.querySelector('.hours-input');
+  
+  const startTime = startTimeInput.value;
+  const endTime = endTimeInput.value;
+  const lunchMinutes = parseInt(lunchInput.value) || 0;
+  
+  if (!startTime || !endTime) {
+    hoursInput.value = '';
+    calculateWeeklyTotals();
+    return;
+  }
+  
+  // Calculate hours
+  const start = new Date(`2000-01-01T${startTime}:00`);
+  const end = new Date(`2000-01-01T${endTime}:00`);
+  
+  // Handle edge cases
+  let totalMinutes = (end - start) / (1000 * 60);
+  
+  // Handle end time before or equal to start time (invalid range)
+  if (totalMinutes <= 0) {
+    totalMinutes = 0; // Invalid time range results in 0 hours
+  }
+  
+  // Subtract lunch break
+  totalMinutes -= lunchMinutes;
+  
+  // Calculate hours (minimum 0)
+  const hours = Math.max(0, totalMinutes / 60);
+  
+  // Round to 2 decimal places
+  const roundedHours = Math.round(hours * 100) / 100;
+  
+  hoursInput.value = roundedHours.toFixed(2);
+  
+  // Recalculate weekly totals
+  calculateWeeklyTotals();
+}
+
+// Edit worker from detail modal
+function editWorkerFromDetail() {
+  if (window.currentWorker) {
+    // Close the detail modal first
+    document.getElementById('workerDetailModal').classList.remove('active');
+    
+    // Open the edit modal
+    showWorkerModal(window.currentWorker);
+  }
 }
 
 // Make functions globally accessible
@@ -2266,3 +4983,7 @@ window.editHours = editHours;
 window.deleteHours = deleteHours;
 window.showRestoreConfirmation = showRestoreConfirmation;
 window.executeRestore = executeRestore;
+window.openWorkerDetailModal = openWorkerDetailModal;
+window.showWorkerTab = showWorkerTab;
+window.deleteWorkerFromTile = deleteWorkerFromTile;
+window.editWorkerFromDetail = editWorkerFromDetail;

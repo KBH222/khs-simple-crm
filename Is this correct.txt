@@ -1,0 +1,29 @@
+(base) PS C:\Users\bruce> New-NetFirewallRule -DisplayName "KHS CRM Server" -Direction Inbound -Protocol TCP -LocalPort 3001 -Action Allow -Profile Domain,Private,Public
+
+
+Name                          : {bd05e092-58fe-4bd2-9fa4-ba20851f8616}
+DisplayName                   : KHS CRM Server
+Description                   :
+DisplayGroup                  :
+Group                         :
+Enabled                       : True
+Profile                       : Domain, Private, Public
+Platform                      : {}
+Direction                     : Inbound
+Action                        : Allow
+EdgeTraversalPolicy           : Block
+LooseSourceMapping            : False
+LocalOnlyMapping              : False
+Owner                         :
+PrimaryStatus                 : OK
+Status                        : The rule was parsed successfully from the store. (65536)
+EnforcementStatus             : NotApplicable
+PolicyStoreSource             : PersistentStore
+PolicyStoreSourceType         : Local
+RemoteDynamicKeywordAddresses : {}
+PolicyAppId                   :
+PackageFamilyName             :
+
+
+
+(base) PS C:\Users\bruce>

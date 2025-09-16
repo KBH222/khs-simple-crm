@@ -11,7 +11,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>KHS CRM</title>
-  <link rel="stylesheet" href="style.css?v=20250913090150">
+  <link rel="stylesheet" href="style.css?v=20250914212500">
   <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
 </head>
 <body>
@@ -161,15 +161,29 @@
             </div>
             <div class="form-group">
               <label for="customerPhone">Phone</label>
-              <input type="tel" id="customerPhone">
+              <input type="tel" id="customerPhone" placeholder="(808) 387-6129" maxlength="14">
             </div>
             <div class="form-group">
               <label for="customerEmail">Email</label>
               <input type="email" id="customerEmail">
             </div>
             <div class="form-group">
-              <label for="customerAddress">Address</label>
-              <textarea id="customerAddress"></textarea>
+              <label for="customerStreet">Street Address *</label>
+              <input type="text" id="customerStreet" placeholder="123 Main Street" required>
+            </div>
+            <div class="form-row" style="display: flex; gap: 10px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="customerCity">City *</label>
+                <input type="text" id="customerCity" placeholder="Honolulu" required>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="customerState">State</label>
+                <input type="text" id="customerState" value="HI" readonly style="background-color: #f9fafb;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="customerZip">ZIP Code *</label>
+                <input type="text" id="customerZip" placeholder="96815" maxlength="5" pattern="[0-9]{5}" required>
+              </div>
             </div>
             <div class="form-group">
               <label for="customerReference">Reference</label>
@@ -267,10 +281,10 @@
           <!-- Tab Navigation -->
           <div class="job-tabs" style="display: flex; border-bottom: 1px solid #E5E7EB; background: #F9FAFB;">
             <button class="job-tab active" data-tab="info" onclick="switchJobTab('info')">Info</button>
-            <button class="job-tab" data-tab="tasks" onclick="switchJobTab('tasks')">Task List</button>
-            <button class="job-tab" data-tab="pics" onclick="switchJobTab('pics')">Pics</button>
-            <button class="job-tab" data-tab="plans" onclick="switchJobTab('plans')">Plans</button>
-            <button class="job-tab" data-tab="extra" onclick="switchJobTab('extra')">Extra $</button>
+            <button class="job-tab" data-tab="tasks" onclick="switchJobTab('tasks')">Task</button>
+            <button class="job-tab" data-tab="pics" onclick="switchJobTab('pics')">Pic</button>
+            <button class="job-tab" data-tab="plans" onclick="switchJobTab('plans')">Plan</button>
+            <button class="job-tab" data-tab="extra" onclick="switchJobTab('extra')">Xtra$</button>
           </div>
           
           <div class="job-tab-content" style="max-height: 60vh; overflow-y: auto; padding: 20px;">
@@ -308,12 +322,11 @@
             
             <!-- Task List Tab -->
             <div id="jobTab-tasks" class="job-tab-panel">
-              <div class="task-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <div class="task-header" style="margin-bottom: 20px;">
                 <h4 style="margin: 0; color: #111827;">Tasks</h4>
-                <button onclick="addTask()" style="background: #10B981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">+ Add Task</button>
               </div>
               <div id="tasksList" class="tasks-list">
-                <p style="color: #6B7280; text-align: center; padding: 20px;">No tasks yet. Click "+ Add Task" to get started.</p>
+                <p style="color: #6B7280; text-align: center; padding: 20px;">Loading tasks...</p>
               </div>
             </div>
             
@@ -325,9 +338,9 @@
                   <div style="color: #6B7280;">
                     <div style="font-size: 48px; margin-bottom: 10px;">📸</div>
                     <p>Drop image files here or <strong style="color: #3B82F6;">click to browse</strong></p>
-                    <p style="font-size: 12px;">Supported: JPG, PNG, GIF (Max 10MB each)</p>
+                    <p style="font-size: 12px;">Supported: JPG, PNG, GIF, HEIF, HEIC (Max 10MB each)</p>
                   </div>
-                  <input type="file" id="picsFileInput" multiple accept="image/*" style="display: none;">
+                  <input type="file" id="picsFileInput" multiple accept="image/*,.heif,.HEIF,.heic,.HEIC" style="display: none;">
                 </div>
                 <div id="picsList" class="files-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 20px;">
                   <!-- Pictures will be loaded here -->
@@ -353,21 +366,14 @@
               </div>
             </div>
             
-            <!-- Extra $ Tab -->
+            <!-- Xtra$ Tab -->
             <div id="jobTab-extra" class="job-tab-panel">
               <div class="extra-costs-section">
-                <div class="cost-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="cost-header" style="margin-bottom: 20px;">
                   <h4 style="margin: 0; color: #111827;">Extra Costs</h4>
-                  <button onclick="addExtraCost()" style="background: #F59E0B; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">+ Add Cost</button>
                 </div>
                 <div id="extraCostsList" class="extra-costs-list">
-                  <p style="color: #6B7280; text-align: center; padding: 20px;">No extra costs yet. Click "+ Add Cost" to add additional charges.</p>
-                </div>
-                <div class="cost-summary" style="border-top: 2px solid #E5E7EB; padding-top: 15px; margin-top: 20px;">
-                  <div style="display: flex; justify-content: space-between; font-weight: 600; color: #111827; font-size: 18px;">
-                    <span>Total Extra Costs:</span>
-                    <span id="totalExtraCosts">$0.00</span>
-                  </div>
+                  <p style="color: #6B7280; text-align: center; padding: 20px;">Loading extra costs...</p>
                 </div>
               </div>
             </div>
@@ -636,46 +642,354 @@
             <button class="add-btn" id="addWorkerBtn">+ Add Worker</button>
           </div>
           
-          <!-- Workers Tabs -->
-          <div class="workers-tabs">
-            <button class="workers-tab active" data-tab="info">Info</button>
-            <button class="workers-tab" data-tab="hours">Hours</button>
-          </div>
-          
-          <!-- Info Tab -->
-          <div id="infoTab" class="workers-tab-content active">
-            <div class="workers-section">
-              <h3>Team Members</h3>
-              <div id="workersList" class="workers-list">
-                <div class="workers-loading">Loading workers...</div>
-              </div>
+          <!-- Team Members Grid -->
+          <div class="team-members-section">
+            <h3>Team Members</h3>
+            <div id="teamMembersGrid" class="team-members-grid">
+              <div class="team-members-loading">Loading team members...</div>
             </div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Worker Detail Modal -->
+      <div id="workerDetailModal" class="modal worker-detail-modal">
+        <div class="modal-content worker-detail-content">
+          <div class="modal-header">
+            <h3 id="workerDetailTitle">Worker Details</h3>
+            <button class="close-btn">&times;</button>
+          </div>
           
-          <!-- Hours Tab -->
-          <div id="hoursTab" class="workers-tab-content">
-            <div class="workers-section">
-              <div class="hours-header">
-                <h3>Time Tracking</h3>
-                <div class="week-navigation">
-                  <button id="prevWeek" class="week-nav-btn">‹</button>
-                  <span id="currentWeek">Week of Sept 14, 2025</span>
-                  <button id="nextWeek" class="week-nav-btn">›</button>
-                  <button id="thisWeek" class="week-today-btn">This Week</button>
+          <!-- Worker Detail Tabs -->
+          <div class="worker-detail-tabs">
+            <button class="worker-detail-tab active" data-tab="info">Info</button>
+            <button class="worker-detail-tab" data-tab="hours">Hours</button>
+            <button class="worker-detail-tab" data-tab="tasks">Tasks</button>
+            <button class="worker-detail-tab" data-tab="notes">Notes</button>
+          </div>
+          
+          <div class="worker-detail-content-wrapper">
+            
+            <!-- Info Tab -->
+            <div id="workerInfoTab" class="worker-detail-tab-content active">
+              <div class="worker-info-display">
+                <div class="worker-info-header">
+                  <div class="worker-avatar">
+                    <div class="avatar-placeholder" id="workerAvatar">JD</div>
+                  </div>
+                  <div class="worker-basic-info">
+                    <h4 id="workerDisplayName">John Doe</h4>
+                    <span class="worker-role-badge" id="workerDisplayRole">Carpenter</span>
+                    <div class="worker-status" id="workerDisplayStatus">Active</div>
+                  </div>
+                  <div class="worker-actions">
+                    <button class="edit-worker-detail-btn" onclick="editWorkerFromDetail()">Edit Info</button>
+                  </div>
                 </div>
-                <button class="add-btn" id="logHoursBtn">+ Log Hours</button>
-              </div>
-              
-              <!-- Hours Summary -->
-              <div id="hoursSummary" class="hours-summary">
-                <div class="summary-loading">Loading hours summary...</div>
-              </div>
-              
-              <!-- Detailed Hours List -->
-              <div id="hoursDetailsList" class="hours-details">
-                <div class="hours-loading">Loading detailed hours...</div>
+                
+                <div class="worker-info-details">
+                  <div class="info-group">
+                    <h5>Contact Information</h5>
+                    <div class="info-item">
+                      <span class="info-label">Phone:</span>
+                      <span class="info-value" id="workerDisplayPhone">Not provided</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Email:</span>
+                      <span class="info-value" id="workerDisplayEmail">Not provided</span>
+                    </div>
+                  </div>
+                  
+                  <div class="info-group" id="workerNotesGroup">
+                    <h5>Notes</h5>
+                    <div class="info-value" id="workerDisplayNotes">No notes available</div>
+                  </div>
+                  
+                  <div class="info-group">
+                    <h5>Work Statistics</h5>
+                    <div class="stats-grid">
+                      <div class="stat-item">
+                        <span class="stat-value" id="workerTotalHours">0.0</span>
+                        <span class="stat-label">Total Hours</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value" id="workerTotalEntries">0</span>
+                        <span class="stat-label">Time Entries</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value" id="workerWeekHours">0.0</span>
+                        <span class="stat-label">This Week</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+            
+            <!-- Hours Tab -->
+            <div id="workerHoursTab" class="worker-detail-tab-content">
+              <div class="worker-hours-section">
+                <div class="worker-hours-header">
+                  <h4>Weekly Timesheet</h4>
+                  <div class="week-navigation">
+                    <button id="workerPrevWeek" class="week-nav-btn">‹</button>
+                    <span id="workerCurrentWeek">Week of Sept 14, 2025</span>
+                    <button id="workerNextWeek" class="week-nav-btn">›</button>
+                    <button id="workerThisWeek" class="week-today-btn">This Week</button>
+                  </div>
+                  <div class="worker-hours-actions">
+                    <button class="load-btn" id="loadWorkerHoursBtn">Load Hours</button>
+                    <button class="save-btn" id="saveWorkerHoursBtn">Save Hours</button>
+                  </div>
+                </div>
+                
+                <!-- Weekly Timesheet Grid -->
+                <div class="worker-timesheet-container">
+                  <table class="timesheet-table" id="workerTimesheetTable">
+                    <thead>
+                      <tr>
+                        <th class="day-column">Day</th>
+                        <th class="time-column">Start Time</th>
+                        <th class="time-column">End Time</th>
+                        <th class="hours-column">Total Hours</th>
+                        <th class="lunch-column">Lunch (mins)</th>
+                        <th class="location-column">Job Location</th>
+                        <th class="type-column">Work Type</th>
+                        <th class="notes-column">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr data-day="monday">
+                        <td class="day-header">Monday</td>
+                        <td><input type="time" class="time-input start-time" data-day="monday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="monday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                      <tr data-day="tuesday">
+                        <td class="day-header">Tuesday</td>
+                        <td><input type="time" class="time-input start-time" data-day="tuesday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="tuesday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                      <tr data-day="wednesday">
+                        <td class="day-header">Wednesday</td>
+                        <td><input type="time" class="time-input start-time" data-day="wednesday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="wednesday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                      <tr data-day="thursday">
+                        <td class="day-header">Thursday</td>
+                        <td><input type="time" class="time-input start-time" data-day="thursday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="thursday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                      <tr data-day="friday">
+                        <td class="day-header">Friday</td>
+                        <td><input type="time" class="time-input start-time" data-day="friday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="friday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                      <tr data-day="saturday">
+                        <td class="day-header">Saturday</td>
+                        <td><input type="time" class="time-input start-time" data-day="saturday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="saturday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                      <tr data-day="sunday">
+                        <td class="day-header">Sunday</td>
+                        <td><input type="time" class="time-input start-time" data-day="sunday"></td>
+                        <td><input type="time" class="time-input end-time" data-day="sunday"></td>
+                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
+                        <td><input type="number" min="0" max="120" class="lunch-input" placeholder="0"></td>
+                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
+                        <td>
+                          <select class="work-type-select">
+                            <option value="">Select Type</option>
+                            <option value="Framing">Framing</option>
+                            <option value="Roofing">Roofing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Drywall">Drywall</option>
+                            <option value="Flooring">Flooring</option>
+                            <option value="Finish Carpentry">Finish Carpentry</option>
+                            <option value="Site Prep">Site Prep</option>
+                            <option value="General Labor">General Labor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="total-row">
+                        <td><strong>TOTALS</strong></td>
+                        <td colspan="2"></td>
+                        <td class="total-hours"><strong id="workerTotalHoursWeek">0.00</strong></td>
+                        <td class="total-lunch"><strong id="workerTotalLunchWeek">0</strong></td>
+                        <td colspan="3"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  
+                  <!-- Loading/Status Messages -->
+                  <div id="workerHoursLoading" class="timesheet-loading" style="display: none;">
+                    <div class="loading-message">Loading worker hours...</div>
+                  </div>
+                  <div id="workerHoursMessage" class="timesheet-message" style="display: none;"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Tasks Tab -->
+            <div id="workerTasksTab" class="worker-detail-tab-content">
+              <div class="worker-tasks-section">
+                <div class="worker-tasks-header">
+                  <h4>Assigned Tasks</h4>
+                  <button class="add-btn" id="addWorkerTaskBtn">+ Add Task</button>
+                </div>
+                
+                <div class="tasks-filters">
+                  <button class="task-filter active" data-filter="all">All Tasks</button>
+                  <button class="task-filter" data-filter="pending">Pending</button>
+                  <button class="task-filter" data-filter="completed">Completed</button>
+                </div>
+                
+                <div id="workerTasksList" class="worker-tasks-list">
+                  <div class="worker-tasks-loading">Loading tasks...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Notes Tab -->
+            <div id="workerNotesTab" class="worker-detail-tab-content">
+              <div class="worker-notes-section">
+                <div class="worker-notes-header">
+                  <h4>Worker Notes</h4>
+                  <button class="add-btn" id="addWorkerNoteBtn">+ Add Note</button>
+                </div>
+                
+                <div class="note-categories">
+                  <button class="note-category active" data-category="all">All Notes</button>
+                  <button class="note-category" data-category="vacation">Vacation</button>
+                  <button class="note-category" data-category="medical">Medical</button>
+                  <button class="note-category" data-category="performance">Performance</button>
+                  <button class="note-category" data-category="general">General</button>
+                </div>
+                
+                <div id="workerNotesList" class="worker-notes-list">
+                  <div class="worker-notes-loading">Loading notes...</div>
+                </div>
+              </div>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -723,36 +1037,33 @@
           </div>
           <form id="workerForm">
             <div class="form-group">
+              <label for="workerInitials">Initials *</label>
+              <input type="text" id="workerInitials" maxlength="3" placeholder="e.g., BH" required style="text-transform: uppercase;">
+            </div>
+            <div class="form-group">
               <label for="workerName">Name *</label>
               <input type="text" id="workerName" required>
             </div>
             <div class="form-group">
-              <label for="workerRole">Role *</label>
-              <select id="workerRole" required>
-                <option value="">Select role...</option>
-                <option value="Foreman">Foreman</option>
-                <option value="Carpenter">Carpenter</option>
-                <option value="Apprentice">Apprentice</option>
-                <option value="Electrician">Electrician</option>
-                <option value="Plumber">Plumber</option>
-                <option value="General Labor">General Labor</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="workerHourlyRate">Hourly Rate</label>
-              <input type="number" id="workerHourlyRate" step="0.01" min="0" placeholder="0.00">
+              <label>Role *</label>
+              <div class="role-radio-group" style="display: flex; gap: 20px; margin-top: 8px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="workerRole" value="Admin" required style="margin-right: 6px;">
+                  Admin
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="workerRole" value="Supervisor" required style="margin-right: 6px;">
+                  Supervisor
+                </label>
+              </div>
             </div>
             <div class="form-group">
               <label for="workerPhone">Phone</label>
-              <input type="tel" id="workerPhone">
+              <input type="tel" id="workerPhone" placeholder="(808) 387-6129" maxlength="14">
             </div>
             <div class="form-group">
               <label for="workerEmail">Email</label>
               <input type="email" id="workerEmail">
-            </div>
-            <div class="form-group">
-              <label for="workerHireDate">Hire Date</label>
-              <input type="date" id="workerHireDate">
             </div>
             <div class="form-group">
               <label for="workerNotes">Notes</label>
@@ -854,6 +1165,6 @@
     </main>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20250914212500"></script>
 </body>
 </html>

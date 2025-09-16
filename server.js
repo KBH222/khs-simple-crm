@@ -3,9 +3,11 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const { promisify } = require('util');
+const multer = require('multer');
+const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Database setup with error handling
@@ -131,6 +133,11 @@ const initializeTables = () => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
   
+  // Add initials column if it doesn't exist (for existing databases)
+  db.run(`ALTER TABLE workers ADD COLUMN initials TEXT`, (err) => {
+    // Ignore error if column already exists
+  });
+  
   // Work hours tracking table
   db.run(`CREATE TABLE IF NOT EXISTS work_hours (
     id TEXT PRIMARY KEY,
@@ -148,6 +155,75 @@ const initializeTables = () => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (worker_id) REFERENCES workers (id),
     FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
+  // Tasks table
+  db.run(`CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    description TEXT NOT NULL,
+    completed BOOLEAN DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
+  // Extra costs table
+  db.run(`CREATE TABLE IF NOT EXISTS extra_costs (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount REAL NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
+  // Job photos table
+  db.run(`CREATE TABLE IF NOT EXISTS job_photos (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    mime_type TEXT NOT NULL,
+    photo_type TEXT DEFAULT 'pics',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
+  // Worker tasks table
+  db.run(`CREATE TABLE IF NOT EXISTS worker_tasks (
+    id TEXT PRIMARY KEY,
+    worker_id TEXT NOT NULL,
+    job_id TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'pending',
+    priority TEXT DEFAULT 'medium',
+    due_date DATE,
+    completed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (worker_id) REFERENCES workers (id),
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
+  // Worker notes table
+  db.run(`CREATE TABLE IF NOT EXISTS worker_notes (
+    id TEXT PRIMARY KEY,
+    worker_id TEXT NOT NULL,
+    category TEXT DEFAULT 'general',
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    is_private BOOLEAN DEFAULT 0,
+    created_by TEXT DEFAULT 'admin',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (worker_id) REFERENCES workers (id)
   )`);
   
   // Create default admin user (simplified)
@@ -272,6 +348,49 @@ app.use((req, res, next) => {
 
 // Serve static files
 app.use(express.static('public'));
+
+// Multer configuration for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const jobId = req.params.jobId;
+    const uploadDir = path.join(__dirname, 'uploads', 'photos', jobId);
+    
+    // Create directory if it doesn't exist
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp and random hash
+    const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(6).toString('hex');
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept images and some document types
+  const allowedMimes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    'image/heic', 'image/heif', 'image/bmp', 'image/tiff',
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword'
+  ];
+  
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files and PDFs are allowed!'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  }
+});
 
 // Helper function to generate IDs
 function generateId(prefix = 'id') {
@@ -519,6 +638,351 @@ app.put('/api/jobs/:id/scope', (req, res) => {
   });
 });
 
+// Tasks API
+app.get('/api/jobs/:jobId/tasks', (req, res) => {
+  const { jobId } = req.params;
+  db.all('SELECT * FROM tasks WHERE job_id = ? ORDER BY sort_order, created_at', [jobId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/jobs/:jobId/tasks', (req, res) => {
+  const { jobId } = req.params;
+  const { description } = req.body;
+  
+  if (!description || !description.trim()) {
+    return res.status(400).json({ error: 'Task description is required' });
+  }
+  
+  const taskId = generateId('task');
+  const now = new Date().toISOString();
+  
+  // Get max sort_order for this job
+  db.get('SELECT MAX(sort_order) as max_order FROM tasks WHERE job_id = ?', [jobId], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    const sortOrder = (row.max_order || 0) + 1;
+    
+    db.run('INSERT INTO tasks (id, job_id, description, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [taskId, jobId, description.trim(), sortOrder, now, now],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({
+          id: taskId,
+          job_id: jobId,
+          description: description.trim(),
+          completed: 0,
+          sort_order: sortOrder,
+          created_at: now
+        });
+      }
+    );
+  });
+});
+
+app.put('/api/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  const { completed, description } = req.body;
+  
+  const now = new Date().toISOString();
+  let query = 'UPDATE tasks SET updated_at = ?';
+  let params = [now];
+  
+  if (typeof completed !== 'undefined') {
+    query += ', completed = ?';
+    params.push(completed ? 1 : 0);
+  }
+  
+  if (description && description.trim()) {
+    query += ', description = ?';
+    params.push(description.trim());
+  }
+  
+  query += ' WHERE id = ?';
+  params.push(id);
+  
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ message: 'Task updated' });
+  });
+});
+
+app.delete('/api/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM tasks WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ message: 'Task deleted' });
+  });
+});
+
+// Update task order
+app.put('/api/jobs/:jobId/tasks/reorder', (req, res) => {
+  const { jobId } = req.params;
+  const { taskIds } = req.body; // Array of task IDs in new order
+  
+  if (!Array.isArray(taskIds)) {
+    return res.status(400).json({ error: 'Task IDs array is required' });
+  }
+  
+  const now = new Date().toISOString();
+  
+  // Update each task's sort_order
+  const promises = taskIds.map((taskId, index) => {
+    return new Promise((resolve, reject) => {
+      db.run('UPDATE tasks SET sort_order = ?, updated_at = ? WHERE id = ? AND job_id = ?',
+        [index + 1, now, taskId, jobId],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+  });
+  
+  Promise.all(promises)
+    .then(() => res.json({ message: 'Task order updated' }))
+    .catch(err => res.status(500).json({ error: 'Database error' }));
+});
+
+// Extra Costs API
+app.get('/api/jobs/:jobId/extra-costs', (req, res) => {
+  const { jobId } = req.params;
+  db.all('SELECT * FROM extra_costs WHERE job_id = ? ORDER BY sort_order, created_at', [jobId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/jobs/:jobId/extra-costs', (req, res) => {
+  const { jobId } = req.params;
+  const { description, amount } = req.body;
+  
+  if (!description || !description.trim()) {
+    return res.status(400).json({ error: 'Description is required' });
+  }
+  
+  if (typeof amount !== 'number' || amount < 0) {
+    return res.status(400).json({ error: 'Valid amount is required' });
+  }
+  
+  const costId = generateId('cost');
+  const now = new Date().toISOString();
+  
+  // Get max sort_order for this job
+  db.get('SELECT MAX(sort_order) as max_order FROM extra_costs WHERE job_id = ?', [jobId], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    const sortOrder = (row.max_order || 0) + 1;
+    
+    db.run('INSERT INTO extra_costs (id, job_id, description, amount, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [costId, jobId, description.trim(), amount, sortOrder, now, now],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({
+          id: costId,
+          job_id: jobId,
+          description: description.trim(),
+          amount: amount,
+          sort_order: sortOrder,
+          created_at: now
+        });
+      }
+    );
+  });
+});
+
+app.delete('/api/extra-costs/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM extra_costs WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Extra cost not found' });
+    }
+    res.json({ message: 'Extra cost deleted' });
+  });
+});
+
+// Photo API
+app.get('/api/jobs/:jobId/photos', (req, res) => {
+  const { jobId } = req.params;
+  const { type } = req.query; // 'pics' or 'plans'
+  
+  let query = 'SELECT * FROM job_photos WHERE job_id = ?';
+  const params = [jobId];
+  
+  if (type && (type === 'pics' || type === 'plans')) {
+    query += ' AND photo_type = ?';
+    params.push(type);
+  }
+  
+  query += ' ORDER BY created_at DESC';
+  
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/jobs/:jobId/photos', upload.array('photos', 20), (req, res) => {
+  const { jobId } = req.params;
+  const { photoType = 'pics' } = req.body;
+  
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No files uploaded' });
+  }
+  
+  // Verify job exists
+  db.get('SELECT id FROM jobs WHERE id = ?', [jobId], (err, job) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    const now = new Date().toISOString();
+    const uploadedFiles = [];
+    let processedCount = 0;
+    
+    // Process each uploaded file
+    req.files.forEach(file => {
+      const photoId = generateId('photo');
+      const filePath = path.relative(__dirname, file.path);
+      
+      db.run(`INSERT INTO job_photos 
+              (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [photoId, jobId, file.filename, file.originalname, filePath, file.size, file.mimetype, photoType, now],
+        function(err) {
+          if (err) {
+            console.error('Failed to save photo metadata:', err);
+            // Clean up uploaded file if database save fails
+            fs.unlink(file.path, () => {});
+          } else {
+            uploadedFiles.push({
+              id: photoId,
+              job_id: jobId,
+              filename: file.filename,
+              original_name: file.originalname,
+              file_path: filePath,
+              file_size: file.size,
+              mime_type: file.mimetype,
+              photo_type: photoType,
+              created_at: now
+            });
+          }
+          
+          processedCount++;
+          if (processedCount === req.files.length) {
+            res.json({
+              message: `Uploaded ${uploadedFiles.length} of ${req.files.length} files successfully`,
+              photos: uploadedFiles
+            });
+          }
+        }
+      );
+    });
+  });
+});
+
+app.get('/api/photos/:photoId', (req, res) => {
+  const { photoId } = req.params;
+  
+  db.get('SELECT * FROM job_photos WHERE id = ?', [photoId], (err, photo) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+    
+    const filePath = path.join(__dirname, photo.file_path);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Photo file not found' });
+    }
+    
+    // Set appropriate headers
+    res.set({
+      'Content-Type': photo.mime_type,
+      'Content-Length': photo.file_size,
+      'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+      'Content-Disposition': `inline; filename="${photo.original_name}"`
+    });
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+    
+    fileStream.on('error', (streamErr) => {
+      console.error('Error streaming photo:', streamErr);
+      res.status(500).json({ error: 'Error serving photo' });
+    });
+  });
+});
+
+app.delete('/api/photos/:photoId', (req, res) => {
+  const { photoId } = req.params;
+  
+  // Get photo info first
+  db.get('SELECT * FROM job_photos WHERE id = ?', [photoId], (err, photo) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+    
+    // Delete from database
+    db.run('DELETE FROM job_photos WHERE id = ?', [photoId], function(dbErr) {
+      if (dbErr) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      // Try to delete the physical file
+      const filePath = path.join(__dirname, photo.file_path);
+      fs.unlink(filePath, (fsErr) => {
+        if (fsErr) {
+          console.error('Failed to delete photo file:', fsErr);
+          // Don't fail the request if file deletion fails - database record is gone
+        }
+      });
+      
+      res.json({ message: 'Photo deleted' });
+    });
+  });
+});
+
 // Calendar Events API
 app.get('/api/calendar/events', (req, res) => {
   const { year, month } = req.query;
@@ -651,7 +1115,7 @@ app.get('/api/workers', (req, res) => {
 });
 
 app.post('/api/workers', (req, res) => {
-  const { name, role, hourly_rate, phone, email, address, hire_date, notes } = req.body;
+  const { name, role, hourly_rate, phone, email, address, hire_date, notes, initials } = req.body;
   
   if (!name || !role) {
     return res.status(400).json({ error: 'Name and role are required' });
@@ -661,11 +1125,12 @@ app.post('/api/workers', (req, res) => {
   const now = new Date().toISOString();
   
   db.run(`INSERT INTO workers 
-          (id, name, role, hourly_rate, phone, email, address, hire_date, status, notes, created_at, updated_at) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [workerId, name, role, hourly_rate || 0, phone, email, address, hire_date, 'ACTIVE', notes, now, now],
+          (id, name, role, hourly_rate, phone, email, address, hire_date, status, notes, initials, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [workerId, name, role, hourly_rate || 0, phone, email, address, hire_date, 'ACTIVE', notes, initials, now, now],
     function(err) {
       if (err) {
+        console.error('Database error creating worker:', err);
         return res.status(500).json({ error: 'Database error' });
       }
       
@@ -680,6 +1145,7 @@ app.post('/api/workers', (req, res) => {
         hire_date,
         status: 'ACTIVE',
         notes,
+        initials,
         created_at: now
       });
     });
@@ -687,7 +1153,7 @@ app.post('/api/workers', (req, res) => {
 
 app.put('/api/workers/:id', (req, res) => {
   const { id } = req.params;
-  const { name, role, hourly_rate, phone, email, address, hire_date, status, notes } = req.body;
+  const { name, role, hourly_rate, phone, email, address, hire_date, status, notes, initials } = req.body;
   
   if (!name || !role) {
     return res.status(400).json({ error: 'Name and role are required' });
@@ -697,11 +1163,12 @@ app.put('/api/workers/:id', (req, res) => {
   
   db.run(`UPDATE workers 
           SET name = ?, role = ?, hourly_rate = ?, phone = ?, email = ?, address = ?, 
-              hire_date = ?, status = ?, notes = ?, updated_at = ?
+              hire_date = ?, status = ?, notes = ?, initials = ?, updated_at = ?
           WHERE id = ?`,
-    [name, role, hourly_rate, phone, email, address, hire_date, status, notes, now, id],
+    [name, role, hourly_rate, phone, email, address, hire_date, status, notes, initials, now, id],
     function(err) {
       if (err) {
+        console.error('Database error updating worker:', err);
         return res.status(500).json({ error: 'Database error' });
       }
       
@@ -709,7 +1176,7 @@ app.put('/api/workers/:id', (req, res) => {
         return res.status(404).json({ error: 'Worker not found' });
       }
       
-      res.json({ message: 'Worker updated' });
+      res.json({ message: 'Worker updated', id, name, role, initials });
     });
 });
 
@@ -854,10 +1321,326 @@ app.delete('/api/work-hours/:id', (req, res) => {
     }
     
     if (this.changes === 0) {
-      return res.status(404).json({ error: 'Work hours entry not found' });
+      return res.status(404).json({ error: 'Hours entry not found' });
     }
     
-    res.json({ message: 'Work hours deleted' });
+    res.json({ message: 'Hours deleted' });
+  });
+});
+
+// USPS Address Validation API
+app.post('/api/validate-address', async (req, res) => {
+  const { street, city, state, zip } = req.body;
+  
+  if (!street) {
+    return res.status(400).json({ error: 'Street address is required' });
+  }
+  
+  try {
+    // For now, return a mock response until USPS credentials are added
+    // This will be replaced with actual USPS API call
+    
+    // Mock Hawaiian address validation
+    const mockValidation = {
+      street: street.trim(),
+      city: city || 'Honolulu', // Default fallback
+      state: 'HI',
+      zip: zip || '96815' // Default Honolulu ZIP
+    };
+    
+    console.log('Address validation request:', { street, city, state, zip });
+    console.log('Mock validation response:', mockValidation);
+    
+    res.json({
+      valid: true,
+      address: mockValidation,
+      source: 'mock' // Will be 'usps' when real API is implemented
+    });
+    
+  } catch (error) {
+    console.error('Address validation error:', error);
+    res.status(500).json({ error: 'Address validation failed' });
+  }
+});
+
+// Timesheet API - for bulk weekly timesheet submissions
+app.post('/api/timesheet', (req, res) => {
+  const { worker_id, week_start, timesheet_entries } = req.body;
+  
+  if (!worker_id || !week_start || !Array.isArray(timesheet_entries)) {
+    return res.status(400).json({ error: 'Worker ID, week start date, and timesheet entries are required' });
+  }
+  
+  // Begin transaction
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+    
+    let completed = 0;
+    let hasError = false;
+    const total = timesheet_entries.length;
+    
+    if (total === 0) {
+      db.run('COMMIT');
+      return res.json({ message: 'No entries to save' });
+    }
+    
+    timesheet_entries.forEach((entry, index) => {
+      const { day_of_week, work_date, start_time, end_time, lunch_minutes, job_location, work_type, notes } = entry;
+      
+      // Skip entries without required data
+      if (!work_date || !start_time || !end_time || !work_type) {
+        completed++;
+        if (completed === total && !hasError) {
+          db.run('COMMIT');
+          res.json({ message: 'Timesheet saved successfully' });
+        }
+        return;
+      }
+      
+      // Calculate hours worked
+      const startDateTime = new Date(`${work_date}T${start_time}`);
+      const endDateTime = new Date(`${work_date}T${end_time}`);
+      const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
+      const hoursWorked = Math.round(((totalMinutes - (lunch_minutes || 0)) / 60) * 100) / 100;
+      
+      // Calculate overtime (over 8 hours per day)
+      const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
+      
+      const hoursId = generateId('hours');
+      const now = new Date().toISOString();
+      
+      // Check if entry already exists for this date/worker
+      db.get(`SELECT id FROM work_hours WHERE worker_id = ? AND work_date = ?`, [worker_id, work_date], (err, existing) => {
+        if (err && !hasError) {
+          hasError = true;
+          db.run('ROLLBACK');
+          return res.status(500).json({ error: 'Database error checking existing entries' });
+        }
+        
+        if (existing) {
+          // Update existing entry
+          db.run(`UPDATE work_hours 
+                  SET start_time = ?, end_time = ?, break_minutes = ?, hours_worked = ?, 
+                      work_type = ?, description = ?, overtime_hours = ?, updated_at = ?
+                  WHERE id = ?`,
+            [start_time, end_time, lunch_minutes || 0, hoursWorked, work_type, 
+             `${job_location ? 'Location: ' + job_location + '. ' : ''}${notes || ''}`, 
+             overtimeHours, now, existing.id],
+            function(updateErr) {
+              if (updateErr && !hasError) {
+                hasError = true;
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Database error updating timesheet' });
+              }
+              
+              completed++;
+              if (completed === total && !hasError) {
+                db.run('COMMIT');
+                res.json({ message: 'Timesheet updated successfully' });
+              }
+            });
+        } else {
+          // Insert new entry
+          db.run(`INSERT INTO work_hours 
+                  (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, 
+                   hours_worked, work_type, description, overtime_hours, created_at, updated_at) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [hoursId, worker_id, null, work_date, start_time, end_time, lunch_minutes || 0, 
+             hoursWorked, work_type, 
+             `${job_location ? 'Location: ' + job_location + '. ' : ''}${notes || ''}`, 
+             overtimeHours, now, now],
+            function(insertErr) {
+              if (insertErr && !hasError) {
+                hasError = true;
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Database error saving timesheet' });
+              }
+              
+              completed++;
+              if (completed === total && !hasError) {
+                db.run('COMMIT');
+                res.json({ message: 'Timesheet saved successfully' });
+              }
+            });
+        }
+      });
+    });
+  });
+});
+
+// Timesheet submit endpoint (alias for POST /api/timesheet)
+app.post('/api/timesheet/submit', (req, res) => {
+  const { entries } = req.body;
+  
+  if (!entries || !Array.isArray(entries)) {
+    return res.status(400).json({ error: 'Entries array is required' });
+  }
+  
+  if (entries.length === 0) {
+    return res.json({ message: 'No entries to save' });
+  }
+  
+  // Begin transaction
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+    
+    let completed = 0;
+    let hasError = false;
+    const total = entries.length;
+    
+    entries.forEach((entry) => {
+      const { worker_id, work_date, start_time, end_time, break_minutes, work_type, job_location, description } = entry;
+      
+      // Skip entries without required data
+      if (!worker_id || !work_date || !start_time || !end_time || !work_type) {
+        completed++;
+        if (completed === total && !hasError) {
+          db.run('COMMIT');
+          res.json({ message: 'Timesheet saved successfully' });
+        }
+        return;
+      }
+      
+      // Calculate hours worked
+      const startDateTime = new Date(`${work_date}T${start_time}`);
+      const endDateTime = new Date(`${work_date}T${end_time}`);
+      const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
+      const hoursWorked = Math.max(0, Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100);
+      
+      // Calculate overtime (over 8 hours per day)
+      const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
+      
+      const hoursId = generateId('hours');
+      const now = new Date().toISOString();
+      
+      // Check if entry already exists for this date/worker
+      db.get(`SELECT id FROM work_hours WHERE worker_id = ? AND work_date = ?`, [worker_id, work_date], (err, existing) => {
+        if (err && !hasError) {
+          hasError = true;
+          db.run('ROLLBACK');
+          return res.status(500).json({ error: 'Database error checking existing entries' });
+        }
+        
+        const fullDescription = `${job_location ? 'Location: ' + job_location + '. ' : ''}${description || ''}`;
+        
+        if (existing) {
+          // Update existing entry
+          db.run(`UPDATE work_hours 
+                  SET start_time = ?, end_time = ?, break_minutes = ?, hours_worked = ?, 
+                      work_type = ?, description = ?, overtime_hours = ?, updated_at = ?
+                  WHERE id = ?`,
+            [start_time, end_time, break_minutes || 0, hoursWorked, work_type, 
+             fullDescription, overtimeHours, now, existing.id],
+            function(updateErr) {
+              if (updateErr && !hasError) {
+                hasError = true;
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Database error updating timesheet' });
+              }
+              
+              completed++;
+              if (completed === total && !hasError) {
+                db.run('COMMIT');
+                res.json({ message: 'Timesheet saved successfully' });
+              }
+            });
+        } else {
+          // Insert new entry
+          db.run(`INSERT INTO work_hours 
+                  (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, 
+                   hours_worked, work_type, description, overtime_hours, created_at, updated_at) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [hoursId, worker_id, null, work_date, start_time, end_time, break_minutes || 0, 
+             hoursWorked, work_type, fullDescription, overtimeHours, now, now],
+            function(insertErr) {
+              if (insertErr && !hasError) {
+                hasError = true;
+                db.run('ROLLBACK');
+                console.error('Insert error:', insertErr);
+                return res.status(500).json({ error: 'Database error saving timesheet' });
+              }
+              
+              completed++;
+              if (completed === total && !hasError) {
+                db.run('COMMIT');
+                res.json({ message: 'Timesheet saved successfully' });
+              }
+            });
+        }
+      });
+    });
+  });
+});
+
+// Get timesheet data for a specific worker and week
+app.get('/api/timesheet', (req, res) => {
+  const { worker_id, week_start } = req.query;
+  
+  if (!worker_id || !week_start) {
+    return res.status(400).json({ error: 'Worker ID and week start date are required' });
+  }
+  
+  const query = `SELECT * FROM work_hours 
+                 WHERE worker_id = ? 
+                 AND work_date >= ? 
+                 AND work_date <= date(?, "+6 days")
+                 ORDER BY work_date`;
+  
+  db.all(query, [worker_id, week_start, week_start], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    // Transform the data into weekly grid format
+    const weeklyData = {};
+    const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    
+    // Initialize empty week
+    daysOfWeek.forEach(day => {
+      weeklyData[day] = {
+        work_date: '',
+        start_time: '',
+        end_time: '',
+        lunch_minutes: 0,
+        job_location: '',
+        work_type: '',
+        notes: '',
+        hours_worked: 0
+      };
+    });
+    
+    // Fill in actual data
+    rows.forEach(row => {
+      const workDate = new Date(row.work_date + 'T00:00:00');
+      const dayOfWeek = daysOfWeek[workDate.getDay()];
+      
+      // Parse job location from description
+      let jobLocation = '';
+      let notes = row.description || '';
+      if (notes.startsWith('Location: ')) {
+        const locationEnd = notes.indexOf('. ');
+        if (locationEnd > -1) {
+          jobLocation = notes.substring(10, locationEnd);
+          notes = notes.substring(locationEnd + 2);
+        } else {
+          jobLocation = notes.substring(10);
+          notes = '';
+        }
+      }
+      
+      weeklyData[dayOfWeek] = {
+        work_date: row.work_date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        lunch_minutes: row.break_minutes || 0,
+        job_location: jobLocation,
+        work_type: row.work_type,
+        notes: notes,
+        hours_worked: row.hours_worked
+      };
+    });
+    
+    res.json(weeklyData);
   });
 });
 
