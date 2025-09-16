@@ -9,7 +9,10 @@
     "build": "echo 'No build step required for simple backend'",
     "test": "npx playwright test",
     "test:headed": "npx playwright test --headed",
-    "test:ui": "npx playwright test --ui"
+    "test:ui": "npx playwright test --ui",
+    "test:safety": "node test-cleanup-safety.js",
+    "test:critical": "npx playwright test critical-functions.spec.js",
+    "test:customer": "npx playwright test customer-management.spec.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
