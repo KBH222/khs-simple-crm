@@ -5,10 +5,36 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Common Colors */
+  --primary-blue: #3B82F6;
+  --primary-blue-hover: #2563EB;
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  
+  /* Common Radius */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  
+  /* Common Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #F3F4F6;
-  color: #111827;
+  background-color: var(--gray-100);
+  color: var(--gray-900);
   line-height: 1.6;
 }
 
@@ -18,13 +44,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background-color: #F3F4F6;
+  padding: var(--space-xl);
+  background-color: var(--gray-100);
 }
 
 .login-card {
   background: white;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   padding: 48px;
   width: 100%;
@@ -39,35 +65,35 @@ body {
 .login-header h1 {
   font-size: 30px;
   font-weight: bold;
-  color: #111827;
-  margin-bottom: 8px;
+  color: var(--gray-900);
+  margin-bottom: var(--space-sm);
 }
 
 .login-header p {
-  color: #6B7280;
+  color: var(--gray-500);
   font-size: 16px;
 }
 
 /* Form Styles */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-xl);
 }
 
 .form-group label {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
-  margin-bottom: 8px;
+  color: var(--gray-700);
+  margin-bottom: var(--space-sm);
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
+  padding: var(--space);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
   font-size: 16px;
   outline: none;
   transition: border-color 0.2s;
@@ -76,7 +102,7 @@ body {
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-  border-color: #3B82F6;
+  border-color: var(--primary-blue);
 }
 
 .form-group textarea {
