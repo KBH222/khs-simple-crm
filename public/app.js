@@ -4308,8 +4308,162 @@ async function validateAddress(street, city = '', state = 'HI', zip = '') {
   }
 }
 
-// Setup address auto-completion
+// US Census Geocoding API - completely free for US addresses
+async function geocodeAddressWithCensus(streetAddress) {
+  try {
+    log('Geocoding address with US Census API:', streetAddress);
+    
+    // Clean up the address for the API
+    const cleanAddress = encodeURIComponent(streetAddress.trim());
+    
+    // US Census Geocoding API endpoint
+    const url = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${cleanAddress}&benchmark=2020&format=json`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Census API request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.result && data.result.addressMatches && data.result.addressMatches.length > 0) {
+      const match = data.result.addressMatches[0];
+      const components = match.addressComponents;
+      
+      const parsedAddress = {
+        street: `${components.fromAddress} ${components.streetName}`,
+        city: components.city,
+        state: components.state,
+        zip: components.zip
+      };
+      
+      log('Census geocoding successful:', parsedAddress);
+      return parsedAddress;
+    } else {
+      log('No address matches found from Census API');
+      return null;
+    }
+  } catch (error) {
+    logError('Census geocoding error:', error);
+    return null;
+  }
+}
+
+// Setup Census-based address autocomplete with debounced lookup
+function setupCensusAddressLookup() {
+  const streetInput = document.getElementById('customerStreet');
+  const cityInput = document.getElementById('customerCity');
+  const stateInput = document.getElementById('customerState');
+  const zipInput = document.getElementById('customerZip');
+  
+  if (!streetInput) {
+    log('Street input not found for address lookup');
+    return false;
+  }
+  
+  log('Setting up US Census address lookup');
+  
+  let lookupTimeout = null;
+  let isLookingUp = false;
+  
+  // Add a subtle indicator for when lookup is happening
+  function showLookupIndicator() {
+    if (cityInput) cityInput.placeholder = 'Looking up...';
+    if (zipInput) zipInput.placeholder = 'Looking up...';
+    streetInput.style.borderColor = '#3B82F6';
+    isLookingUp = true;
+  }
+  
+  function hideLookupIndicator() {
+    if (cityInput) cityInput.placeholder = 'Honolulu';
+    if (zipInput) zipInput.placeholder = '96815';
+    streetInput.style.borderColor = '';
+    isLookingUp = false;
+  }
+  
+  // Debounced lookup function
+  async function performLookup() {
+    const streetValue = streetInput.value.trim();
+    
+    // Only lookup if we have a reasonable street address (at least 5 characters)
+    if (streetValue.length < 5) {
+      hideLookupIndicator();
+      return;
+    }
+    
+    // Skip if city and zip are already filled
+    if (cityInput?.value.trim() && zipInput?.value.trim()) {
+      hideLookupIndicator();
+      return;
+    }
+    
+    showLookupIndicator();
+    
+    const geocodedAddress = await geocodeAddressWithCensus(streetValue);
+    
+    if (geocodedAddress) {
+      // Auto-fill city and ZIP if they're empty
+      if (cityInput && !cityInput.value.trim()) {
+        cityInput.value = geocodedAddress.city;
+        log('Auto-filled city:', geocodedAddress.city);
+      }
+      
+      if (stateInput && !stateInput.value.trim()) {
+        stateInput.value = geocodedAddress.state;
+        log('Auto-filled state:', geocodedAddress.state);
+      }
+      
+      if (zipInput && !zipInput.value.trim()) {
+        zipInput.value = geocodedAddress.zip;
+        log('Auto-filled ZIP:', geocodedAddress.zip);
+      }
+      
+      // Optionally update the street address with the standardized version
+      // streetInput.value = geocodedAddress.street;
+    }
+    
+    hideLookupIndicator();
+  }
+  
+  // Setup debounced input listener
+  streetInput.addEventListener('input', function() {
+    // Clear any existing timeout
+    if (lookupTimeout) {
+      clearTimeout(lookupTimeout);
+    }
+    
+    // Set a new timeout for 1.5 seconds after user stops typing
+    lookupTimeout = setTimeout(performLookup, 1500);
+  });
+  
+  // Also lookup on blur (when user leaves the field)
+  streetInput.addEventListener('blur', function() {
+    // Clear timeout and do immediate lookup if not already looking up
+    if (lookupTimeout) {
+      clearTimeout(lookupTimeout);
+      lookupTimeout = null;
+    }
+    
+    if (!isLookingUp) {
+      setTimeout(performLookup, 100); // Small delay to allow for smooth UX
+    }
+  });
+  
+  return true;
+}
+
+// Setup address auto-completion (using US Census API)
 function setupAddressAutoComplete() {
+  // Use US Census geocoding API
+  if (setupCensusAddressLookup()) {
+    log('US Census address lookup setup successfully');
+    return;
+  }
+  
+  // Fallback to original USPS validation method
+  log('Using fallback USPS address validation');
+  
   const streetInput = document.getElementById('customerStreet');
   const cityInput = document.getElementById('customerCity');
   const zipInput = document.getElementById('customerZip');
@@ -4319,7 +4473,7 @@ function setupAddressAutoComplete() {
     return;
   }
   
-  log('Setting up address auto-completion');
+  log('Setting up fallback address auto-completion');
   
   // Validate address when street input loses focus
   streetInput.addEventListener('blur', async function() {
