@@ -404,8 +404,16 @@ function showCustomerModal(customer = null) {
       document.getElementById('customerZip').value = '';
     }
     
-    document.getElementById('customerReference').value = customer.reference || '';
-    document.getElementById('customerType').value = customer.customer_type || 'CURRENT';
+    // Set radio buttons for reference and type
+    const referenceRadio = document.querySelector(`input[name="customerReference"][value="${customer.reference}"]`);
+    if (referenceRadio) {
+      referenceRadio.checked = true;
+    }
+    
+    const typeRadio = document.querySelector(`input[name="customerType"][value="${customer.customer_type || 'CURRENT'}"]`);
+    if (typeRadio) {
+      typeRadio.checked = true;
+    }
     document.getElementById('customerNotes').value = customer.notes || '';
     form.dataset.customerId = customer.id;
   } else {
@@ -566,13 +574,17 @@ async function handleCustomerSubmit(e) {
     }
   }
   
+  // Get selected radio button values
+  const selectedReference = document.querySelector('input[name="customerReference"]:checked');
+  const selectedType = document.querySelector('input[name="customerType"]:checked');
+  
   const customerData = {
     name: document.getElementById('customerName').value,
     email: document.getElementById('customerEmail').value,
     phone: cleanPhone, // Store clean digits only
     address: fullAddress,
-    reference: document.getElementById('customerReference').value,
-    customer_type: document.getElementById('customerType').value,
+    reference: selectedReference ? selectedReference.value : '',
+    customer_type: selectedType ? selectedType.value : 'CURRENT',
     notes: document.getElementById('customerNotes').value
   };
   

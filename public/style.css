@@ -3255,6 +3255,49 @@ button {
   background: white;
 }
 
+/* Customer Form Radio Button Styles */
+.reference-options label,
+.type-options label {
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  transition: all 0.2s;
+  background: white;
+  min-width: fit-content;
+  font-size: 14px;
+}
+
+.reference-options label:hover,
+.type-options label:hover {
+  background: #F9FAFB;
+  border-color: #3B82F6;
+}
+
+.reference-options label:has(input:checked),
+.type-options label:has(input:checked) {
+  background: #EBF8FF;
+  border-color: #3B82F6;
+  color: #1D4ED8;
+  font-weight: 500;
+}
+
+.reference-options input[type="radio"],
+.type-options input[type="radio"] {
+  margin-right: 6px;
+}
+
+/* Responsive layout for reference options */
+@media (max-width: 480px) {
+  .reference-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .reference-options label {
+    text-align: center;
+  }
+}
+
 .worker-detail-content-wrapper {
   max-height: 70vh;
   overflow-y: auto;

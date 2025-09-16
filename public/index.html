@@ -155,6 +155,39 @@
             <button class="close-btn">&times;</button>
           </div>
           <form id="customerForm">
+            <!-- Reference and Type moved to top -->
+            <div class="form-group">
+              <label>Reference</label>
+              <div class="reference-options" style="display: flex; gap: 15px; margin-top: 8px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="customerReference" value="HOD" style="margin-right: 6px;">
+                  HOD
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="customerReference" value="Yelp" style="margin-right: 6px;">
+                  Yelp
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="customerReference" value="Referral" style="margin-right: 6px;">
+                  Referral
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Type</label>
+              <div class="type-options" style="display: flex; gap: 15px; margin-top: 8px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="customerType" value="CURRENT" style="margin-right: 6px;" checked>
+                  Client
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" name="customerType" value="LEADS" style="margin-right: 6px;">
+                  Lead
+                </label>
+              </div>
+            </div>
+            
             <div class="form-group">
               <label for="customerName">Name *</label>
               <input type="text" id="customerName" required>
@@ -184,22 +217,6 @@
                 <label for="customerZip">ZIP Code *</label>
                 <input type="text" id="customerZip" placeholder="96815" maxlength="5" pattern="[0-9]{5}" required>
               </div>
-            </div>
-            <div class="form-group">
-              <label for="customerReference">Reference</label>
-              <select id="customerReference">
-                <option value="">Select reference...</option>
-                <option value="HOD">Home Depot</option>
-                <option value="Yelp">Yelp</option>
-                <option value="Cust">Customer Referral</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="customerType">Type</label>
-              <select id="customerType">
-                <option value="CURRENT">Current Customer</option>
-                <option value="LEADS">Lead</option>
-              </select>
             </div>
             <div class="form-group">
               <label for="customerNotes">Notes</label>
