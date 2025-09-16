@@ -3286,14 +3286,24 @@ button {
   margin-right: 6px;
 }
 
-/* Responsive layout for reference options */
+/* Responsive layout for reference and type on same line */
+@media (max-width: 640px) {
+  /* Stack Reference and Type vertically on smaller screens */
+  .form-row:has(.reference-options) {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
 @media (max-width: 480px) {
-  .reference-options {
+  .reference-options,
+  .type-options {
     flex-direction: column;
     gap: 8px;
   }
   
-  .reference-options label {
+  .reference-options label,
+  .type-options label {
     text-align: center;
   }
 }

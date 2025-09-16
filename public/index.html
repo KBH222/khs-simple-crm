@@ -155,36 +155,38 @@
             <button class="close-btn">&times;</button>
           </div>
           <form id="customerForm">
-            <!-- Reference and Type moved to top -->
-            <div class="form-group">
-              <label>Reference</label>
-              <div class="reference-options" style="display: flex; gap: 15px; margin-top: 8px; flex-wrap: wrap;">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" name="customerReference" value="HOD" style="margin-right: 6px;">
-                  HOD
-                </label>
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" name="customerReference" value="Yelp" style="margin-right: 6px;">
-                  Yelp
-                </label>
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" name="customerReference" value="Referral" style="margin-right: 6px;">
-                  Referral
-                </label>
+            <!-- Reference and Type on same line -->
+            <div class="form-row" style="display: flex; gap: 20px; align-items: flex-start;">
+              <div class="form-group" style="flex: 1;">
+                <label>Reference</label>
+                <div class="reference-options" style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customerReference" value="HOD" style="margin-right: 6px;">
+                    HOD
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customerReference" value="Yelp" style="margin-right: 6px;">
+                    Yelp
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customerReference" value="Referral" style="margin-right: 6px;">
+                    Ref
+                  </label>
+                </div>
               </div>
-            </div>
-            
-            <div class="form-group">
-              <label>Type</label>
-              <div class="type-options" style="display: flex; gap: 15px; margin-top: 8px;">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" name="customerType" value="CURRENT" style="margin-right: 6px;" checked>
-                  Client
-                </label>
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" name="customerType" value="LEADS" style="margin-right: 6px;">
-                  Lead
-                </label>
+              
+              <div class="form-group" style="flex: 1;">
+                <label>Type</label>
+                <div class="type-options" style="display: flex; gap: 10px; margin-top: 8px;">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customerType" value="CURRENT" style="margin-right: 6px;" checked>
+                    Client
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customerType" value="LEADS" style="margin-right: 6px;">
+                    Lead
+                  </label>
+                </div>
               </div>
             </div>
             
