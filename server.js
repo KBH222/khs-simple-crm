@@ -18,7 +18,9 @@ let dbInitialized = false;
 const initializeDatabase = () => {
   return new Promise((resolve, reject) => {
     try {
-      db = new sqlite3.Database('crm.db', (err) => {
+      // Use persistent volume path for database in production
+      const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
+      db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
           console.error('Failed to connect to database:', err);
           reject(err);
@@ -1658,7 +1660,8 @@ function createBackup(reason = 'manual') {
     }
     
     // Copy database file
-    const sourcePath = path.join(__dirname, 'crm.db');
+    const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
+    const sourcePath = path.join(__dirname, dbPath);
     
     if (!fs.existsSync(sourcePath)) {
       return reject(new Error('Source database file not found'));
@@ -1779,7 +1782,8 @@ app.post('/api/backup/restore', async (req, res) => {
   
   try {
     const backupPath = path.join(__dirname, 'backups', filename);
-    const mainDbPath = path.join(__dirname, 'crm.db');
+    const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
+    const mainDbPath = path.join(__dirname, dbPath);
     
     // Check if backup file exists
     if (!fs.existsSync(backupPath)) {
@@ -1807,7 +1811,8 @@ app.post('/api/backup/restore', async (req, res) => {
     
     // Reinitialize database connection with the restored data
     try {
-      db = new sqlite3.Database('crm.db', (err) => {
+      const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
+      db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
           console.error('Failed to reconnect to restored database:', err);
           return res.status(500).json({

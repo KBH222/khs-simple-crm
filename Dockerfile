@@ -12,8 +12,8 @@ RUN npm ci --only=production
 # Copy application code
 COPY . .
 
-# Create data directory for SQLite
-RUN mkdir -p /app/data
+# Create data directory for SQLite (persistent volume)
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 # Expose port
 EXPOSE 3001
