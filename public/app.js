@@ -1,11 +1,10 @@
-// Global state
-let customers = [];
-let currentFilter = 'all';
-let currentDate = new Date();
-let calendarEvents = [];
-let selectedDate = null;
-let autoRefreshInterval = null;
-let isPageVisible = true;
+// 🚀 BEAST MODE: Global state + optimized logging
+const isDev = location.hostname === 'localhost';
+const log = (...args) => isDev && console.log(...args);
+const logError = (...args) => console.error(...args);
+
+let customers = [], currentFilter = 'all', currentDate = new Date();
+let calendarEvents = [], selectedDate = null, autoRefreshInterval = null, isPageVisible = true;
 
 // Utility functions
 function formatDate(date) {
@@ -27,33 +26,25 @@ function formatTime(date) {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM Content Loaded!');
+  log('DOM Content Loaded!');
   updateDateTime();
   setInterval(updateDateTime, 1000);
   loadCustomers();
-  loadBackupInfo(); // Load backup information on startup
-  
-  // Event listeners
+  loadBackupInfo();
   setupEventListeners();
-  
-  // Add click test for debugging
-  setTimeout(() => {
-    testNavigation();
-  }, 1000);
+  setTimeout(() => testNavigation(), 1000);
 });
 
 function setupEventListeners() {
-  console.log('Setting up event listeners...');
+  log('Setting up event listeners...');
   
-  // Setup customer phone formatting on modal open
+  // 🚀 BEAST MODE: Customer modal setup
   const customerModal = document.getElementById('customerModal');
   if (customerModal) {
-    // When customer modal is shown, setup formatting
     const observer = new MutationObserver(() => {
       if (customerModal.classList.contains('active')) {
-        // Use setTimeout to ensure DOM is ready
         setTimeout(() => {
-          setupPhoneFormatting(); // 🚀 BEAST MODE!
+          setupPhoneFormatting();
           setupCityAutoComplete();
           setupAddressAutoComplete();
         }, 10);
@@ -62,21 +53,21 @@ function setupEventListeners() {
     observer.observe(customerModal, { attributes: true, attributeFilter: ['class'] });
   }
   
-  // Navigation cards
+  // 🚀 BEAST MODE: Navigation cards
   const navCards = document.querySelectorAll('.nav-card');
-  console.log('Found nav cards:', navCards.length);
+  log('Found nav cards:', navCards.length);
   
   navCards.forEach((card, index) => {
     const page = card.dataset.page;
-    console.log(`Nav card ${index}: page = ${page}`);
+    log(`Nav card ${index}: page = ${page}`);
     
     card.addEventListener('click', function(e) {
-      console.log('Nav card clicked:', page);
+      log('Nav card clicked:', page);
       e.preventDefault();
       if (page) {
         showPage(page);
       } else {
-        console.error('No page data attribute found!');
+        logError('No page data attribute found!');
       }
     });
     
@@ -143,26 +134,26 @@ function setupEventListeners() {
 
 
 function showPage(pageName) {
-  console.log('Showing page:', pageName);
+  log('🚀 Showing page:', pageName);
   
   // Hide all pages
   const allPages = document.querySelectorAll('.page');
-  console.log('Found pages:', allPages.length);
+  log('Found pages:', allPages.length);
   
   allPages.forEach(page => {
     page.classList.remove('active');
-    console.log('Hiding page:', page.id);
+    log('Hiding page:', page.id);
   });
   
   // Show selected page
   const targetPage = document.getElementById(pageName);
-  console.log('Target page element:', targetPage);
+  log('Target page element:', targetPage);
   
   if (targetPage) {
     targetPage.classList.add('active');
-    console.log('Showing page:', pageName);
+    log('✅ Successfully showing page:', pageName);
   } else {
-    console.error('Page not found:', pageName);
+    logError('❌ Page not found:', pageName);
   }
   
   // Load page-specific data
@@ -203,10 +194,10 @@ async function loadCustomers() {
       customers = data;
       renderCustomers();
     } else {
-      console.error('Failed to load customers:', data.message);
+      logError('Failed to load customers:', data.message);
     }
   } catch (error) {
-    console.error('Error loading customers:', error);
+    logError('Error loading customers:', error);
   }
 }
 
@@ -247,7 +238,7 @@ async function loadCustomerJobs(customerId) {
       loadingSpan.style.color = '#EF4444';
     }
   } catch (error) {
-    console.error('Error loading customer jobs:', error);
+    logError('Error loading customer jobs:', error);
     const loadingSpan = document.querySelector(`#jobs-${customerId} .jobs-loading`);
     if (loadingSpan) {
       loadingSpan.textContent = 'Error loading';
@@ -453,10 +444,10 @@ async function deleteCustomer(customerId) {
     if (response.ok) {
       loadCustomers(); // Reload the list
     } else {
-      console.error('Failed to delete customer');
+      logError('Failed to delete customer');
     }
   } catch (error) {
-    console.error('Error deleting customer:', error);
+    logError('Error deleting customer:', error);
   }
 }
 
@@ -501,14 +492,14 @@ async function handleJobSubmit(e) {
   const customerId = form.dataset.customerId;
   
   if (!customerId) {
-    console.error('Customer not selected');
+    logError('❌ Customer not selected');
     return;
   }
   
   // Get selected job type
   const selectedJobType = document.querySelector('input[name="jobType"]:checked');
   if (!selectedJobType) {
-    console.error('Please select a job type');
+    logError('❌ Please select a job type');
     return;
   }
   
@@ -537,14 +528,14 @@ async function handleJobSubmit(e) {
     
     if (response.ok) {
       hideModals();
-      console.log(`Job "${jobData.title}" created successfully!`);
+      log(`✅ Job "${jobData.title}" created successfully!`);
       // Refresh the jobs for this customer
       loadCustomerJobs(customerId);
     } else {
-      console.error(data.message || 'Failed to create job');
+      logError(data.message || 'Failed to create job');
     }
   } catch (error) {
-    console.error('Error creating job:', error);
+    logError('Error creating job:', error);
   }
 }
 
@@ -609,10 +600,10 @@ async function handleCustomerSubmit(e) {
       hideModals();
       loadCustomers(); // Reload the list
     } else {
-      console.error(data.message || 'Failed to save customer');
+      logError(data.message || 'Failed to save customer');
     }
   } catch (error) {
-    console.error('Error saving customer:', error);
+    logError('Error saving customer:', error);
   }
 }
 
@@ -672,35 +663,35 @@ function formatAddress(address) {
   return escapeHtml(address);
 }
 
-// Placeholder functions for other sections
+// 🚀 BEAST MODE: Placeholder functions for other sections
 function showJobs() {
-  console.log('Jobs section coming soon!');
+  log('🚧 Jobs section coming soon!');
 }
 
 function showWorkers() {
-  console.log('Workers section coming soon!');
+  log('🚧 Workers section coming soon!');
 }
 
 function showMaterials() {
-  console.log('Materials section coming soon!');
+  log('🚧 Materials section coming soon!');
 }
 
 function showKHSInfo() {
-  console.log('Company Info section coming soon!');
+  log('🚧 Company Info section coming soon!');
 }
 
 function showProfile() {
-  console.log('Profile section coming soon!');
+  log('🚧 Profile section coming soon!');
 }
 
-// Debug function to test navigation
+// 🚀 BEAST MODE: Debug function to test navigation
 function testNavigation() {
-  console.log('=== NAVIGATION TEST ===');
+  log('=== NAVIGATION TEST ===');
   const navCards = document.querySelectorAll('.nav-card');
-  console.log('Nav cards found:', navCards.length);
+  log('Nav cards found:', navCards.length);
   
   navCards.forEach((card, index) => {
-    console.log(`Card ${index}:`, {
+    log(`Card ${index}:`, {
       element: card,
       dataset: card.dataset,
       page: card.dataset.page,
@@ -709,17 +700,17 @@ function testNavigation() {
   });
   
   const pages = document.querySelectorAll('.page');
-  console.log('Pages found:', pages.length);
+  log('Pages found:', pages.length);
   
   pages.forEach((page, index) => {
-    console.log(`Page ${index}:`, {
+    log(`Page ${index}:`, {
       id: page.id,
       classList: Array.from(page.classList),
       visible: page.classList.contains('active')
     });
   });
   
-  console.log('=== END TEST ===');
+  log('=== END TEST ===');
 }
 
 // Job viewing and management
@@ -734,10 +725,10 @@ async function viewJob(jobId) {
       currentJob = job;
       showJobDetailsModal(job);
     } else {
-      console.error('Failed to load job details');
+      logError('Failed to load job details');
     }
   } catch (error) {
-    console.error('Error loading job:', error);
+    logError('Error loading job:', error);
   }
 }
 
@@ -787,7 +778,7 @@ function showJobDetailsModal(job) {
 
 function editJob() {
   if (currentJob) {
-    console.log('Job editing feature coming soon!');
+    log('🚧 Job editing feature coming soon!');
     // TODO: Implement job editing
   }
 }
@@ -806,10 +797,10 @@ async function deleteJob() {
       loadCustomerJobs(currentJob.customer_id);
       currentJob = null;
     } else {
-      console.error('Failed to save job');
+      logError('Failed to save job');
     }
   } catch (error) {
-    console.error('Error saving job:', error);
+    logError('Error saving job:', error);
   }
 }
 
@@ -830,10 +821,10 @@ async function deleteJobFromTile(jobId) {
         loadCustomers();
       }
     } else {
-      console.error('Failed to delete job');
+      logError('Failed to delete job');
     }
   } catch (error) {
-    console.error('Error deleting job:', error);
+    logError('Error deleting job:', error);
   }
 }
 
@@ -849,10 +840,10 @@ async function saveProjectScope(jobId, scope) {
     });
     
     if (!response.ok) {
-      console.error('Failed to save project scope');
+      logError('Failed to save project scope');
     }
   } catch (error) {
-    console.error('Error saving project scope:', error);
+    logError('Error saving project scope:', error);
   }
 }
 
@@ -883,18 +874,18 @@ function switchJobTab(tabName) {
 // Load data for specific tabs
   if (currentJob && currentJob.id) {
     if (tabName === 'tasks') {
-      console.log('Loading tasks for job:', currentJob.id);
+      log('📋 Loading tasks for job:', currentJob.id);
       loadJobTasks(currentJob.id);
     } else if (tabName === 'extra') {
-      console.log('Loading extra costs for job:', currentJob.id);
+      log('💰 Loading extra costs for job:', currentJob.id);
       loadExtraCosts(currentJob.id);
     } else if (tabName === 'pics' || tabName === 'plans') {
-      console.log(`Setting up file drop zones for ${tabName} tab`);
+      log(`📁 Setting up file drop zones for ${tabName} tab`);
       // Re-setup file drop zones to ensure they're working
       setTimeout(() => setupFileDropZones(), 100);
     }
   } else {
-    console.log('No currentJob set or no ID:', { currentJob });
+    log('⚠️ No currentJob set or no ID:', { currentJob });
   }
 }
 
@@ -902,11 +893,11 @@ function switchJobTab(tabName) {
 let fileDropZonesSetup = false;
 
 function setupFileDropZones() {
-  console.log('Setting up file drop zones...');
+  log('📁 Setting up file drop zones...');
   
   // Prevent duplicate setup
   if (fileDropZonesSetup) {
-    console.log('File drop zones already set up, skipping...');
+    log('🚫 File drop zones already set up, skipping...');
     return;
   }
   
@@ -914,36 +905,36 @@ function setupFileDropZones() {
   const picsDropZone = document.getElementById('picsDropZone');
   const picsFileInput = document.getElementById('picsFileInput');
   
-  console.log('Pics drop zone elements:', { picsDropZone, picsFileInput });
+  log('Pics drop zone elements:', { picsDropZone, picsFileInput });
   
   if (picsDropZone && picsFileInput) {
-    console.log('Setting up pics drop zone event listeners');
+    log('🌄 Setting up pics drop zone event listeners');
     
     picsDropZone.onclick = () => {
-      console.log('Pics drop zone clicked - opening file dialog');
+      log('🌄 Pics drop zone clicked - opening file dialog');
       picsFileInput.click();
     };
     
     picsFileInput.addEventListener('change', (e) => {
-      console.log('File input changed:', e.target.files);
+      log('📝 File input changed:', e.target.files);
       handleFileSelect(e, 'pics');
     });
     
     picsDropZone.addEventListener('dragenter', (e) => {
-      console.log('Dragenter on pics zone');
+      log('➡️ Dragenter on pics zone');
       e.preventDefault();
       picsDropZone.classList.add('dragover');
     });
     
     picsDropZone.addEventListener('dragover', (e) => {
-      console.log('Dragover on pics zone');
+      log('➡️ Dragover on pics zone');
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
       picsDropZone.classList.add('dragover');
     });
     
     picsDropZone.addEventListener('dragleave', (e) => {
-      console.log('Dragleave on pics zone');
+      log('⬅️ Dragleave on pics zone');
       // Only remove class if we're actually leaving the drop zone (not entering a child)
       if (!picsDropZone.contains(e.relatedTarget)) {
         picsDropZone.classList.remove('dragover');
@@ -951,15 +942,15 @@ function setupFileDropZones() {
     });
     
     picsDropZone.addEventListener('drop', (e) => {
-      console.log('Drop on pics zone:', e.dataTransfer.files);
+      log('📦 Drop on pics zone:', e.dataTransfer.files);
       e.preventDefault();
       picsDropZone.classList.remove('dragover');
       handleFileDrop(e, 'pics');
     });
     
-    console.log('Pics drop zone setup complete');
+    log('✅ Pics drop zone setup complete');
   } else {
-    console.error('Could not find pics drop zone elements:', { picsDropZone, picsFileInput });
+    logError('❌ Could not find pics drop zone elements:', { picsDropZone, picsFileInput });
   }
   
   // Setup plans drop zone
@@ -991,35 +982,35 @@ function setupFileDropZones() {
 }
 
 function handleFileSelect(event, type) {
-  console.log(`handleFileSelect called for type: ${type}`);
+  log(`📝 handleFileSelect called for type: ${type}`);
   const files = Array.from(event.target.files);
-  console.log('Selected files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
+  log('📁 Selected files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
   uploadFiles(files, type);
 }
 
 function handleFileDrop(event, type) {
-  console.log(`handleFileDrop called for type: ${type}`);
+  log(`📦 handleFileDrop called for type: ${type}`);
   const files = Array.from(event.dataTransfer.files);
-  console.log('Dropped files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
+  log('📦 Dropped files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
   uploadFiles(files, type);
 }
 
 async function uploadFiles(files, type) {
-  console.log(`uploadFiles called: ${files.length} files to ${type}`);
+  log(`🚀 uploadFiles called: ${files.length} files to ${type}`);
   
   if (files.length === 0) {
-    console.warn('No files provided to upload');
+    log('⚠️ No files provided to upload');
     return;
   }
   
   if (!currentJob || !currentJob.id) {
-    console.error('No current job selected for upload');
+    logError('❌ No current job selected for upload');
     alert('Please select a job first before uploading photos');
     return;
   }
   
   // Show immediate feedback to user
-  console.log(`Uploading ${files.length} ${type} files to job ${currentJob.id}`);
+  log(`📤 Uploading ${files.length} ${type} files to job ${currentJob.id}`);
   
   // Create FormData for upload
   const formData = new FormData();
@@ -1046,7 +1037,7 @@ async function uploadFiles(files, type) {
     document.body.removeChild(uploadStatus);
     
     if (response.ok) {
-      console.log('Upload successful:', result);
+      log('✅ Upload successful:', result);
       
       // Show success message
       const successMsg = document.createElement('div');
@@ -1058,11 +1049,11 @@ async function uploadFiles(files, type) {
       // Reload photos for this job
       await loadJobFiles(currentJob.id);
     } else {
-      console.error('Upload failed:', result);
+      logError('Upload failed:', result);
       alert(`Upload failed: ${result.error || 'Unknown error'}`);
     }
   } catch (error) {
-    console.error('Upload error:', error);
+    logError('Upload error:', error);
     alert(`Upload error: ${error.message}`);
   }
 }
@@ -1077,24 +1068,24 @@ let taskDraggedElement = null;
 
 // Load and display tasks
 async function loadJobTasks(jobId) {
-  console.log('loadJobTasks called with jobId:', jobId);
+  log('loadJobTasks called with jobId:', jobId);
   try {
     const url = `/api/jobs/${jobId}/tasks`;
-    console.log('Fetching:', url);
+    log('Fetching:', url);
     const response = await fetch(url);
     const tasks = await response.json();
     
-    console.log('API Response:', { status: response.status, tasks });
+    log('API Response:', { status: response.status, tasks });
     
     if (response.ok) {
       currentJobTasks = tasks;
-      console.log('About to render tasks:', tasks);
+      log('About to render tasks:', tasks);
       renderTasks();
     } else {
-      console.error('Failed to load tasks:', tasks.error);
+      logError('Failed to load tasks:', tasks.error);
     }
   } catch (error) {
-    console.error('Error loading tasks:', error);
+    logError('Error loading tasks:', error);
   }
 }
 
@@ -1217,10 +1208,10 @@ async function addTask(description) {
         }
       }, 300);
     } else {
-      console.error('Failed to add task:', result.error);
+      logError('Failed to add task:', result.error);
     }
   } catch (error) {
-    console.error('Error adding task:', error);
+    logError('Error adding task:', error);
   }
 }
 
@@ -1242,10 +1233,10 @@ async function toggleTask(taskId, completed) {
         renderTasks();
       }
     } else {
-      console.error('Failed to update task');
+      logError('Failed to update task');
     }
   } catch (error) {
-    console.error('Error updating task:', error);
+    logError('Error updating task:', error);
   }
 }
 
@@ -1258,10 +1249,10 @@ async function deleteTask(taskId) {
     if (response.ok) {
       await loadJobTasks(currentJob.id); // Reload tasks
     } else {
-      console.error('Failed to delete task');
+      logError('Failed to delete task');
     }
   } catch (error) {
-    console.error('Error deleting task:', error);
+    logError('Error deleting task:', error);
   }
 }
 
@@ -1338,20 +1329,20 @@ async function updateTaskOrder() {
     });
     
     if (!response.ok) {
-      console.error('Failed to update task order');
+      logError('Failed to update task order');
       // Reload tasks to revert to original order
       await loadJobTasks(currentJob.id);
     }
   } catch (error) {
-    console.error('Error updating task order:', error);
+    logError('Error updating task order:', error);
   }
 }
 
 async function loadJobFiles(jobId) {
-  console.log('Loading files for job:', jobId);
+  log('Loading files for job:', jobId);
   
   if (!jobId) {
-    console.warn('No job ID provided to loadJobFiles');
+    log('No job ID provided to loadJobFiles');
     clearPicsDisplay();
     clearPlansDisplay();
     return;
@@ -1362,10 +1353,10 @@ async function loadJobFiles(jobId) {
     const picsResponse = await fetch(`/api/jobs/${jobId}/photos?type=pics`);
     if (picsResponse.ok) {
       const picsData = await picsResponse.json();
-      console.log(`Loaded ${picsData.length} pics for job ${jobId}`);
+      log(`Loaded ${picsData.length} pics for job ${jobId}`);
       displayServerPhotos(picsData, 'pics');
     } else {
-      console.error('Failed to load pics:', picsResponse.status);
+      logError('Failed to load pics:', picsResponse.status);
       clearPicsDisplay();
     }
     
@@ -1373,14 +1364,14 @@ async function loadJobFiles(jobId) {
     const plansResponse = await fetch(`/api/jobs/${jobId}/photos?type=plans`);
     if (plansResponse.ok) {
       const plansData = await plansResponse.json();
-      console.log(`Loaded ${plansData.length} plans for job ${jobId}`);
+      log(`Loaded ${plansData.length} plans for job ${jobId}`);
       displayServerPhotos(plansData, 'plans');
     } else {
-      console.error('Failed to load plans:', plansResponse.status);
+      logError('Failed to load plans:', plansResponse.status);
       clearPlansDisplay();
     }
   } catch (error) {
-    console.error('Error loading job files:', error);
+    logError('Error loading job files:', error);
     clearPicsDisplay();
     clearPlansDisplay();
   }
@@ -1414,10 +1405,10 @@ async function createSharpThumbnail(file, container) {
       enlargeImage(file, img.src);
     });
     
-    console.log(`Sharp thumbnail created for: ${file.name} (DPR: ${DPR}, Canvas: ${PIXELS}x${PIXELS}, CSS: ${TARGET}x${TARGET})`);
+    log(`Sharp thumbnail created for: ${file.name} (DPR: ${DPR}, Canvas: ${PIXELS}x${PIXELS}, CSS: ${TARGET}x${TARGET})`);
     return Promise.resolve(); // Explicitly return resolved promise
   } catch (err) {
-    console.error('Thumbnail creation error:', err);
+    logError('Thumbnail creation error:', err);
     // Fallback to simple image display
     const img = document.createElement('img');
     img.style.width = TARGET + 'px';
@@ -1817,7 +1808,7 @@ function createSharpThumbnail(file, container) {
         enlargeImage(file, e.target.result);
       });
       
-      console.log(`Sharp thumbnail created for: ${file.name}`);
+      log(`Sharp thumbnail created for: ${file.name}`);
     };
     img.src = e.target.result;
   };
@@ -1929,14 +1920,14 @@ function createPixelPerfectThumbnail_OLD(file, container) {
         enlargeImage(file, canvas.toDataURL('image/png', 1.0));
       });
       
-      console.log(`Created pixel-perfect thumbnail: ${file.name} (DPR: ${dpr}, Canvas: ${canvasSize}x${canvasSize}, CSS: ${cssSize}x${cssSize})`);
+      log(`Created pixel-perfect thumbnail: ${file.name} (DPR: ${dpr}, Canvas: ${canvasSize}x${canvasSize}, CSS: ${cssSize}x${cssSize})`);
     };
     
     tempImg.src = e.target.result;
   };
   
   reader.onerror = function() {
-    console.error('Failed to create thumbnail for:', file.name);
+    logError('Failed to create thumbnail for:', file.name);
     // Fallback to simple img element
     const img = document.createElement('img');
     img.src = URL.createObjectURL(file);
@@ -1964,7 +1955,7 @@ function downloadFile(file) {
     URL.revokeObjectURL(url);
   }, 100);
   
-  console.log(`Downloaded HEIF/HEIC file: ${file.name}`);
+  log(`Downloaded HEIF/HEIC file: ${file.name}`);
 }
 
 // Method 1: Native Size (No Scale) - Show image at actual pixels
@@ -1972,7 +1963,7 @@ function renderMethodNative1(file, container) {
   const img = document.createElement('img');
   img.src = URL.createObjectURL(file);
   img.onload = () => {
-    console.log(`Image natural size: ${img.naturalWidth}x${img.naturalHeight}`);
+    log(`Image natural size: ${img.naturalWidth}x${img.naturalHeight}`);
     // Show at actual size, cropped to container
     img.style.cssText = `
       width: ${img.naturalWidth}px;
@@ -2274,7 +2265,7 @@ function clearPlansDisplay() {
 }
 
 function displayServerPhotos(photos, type) {
-  console.log(`displayServerPhotos called with ${photos.length} ${type} photos`);
+  log(`displayServerPhotos called with ${photos.length} ${type} photos`);
   
   if (type === 'pics') {
     displayServerPics(photos, type);
@@ -2286,7 +2277,7 @@ function displayServerPhotos(photos, type) {
 function displayServerPics(photos, type) {
   const picsList = document.getElementById('picsList');
   if (!picsList) {
-    console.error('picsList element not found');
+    logError('picsList element not found');
     return;
   }
   
@@ -2363,7 +2354,7 @@ function displayServerPics(photos, type) {
 function displayServerPlans(photos, type) {
   const plansList = document.getElementById('plansList');
   if (!plansList) {
-    console.error('plansList element not found');
+    logError('plansList element not found');
     return;
   }
   
@@ -2429,7 +2420,7 @@ async function deleteServerPhoto(photoId, type) {
     });
     
     if (response.ok) {
-      console.log('Photo deleted successfully');
+      log('Photo deleted successfully');
       // Reload the photos for current job
       if (currentJob && currentJob.id) {
         await loadJobFiles(currentJob.id);
@@ -2439,7 +2430,7 @@ async function deleteServerPhoto(photoId, type) {
       alert(`Failed to delete photo: ${error.error}`);
     }
   } catch (error) {
-    console.error('Error deleting photo:', error);
+    logError('Error deleting photo:', error);
     alert('Error deleting photo');
   }
 }
@@ -2545,10 +2536,10 @@ async function loadExtraCosts(jobId) {
       currentJobExtraCosts = notes;
       renderExtraNotes();
     } else {
-      console.error('Failed to load extra notes:', notes.error);
+      logError('Failed to load extra notes:', notes.error);
     }
   } catch (error) {
-    console.error('Error loading extra notes:', error);
+    logError('Error loading extra notes:', error);
   }
 }
 
@@ -2629,10 +2620,10 @@ async function addExtraNote() {
       noteInput.value = '';
       noteInput.focus();
     } else {
-      console.error('Failed to add extra note:', result.error);
+      logError('Failed to add extra note:', result.error);
     }
   } catch (error) {
-    console.error('Error adding extra note:', error);
+    logError('Error adding extra note:', error);
   }
 }
 
@@ -2645,10 +2636,10 @@ async function deleteExtraNote(noteId) {
     if (response.ok) {
       await loadExtraCosts(currentJob.id); // Reload notes
     } else {
-      console.error('Failed to delete extra note');
+      logError('Failed to delete extra note');
     }
   } catch (error) {
-    console.error('Error deleting extra note:', error);
+    logError('Error deleting extra note:', error);
   }
 }
 
@@ -2665,7 +2656,7 @@ async function clearAllExtraNotes() {
       await Promise.all(deletePromises);
       await loadExtraCosts(currentJob.id); // Reload (should be empty)
     } catch (error) {
-      console.error('Error clearing all extra notes:', error);
+      logError('Error clearing all extra notes:', error);
     }
   }
 }
@@ -2674,7 +2665,7 @@ async function clearAllExtraNotes() {
 // Communication functions
 function sendText(phoneNumber) {
   if (!phoneNumber || phoneNumber === 'Not provided') {
-    console.log('No phone number available for this customer.');
+    log('No phone number available for this customer.');
     return;
   }
   
@@ -2687,16 +2678,16 @@ function sendText(phoneNumber) {
   } else {
     // For desktop, copy number to clipboard
     navigator.clipboard.writeText(cleanPhone).then(() => {
-      console.log(`Phone number ${phoneNumber} copied to clipboard!`);
+      log(`Phone number ${phoneNumber} copied to clipboard!`);
     }).catch(() => {
-      console.log(`Phone number: ${phoneNumber}`);
+      log(`Phone number: ${phoneNumber}`);
     });
   }
 }
 
 // Calendar Functions
 function initializeCalendar() {
-  console.log('Initializing calendar...');
+  log('Initializing calendar...');
   setupCalendarEventListeners();
   renderCalendar();
   loadCalendarEvents();
@@ -2898,13 +2889,13 @@ async function handleEventSubmit(e) {
     if (response.ok) {
       hideModals();
       loadCalendarEvents();
-      console.log('Event created successfully!');
+      log('Event created successfully!');
     } else {
       const error = await response.json();
-      console.error(error.message || 'Failed to create event');
+      logError(error.message || 'Failed to create event');
     }
   } catch (error) {
-    console.error('Error creating event:', error);
+    logError('Error creating event:', error);
   }
 }
 
@@ -2919,10 +2910,10 @@ async function loadCalendarEvents() {
       calendarEvents = events;
       renderEvents();
     } else {
-      console.error('Failed to load calendar events');
+      logError('Failed to load calendar events');
     }
   } catch (error) {
-    console.error('Error loading calendar events:', error);
+    logError('Error loading calendar events:', error);
   }
 }
 
@@ -2968,7 +2959,7 @@ function renderEvents() {
 }
 
 function viewEvent(event) {
-  console.log(`Event: ${event.title} - Date: ${event.event_date} - Type: ${event.event_type}`);
+  log(`Event: ${event.title} - Date: ${event.event_date} - Type: ${event.event_type}`);
   // TODO: Show event details in a modal instead of alert
 }
 
@@ -2995,7 +2986,7 @@ function handleEventDragStart(e) {
     day.classList.add('drop-zone');
   });
   
-  console.log('Started dragging event:', draggedEvent.title);
+  log('Started dragging event:', draggedEvent.title);
 }
 
 function handleEventDragEnd(e) {
@@ -3009,7 +3000,7 @@ function handleEventDragEnd(e) {
   draggedEvent = null;
   draggedEventElement = null;
   
-  console.log('Ended dragging event');
+  log('Ended dragging event');
 }
 
 function setupCalendarDayDropListeners() {
@@ -3070,17 +3061,17 @@ async function handleDayDrop(e) {
   const targetDate = e.target.closest('.calendar-day')?.dataset.date;
   
   if (!targetDate) {
-    console.error('No target date found');
+    logError('No target date found');
     return;
   }
   
   // Don't allow dropping on the same date
   if (targetDate === draggedEvent.originalDate) {
-    console.log('Cannot drop event on the same date');
+    log('Cannot drop event on the same date');
     return;
   }
   
-  console.log(`Moving event ${draggedEvent.title} from ${draggedEvent.originalDate} to ${targetDate}`);
+  log(`Moving event ${draggedEvent.title} from ${draggedEvent.originalDate} to ${targetDate}`);
   
   try {
     // Update event date via API
@@ -3095,17 +3086,17 @@ async function handleDayDrop(e) {
     });
     
     if (response.ok) {
-      console.log('Event moved successfully');
+      log('Event moved successfully');
       // Reload calendar events to reflect the change
       await loadCalendarEvents();
       
       // Show success feedback
       showMoveSuccessFeedback(targetDate);
     } else {
-      console.error('Failed to move event');
+      logError('Failed to move event');
     }
   } catch (error) {
-    console.error('Error moving event:', error);
+    logError('Error moving event:', error);
   }
 }
 
@@ -3148,14 +3139,14 @@ async function deleteCalendarEvent(eventId) {
     });
     
     if (response.ok) {
-      console.log('Event deleted successfully');
+      log('Event deleted successfully');
       // Reload calendar events to reflect the change
       await loadCalendarEvents();
     } else {
-      console.error('Failed to delete event');
+      logError('Failed to delete event');
     }
   } catch (error) {
-    console.error('Error deleting event:', error);
+    logError('Error deleting event:', error);
   }
 }
 
@@ -3176,7 +3167,7 @@ async function createBackup() {
     if (result.success) {
       statusElement.textContent = 'Backup created successfully!';
       statusElement.style.color = '#059669';
-      console.log('Backup created:', result.backup.filename);
+      log('Backup created:', result.backup.filename);
       
       // Refresh backup history if on settings page
       const settingsPage = document.getElementById('settings');
@@ -3193,7 +3184,7 @@ async function createBackup() {
       throw new Error(result.error || 'Backup failed');
     }
   } catch (error) {
-    console.error('Backup failed:', error);
+    logError('Backup failed:', error);
     statusElement.textContent = 'Backup failed - try again';
     statusElement.style.color = '#DC2626';
     
@@ -3221,7 +3212,7 @@ async function loadBackupInfo() {
       }
     }
   } catch (error) {
-    console.error('Failed to load backup info:', error);
+    logError('Failed to load backup info:', error);
   }
 }
 
@@ -3312,7 +3303,7 @@ async function loadBackupHistory() {
       historyContainer.innerHTML = '<div class="backup-loading">No backups found</div>';
     }
   } catch (error) {
-    console.error('Failed to load backup history:', error);
+    logError('Failed to load backup history:', error);
     historyContainer.innerHTML = '<div class="backup-loading">Failed to load backup history</div>';
   }
 }
@@ -3385,7 +3376,7 @@ async function executeRestore() {
   const backupFilename = modal.dataset.selectedBackup;
   
   if (!backupFilename) {
-    console.error('No backup selected for restore');
+    logError('No backup selected for restore');
     return;
   }
   
@@ -3449,7 +3440,7 @@ async function executeRestore() {
       throw new Error(result.error || 'Restore failed');
     }
   } catch (error) {
-    console.error('Restore failed:', error);
+    logError('Restore failed:', error);
     
     confirmBtn.textContent = 'Restore Failed';
     confirmBtn.style.background = '#DC2626';
@@ -3560,10 +3551,10 @@ async function loadWorkers() {
       workers = data;
       renderWorkers();
     } else {
-      console.error('Failed to load workers:', data.error);
+      logError('Failed to load workers:', data.error);
     }
   } catch (error) {
-    console.error('Error loading workers:', error);
+    logError('Error loading workers:', error);
   }
 }
 
@@ -3573,7 +3564,7 @@ function renderWorkers() {
   
   // Check if element exists (we might be on a different page)
   if (!workersList) {
-    console.log('workersList element not found, skipping render');
+    log('workersList element not found, skipping render');
     return;
   }
   
@@ -3626,7 +3617,7 @@ function showWorkerModal(worker = null) {
   
   if (worker) {
     // Edit mode
-    console.log('Setting up edit mode for worker:', worker);
+    log('Setting up edit mode for worker:', worker);
     title.textContent = 'Edit Worker';
     document.getElementById('workerInitials').value = worker.initials || '';
     document.getElementById('workerName').value = worker.name;
@@ -3636,7 +3627,7 @@ function showWorkerModal(worker = null) {
     if (roleRadio) {
       roleRadio.checked = true;
     } else {
-      console.warn('No matching role radio found for:', worker.role);
+      log('No matching role radio found for:', worker.role);
     }
     
     const phoneValue = worker.phone || '';
@@ -3646,7 +3637,7 @@ function showWorkerModal(worker = null) {
     
     // Ensure worker ID is properly set
     form.dataset.workerId = worker.id;
-    console.log('Set form workerId to:', worker.id);
+    log('Set form workerId to:', worker.id);
   } else {
     // Add mode
     title.textContent = 'Add Worker';
@@ -3677,10 +3668,10 @@ async function deleteWorker(workerId) {
       loadWorkers(); // Reload the old list
       loadActiveWorkers(); // Reload the team members grid
     } else {
-      console.error('Failed to delete worker');
+      logError('Failed to delete worker');
     }
   } catch (error) {
-    console.error('Error deleting worker:', error);
+    logError('Error deleting worker:', error);
   }
 }
 
@@ -3692,13 +3683,13 @@ async function handleWorkerSubmit(e) {
   const workerId = form.dataset.workerId;
   const isEdit = !!workerId;
   
-  console.log('Worker submit:', { workerId, isEdit, formData: form.dataset });
+  log('Worker submit:', { workerId, isEdit, formData: form.dataset });
   
   // Get selected role from radio buttons
   const selectedRole = document.querySelector('input[name="workerRole"]:checked');
   
   if (!selectedRole) {
-    console.error('No role selected');
+    logError('No role selected');
     alert('Please select a role');
     return;
   }
@@ -3708,13 +3699,13 @@ async function handleWorkerSubmit(e) {
   const name = document.getElementById('workerName').value.trim();
   
   if (!initials) {
-    console.error('Initials are required');
+    logError('Initials are required');
     alert('Please enter worker initials');
     return;
   }
   
   if (!name) {
-    console.error('Name is required');
+    logError('Name is required');
     alert('Please enter worker name');
     return;
   }
@@ -3736,11 +3727,11 @@ async function handleWorkerSubmit(e) {
     initials: initials.toUpperCase()
   };
   
-  console.log('Worker data to save:', workerData);
+  log('Worker data to save:', workerData);
   
   // Safety check for edit operations
   if (isEdit && !workerId) {
-    console.error('Edit mode but no workerId found!');
+    logError('Edit mode but no workerId found!');
     alert('Error: Cannot edit worker - missing worker ID');
     return;
   }
@@ -3749,7 +3740,7 @@ async function handleWorkerSubmit(e) {
     const url = isEdit ? `/api/workers/${workerId}` : '/api/workers';
     const method = isEdit ? 'PUT' : 'POST';
     
-    console.log('Making request:', { url, method, isEdit, workerId });
+    log('Making request:', { url, method, isEdit, workerId });
     
     const response = await fetch(url, {
       method,
@@ -3760,10 +3751,10 @@ async function handleWorkerSubmit(e) {
     });
     
     const data = await response.json();
-    console.log('Server response:', { status: response.status, data });
+    log('Server response:', { status: response.status, data });
     
     if (response.ok) {
-      console.log('Worker save successful, reloading data...');
+      log('Worker save successful, reloading data...');
       hideModals();
       
       try {
@@ -3782,17 +3773,17 @@ async function handleWorkerSubmit(e) {
           loadWorkersForDropdowns();
         }
         
-        console.log('Data reload complete successfully');
+        log('Data reload complete successfully');
       } catch (reloadError) {
-        console.error('Error during data reload:', reloadError);
+        logError('Error during data reload:', reloadError);
         alert('Worker saved successfully, but there was an issue refreshing the display. Please refresh the page.');
       }
     } else {
-      console.error('Server error:', data.error || 'Failed to save worker');
+      logError('Server error:', data.error || 'Failed to save worker');
       alert(`Failed to save worker: ${data.error || 'Unknown error'}`);
     }
   } catch (error) {
-    console.error('Error saving worker:', error);
+    logError('Error saving worker:', error);
     alert(`Error saving worker: ${error.message}`);
   }
 }
@@ -3857,10 +3848,10 @@ async function loadWorkHours() {
       renderHoursSummary();
       renderHoursDetails();
     } else {
-      console.error('Failed to load work hours:', data.error);
+      logError('Failed to load work hours:', data.error);
     }
   } catch (error) {
-    console.error('Error loading work hours:', error);
+    logError('Error loading work hours:', error);
   }
 }
 
@@ -4008,10 +3999,10 @@ async function deleteHours(hoursId) {
     if (response.ok) {
       loadWorkHours(); // Reload the hours
     } else {
-      console.error('Failed to delete hours');
+      logError('Failed to delete hours');
     }
   } catch (error) {
-    console.error('Error deleting hours:', error);
+    logError('Error deleting hours:', error);
   }
 }
 
@@ -4056,7 +4047,7 @@ async function loadJobsForDropdowns() {
       });
     }
   } catch (error) {
-    console.error('Error loading jobs:', error);
+    logError('Error loading jobs:', error);
   }
 }
 
@@ -4080,7 +4071,7 @@ async function handleHoursSubmit(e) {
   };
   
   if (!hoursData.worker_id || !hoursData.work_date || !hoursData.start_time || !hoursData.end_time || !hoursData.work_type) {
-    console.error('Please fill in all required fields');
+    logError('Please fill in all required fields');
     return;
   }
   
@@ -4102,10 +4093,10 @@ async function handleHoursSubmit(e) {
       hideModals();
       loadWorkHours(); // Reload the hours
     } else {
-      console.error(data.error || 'Failed to save hours');
+      logError(data.error || 'Failed to save hours');
     }
   } catch (error) {
-    console.error('Error saving hours:', error);
+    logError('Error saving hours:', error);
   }
 }
 
@@ -4143,7 +4134,7 @@ const setupPhoneFormatting = (selector = 'input[type="tel"], #workerPhone, #cust
 function parseAddress(addressString) {
   if (!addressString) return { street: '', city: '', state: 'HI', zip: '' };
   
-  console.log('Parsing address:', addressString);
+  log('Parsing address:', addressString);
   
   // Try to parse various address formats
   const patterns = [
@@ -4170,7 +4161,7 @@ function parseAddress(addressString) {
         zip: match[4].trim()
       };
       
-      console.log('Parsed address result:', result);
+      log('Parsed address result:', result);
       return result;
     }
   }
@@ -4183,7 +4174,7 @@ function parseAddress(addressString) {
     zip: ''
   };
   
-  console.log('Fallback address result:', result);
+  log('Fallback address result:', result);
   return result;
 }
 
@@ -4199,16 +4190,16 @@ const HAWAIIAN_CITIES = [
 function setupCityAutoComplete() {
   const cityInput = document.getElementById('customerCity');
   if (!cityInput) {
-    console.log('City input not found for auto-completion');
+    log('City input not found for auto-completion');
     return;
   }
   
-  console.log('Setting up city auto-completion');
+  log('Setting up city auto-completion');
   let currentSuggestions = null;
   
   cityInput.addEventListener('input', function(e) {
     const value = e.target.value.toLowerCase();
-    console.log('City input changed:', value);
+    log('City input changed:', value);
     
     // Remove existing suggestions
     if (currentSuggestions) {
@@ -4223,10 +4214,10 @@ function setupCityAutoComplete() {
       city.toLowerCase().includes(value)
     ).slice(0, 5); // Limit to 5 suggestions
     
-    console.log('Found city matches:', matches);
+    log('Found city matches:', matches);
     
     if (matches.length === 0) {
-      console.log('No city matches found for:', value);
+      log('No city matches found for:', value);
       return;
     }
     
@@ -4292,7 +4283,7 @@ function setupCityAutoComplete() {
 // Address validation using USPS API
 async function validateAddress(street, city = '', state = 'HI', zip = '') {
   try {
-    console.log('Validating address:', { street, city, state, zip });
+    log('Validating address:', { street, city, state, zip });
     
     const response = await fetch('/api/validate-address', {
       method: 'POST',
@@ -4305,14 +4296,14 @@ async function validateAddress(street, city = '', state = 'HI', zip = '') {
     const result = await response.json();
     
     if (response.ok && result.valid) {
-      console.log('Address validation successful:', result.address);
+      log('Address validation successful:', result.address);
       return result.address;
     } else {
-      console.error('Address validation failed:', result.error);
+      logError('Address validation failed:', result.error);
       return null;
     }
   } catch (error) {
-    console.error('Address validation error:', error);
+    logError('Address validation error:', error);
     return null;
   }
 }
@@ -4324,11 +4315,11 @@ function setupAddressAutoComplete() {
   const zipInput = document.getElementById('customerZip');
   
   if (!streetInput) {
-    console.log('Street input not found for address validation');
+    log('Street input not found for address validation');
     return;
   }
   
-  console.log('Setting up address auto-completion');
+  log('Setting up address auto-completion');
   
   // Validate address when street input loses focus
   streetInput.addEventListener('blur', async function() {
@@ -4336,7 +4327,7 @@ function setupAddressAutoComplete() {
     
     if (streetValue.length < 5) return; // Too short to be a valid address
     
-    console.log('Street input lost focus, validating:', streetValue);
+    log('Street input lost focus, validating:', streetValue);
     
     // Show loading state
     if (cityInput) cityInput.placeholder = 'Loading...';
@@ -4353,12 +4344,12 @@ function setupAddressAutoComplete() {
       // Auto-fill city and ZIP if they're empty
       if (cityInput && !cityInput.value) {
         cityInput.value = validatedAddress.city;
-        console.log('Auto-filled city:', validatedAddress.city);
+        log('Auto-filled city:', validatedAddress.city);
       }
       
       if (zipInput && !zipInput.value) {
         zipInput.value = validatedAddress.zip;
-        console.log('Auto-filled ZIP:', validatedAddress.zip);
+        log('Auto-filled ZIP:', validatedAddress.zip);
       }
     }
     
@@ -4396,38 +4387,38 @@ function setupWorkerEventListeners() {
 
 // Team Members / Worker Management Functions
 async function initializeTeamMembers() {
-  console.log('Initializing team members...');
+  log('Initializing team members...');
   await loadActiveWorkers();
   setupWorkerEventListeners();
 }
 
 async function loadActiveWorkers() {
   try {
-    console.log('Loading active workers...');
+    log('Loading active workers...');
     const response = await fetch('/api/workers?status=ACTIVE');
     const workersData = await response.json();
     
     if (response.ok) {
-      console.log('Loaded workers:', workersData.length, 'workers');
+      log('Loaded workers:', workersData.length, 'workers');
       workers = workersData;
       renderWorkerTiles();
     } else {
-      console.error('Failed to load workers:', workersData);
+      logError('Failed to load workers:', workersData);
       showLoadingMessage('Failed to load team members');
     }
   } catch (error) {
-    console.error('Error loading workers:', error);
+    logError('Error loading workers:', error);
     showLoadingMessage('Error loading team members');
     throw error; // Re-throw so caller knows about the error
   }
 }
 
 function renderWorkerTiles() {
-  console.log('renderWorkerTiles called with', workers.length, 'workers:', workers);
+  log('renderWorkerTiles called with', workers.length, 'workers:', workers);
   
   const container = document.getElementById('teamMembersGrid');
   if (!container) {
-    console.error('Team members grid container not found');
+    logError('Team members grid container not found');
     return;
   }
   
@@ -4437,7 +4428,7 @@ function renderWorkerTiles() {
   }
   
   if (workers.length === 0) {
-    console.log('No workers to display, showing empty state');
+    log('No workers to display, showing empty state');
     container.innerHTML = `
       <div class="empty-state">
         <p>No team members found</p>
@@ -4487,7 +4478,7 @@ function showLoadingMessage(message) {
 function openWorkerDetailModal(workerId) {
   const worker = workers.find(w => w.id === workerId);
   if (!worker) {
-    console.error('Worker not found:', workerId);
+    logError('Worker not found:', workerId);
     return;
   }
   
@@ -4565,7 +4556,7 @@ function showWorkerTab(tabName) {
 }
 
 async function loadWorkerTimesheet(workerId) {
-  console.log('Loading timesheet for worker:', workerId);
+  log('Loading timesheet for worker:', workerId);
   
   // Initialize timesheet with current week
   const today = new Date();
@@ -4660,11 +4651,11 @@ async function loadTimesheetData() {
       populateTimesheetGrid(hoursData);
       showMessage('Timesheet loaded', 'success');
     } else {
-      console.error('Failed to load timesheet:', hoursData);
+      logError('Failed to load timesheet:', hoursData);
       showMessage('Failed to load timesheet', 'error');
     }
   } catch (error) {
-    console.error('Error loading timesheet:', error);
+    logError('Error loading timesheet:', error);
     showMessage('Error loading timesheet', 'error');
   } finally {
     if (loadingEl) loadingEl.style.display = 'none';
@@ -4805,11 +4796,11 @@ async function saveWorkerTimesheet() {
           savedCount++;
         } else {
           hasError = true;
-          console.error('Failed to save entry:', entry);
+          logError('Failed to save entry:', entry);
         }
       } catch (entryError) {
         hasError = true;
-        console.error('Error saving entry:', entryError, entry);
+        logError('Error saving entry:', entryError, entry);
       }
     }
     
@@ -4821,7 +4812,7 @@ async function saveWorkerTimesheet() {
       showMessage('Failed to save timesheet', 'error');
     }
   } catch (error) {
-    console.error('Error saving timesheet:', error);
+    logError('Error saving timesheet:', error);
     showMessage('Error saving timesheet', 'error');
   }
 }
@@ -4841,19 +4832,19 @@ function showMessage(message, type) {
 }
 
 async function loadWorkerTasks(workerId) {
-  console.log('Loading tasks for worker:', workerId);
+  log('Loading tasks for worker:', workerId);
   // TODO: Implement task loading
 }
 
 async function loadWorkerNotes(workerId) {
-  console.log('Loading notes for worker:', workerId);
+  log('Loading notes for worker:', workerId);
   // TODO: Implement notes loading
 }
 
 function deleteWorkerFromTile(workerId) {
   const worker = workers.find(w => w.id === workerId);
   if (!worker) {
-    console.error('Worker not found:', workerId);
+    logError('Worker not found:', workerId);
     return;
   }
   
