@@ -53,7 +53,7 @@ function setupEventListeners() {
       if (customerModal.classList.contains('active')) {
         // Use setTimeout to ensure DOM is ready
         setTimeout(() => {
-          setupCustomerPhoneFormatting();
+          setupPhoneFormatting(); // 🚀 BEAST MODE!
           setupCityAutoComplete();
           setupAddressAutoComplete();
         }, 10);
@@ -429,9 +429,9 @@ function showCustomerModal(customer = null) {
   
   modal.classList.add('active');
   
-  // Setup phone formatting, city auto-completion, and address validation
+  // 🚀 BEAST MODE setup - phone formatting, city auto-completion, and address validation
   setTimeout(() => {
-    setupCustomerPhoneFormatting();
+    setupPhoneFormatting(); // Universal phone formatter!
     setupCityAutoComplete();
     setupAddressAutoComplete();
   }, 50);
@@ -4109,51 +4109,35 @@ async function handleHoursSubmit(e) {
   }
 }
 
-// Phone number formatting function
-function formatPhoneNumber(value) {
-  // Remove all non-digit characters
-  const phoneNumber = value.replace(/\D/g, '');
-  
-  // Format based on length
-  if (phoneNumber.length <= 3) {
-    return phoneNumber;
-  } else if (phoneNumber.length <= 6) {
-    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-  } else {
-    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
-  }
-}
+// 🚀 BEAST MODE PHONE FORMATTER - Handles EVERYTHING!
+const formatPhoneNumber = (value = '') => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+};
 
-// Setup phone number formatting
-function setupPhoneFormatting() {
-  const phoneInput = document.getElementById('workerPhone');
-  if (phoneInput) {
-    phoneInput.addEventListener('input', function(e) {
-      const cursorPosition = e.target.selectionStart;
-      const formatted = formatPhoneNumber(e.target.value);
-      const oldLength = e.target.value.length;
-      
-      e.target.value = formatted;
-      
-      // Maintain cursor position after formatting
-      const newLength = formatted.length;
-      const lengthDiff = newLength - oldLength;
-      const newCursorPosition = cursorPosition + lengthDiff;
-      
-      // Set cursor position after formatting
-      requestAnimationFrame(() => {
-        e.target.setSelectionRange(newCursorPosition, newCursorPosition);
-      });
-    });
+// 💪 ULTIMATE PHONE SETUP - Works for ANY input field
+const setupPhoneFormatting = (selector = 'input[type="tel"], #workerPhone, #customerPhone') => {
+  document.querySelectorAll(selector).forEach(input => {
+    if (input.dataset.phoneSetup) return; // Already set up
+    input.dataset.phoneSetup = 'true';
     
-    // Also format on paste
-    phoneInput.addEventListener('paste', function(e) {
-      setTimeout(() => {
-        e.target.value = formatPhoneNumber(e.target.value);
-      }, 10);
-    });
-  }
-}
+    // Format existing value
+    input.value = formatPhoneNumber(input.value);
+    
+    const handleInput = (e) => {
+      const cursor = e.target.selectionStart;
+      const oldLen = e.target.value.length;
+      e.target.value = formatPhoneNumber(e.target.value);
+      const diff = e.target.value.length - oldLen;
+      requestAnimationFrame(() => e.target.setSelectionRange(cursor + diff, cursor + diff));
+    };
+    
+    input.addEventListener('input', handleInput);
+    input.addEventListener('paste', () => setTimeout(() => input.value = formatPhoneNumber(input.value), 10));
+  });
+};
 
 // Parse address string into components
 function parseAddress(addressString) {
@@ -4384,35 +4368,7 @@ function setupAddressAutoComplete() {
   });
 }
 
-// Setup customer phone formatting
-function setupCustomerPhoneFormatting() {
-  const phoneInput = document.getElementById('customerPhone');
-  if (!phoneInput) return;
-  
-  // Format existing value on load (edit mode)
-  phoneInput.value = formatPhoneNumber(phoneInput.value || '');
-  
-  phoneInput.addEventListener('input', function(e) {
-    const cursorPosition = e.target.selectionStart;
-    const formatted = formatPhoneNumber(e.target.value);
-    const oldLength = e.target.value.length;
-    
-    e.target.value = formatted;
-    
-    const newLength = formatted.length;
-    const lengthDiff = newLength - oldLength;
-    const newCursorPosition = cursorPosition + lengthDiff;
-    requestAnimationFrame(() => {
-      e.target.setSelectionRange(newCursorPosition, newCursorPosition);
-    });
-  });
-  
-  phoneInput.addEventListener('paste', function(e) {
-    setTimeout(() => {
-      e.target.value = formatPhoneNumber(e.target.value);
-    }, 10);
-  });
-}
+// 🚀 BEAST MODE: Use the universal setupPhoneFormatting instead!
 
 // Setup worker event listeners in main setup
 function setupWorkerEventListeners() {
