@@ -1872,6 +1872,10 @@ async function startServer() {
     console.log('📋 Setting up database tables...');
     await initializeTables();
     
+    // Wait a moment for database to fully initialize before backup
+    console.log('⏳ Waiting for database to fully initialize...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Auto backup on server start
     try {
       const backup = await createBackup('startup');
