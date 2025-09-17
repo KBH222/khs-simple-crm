@@ -20,6 +20,18 @@ const initializeDatabase = () => {
     try {
       // Use persistent volume path for database in production
       const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
+      
+      // Ensure directory exists for Railway deployment
+      if (process.env.RAILWAY_ENVIRONMENT) {
+        const dbDir = path.dirname(dbPath);
+        if (!fs.existsSync(dbDir)) {
+          fs.mkdirSync(dbDir, { recursive: true });
+          console.log(`📁 Created database directory: ${dbDir}`);
+        }
+      }
+      
+      console.log(`🔗 Connecting to database at: ${dbPath}`);
+      
       db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
           console.error('Failed to connect to database:', err);
@@ -228,102 +240,122 @@ const initializeTables = () => {
     FOREIGN KEY (worker_id) REFERENCES workers (id)
   )`);
   
-  // Create default admin user (simplified)
-  const adminId = 'admin-' + Date.now();
-  
-  db.run(`INSERT OR IGNORE INTO users (id, email, password, name, role) 
-          VALUES (?, ?, ?, ?, ?)`,
-    [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER']
-  );
-  
-  // Add some sample customers for demo
-  const sampleCustomers = [
-    {
-      id: 'demo-customer-1',
-      name: 'John Smith',
-      phone: '(555) 123-4567',
-      email: 'john.smith@email.com',
-      address: '123 Main Street, Anytown, ST 12345',
-      notes: 'Regular customer, prefers morning appointments',
-      reference: 'HOD',
-      customer_type: 'CURRENT'
-    },
-    {
-      id: 'demo-customer-2', 
-      name: 'ABC Construction LLC',
-      phone: '(555) 987-6543',
-      email: 'contact@abcconstruction.com',
-      address: '456 Business Park Drive, Anytown, ST 12345',
-      notes: 'Commercial client, large projects',
-      reference: 'Cust',
-      customer_type: 'CURRENT'
-    },
-    {
-      id: 'demo-customer-3',
-      name: 'Sarah Johnson', 
-      phone: '(555) 456-7890',
-      email: 'sarah.j@example.com',
-      address: '789 Oak Avenue, Anytown, ST 12345',
-      notes: 'Interested in kitchen remodel - follow up needed',
-      reference: 'Yelp',
-      customer_type: 'LEADS'
+  // Only add sample data if this is a completely fresh database
+  // Check if any customers exist first
+  db.get("SELECT COUNT(*) as count FROM customers", (err, row) => {
+    if (err) {
+      console.error('Error checking customer count:', err);
+      return;
     }
-  ];
-  
-  const now = new Date().toISOString();
-  sampleCustomers.forEach(customer => {
-    db.run(`INSERT OR IGNORE INTO customers 
-            (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [customer.id, customer.name, customer.phone, customer.email, customer.address, 
-       customer.notes, customer.reference, customer.customer_type, now, now]
-    );
-  });
-  
-  // Add sample workers
-  const sampleWorkers = [
-    {
-      id: 'worker-1',
-      name: 'Mike Johnson',
-      role: 'Foreman',
-      hourly_rate: 35.00,
-      phone: '(555) 111-2222',
-      email: 'mike.j@khsconstruction.com',
-      hire_date: '2023-01-15',
-      status: 'ACTIVE',
-      notes: 'Lead carpenter, 15+ years experience'
-    },
-    {
-      id: 'worker-2',
-      name: 'Carlos Rodriguez',
-      role: 'Carpenter',
-      hourly_rate: 28.00,
-      phone: '(555) 333-4444',
-      email: 'carlos.r@khsconstruction.com',
-      hire_date: '2023-03-20',
-      status: 'ACTIVE',
-      notes: 'Specialized in finish work'
-    },
-    {
-      id: 'worker-3',
-      name: 'David Thompson',
-      role: 'Apprentice',
-      hourly_rate: 18.00,
-      phone: '(555) 555-6666',
-      email: 'david.t@khsconstruction.com',
-      hire_date: '2024-01-08',
-      status: 'ACTIVE',
-      notes: 'New hire, eager to learn'
+    
+    const customerCount = row.count;
+    console.log(`Found ${customerCount} existing customers in database`);
+    
+    // Only insert sample data if database is completely empty
+    if (customerCount === 0) {
+      console.log('🎯 Fresh database detected - adding initial sample data');
+      
+      // Create default admin user
+      const adminId = 'admin-' + Date.now();
+      db.run(`INSERT OR IGNORE INTO users (id, email, password, name, role) 
+              VALUES (?, ?, ?, ?, ?)`,
+        [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER']
+      );
+      
+      // Add some sample customers for demo (only on first run)
+      const sampleCustomers = [
+        {
+          id: 'demo-customer-1',
+          name: 'John Smith',
+          phone: '(555) 123-4567',
+          email: 'john.smith@email.com',
+          address: '123 Main Street, Anytown, ST 12345',
+          notes: 'Regular customer, prefers morning appointments',
+          reference: 'HOD',
+          customer_type: 'CURRENT'
+        },
+        {
+          id: 'demo-customer-2', 
+          name: 'ABC Construction LLC',
+          phone: '(555) 987-6543',
+          email: 'contact@abcconstruction.com',
+          address: '456 Business Park Drive, Anytown, ST 12345',
+          notes: 'Commercial client, large projects',
+          reference: 'Cust',
+          customer_type: 'CURRENT'
+        },
+        {
+          id: 'demo-customer-3',
+          name: 'Sarah Johnson', 
+          phone: '(555) 456-7890',
+          email: 'sarah.j@example.com',
+          address: '789 Oak Avenue, Anytown, ST 12345',
+          notes: 'Interested in kitchen remodel - follow up needed',
+          reference: 'Yelp',
+          customer_type: 'LEADS'
+        }
+      ];
+      
+      const now = new Date().toISOString();
+      sampleCustomers.forEach(customer => {
+        db.run(`INSERT INTO customers 
+                (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [customer.id, customer.name, customer.phone, customer.email, customer.address, 
+           customer.notes, customer.reference, customer.customer_type, now, now]
+        );
+      });
+      
+      // Add sample workers (only on first run)
+      const sampleWorkers = [
+        {
+          id: 'worker-1',
+          name: 'Mike Johnson',
+          role: 'Foreman',
+          hourly_rate: 35.00,
+          phone: '(555) 111-2222',
+          email: 'mike.j@khsconstruction.com',
+          hire_date: '2023-01-15',
+          status: 'ACTIVE',
+          notes: 'Lead carpenter, 15+ years experience'
+        },
+        {
+          id: 'worker-2',
+          name: 'Carlos Rodriguez',
+          role: 'Carpenter',
+          hourly_rate: 28.00,
+          phone: '(555) 333-4444',
+          email: 'carlos.r@khsconstruction.com',
+          hire_date: '2023-03-20',
+          status: 'ACTIVE',
+          notes: 'Specialized in finish work'
+        },
+        {
+          id: 'worker-3',
+          name: 'David Thompson',
+          role: 'Apprentice',
+          hourly_rate: 18.00,
+          phone: '(555) 555-6666',
+          email: 'david.t@khsconstruction.com',
+          hire_date: '2024-01-08',
+          status: 'ACTIVE',
+          notes: 'New hire, eager to learn'
+        }
+      ];
+      
+      sampleWorkers.forEach(worker => {
+        db.run(`INSERT INTO workers 
+                (id, name, role, hourly_rate, phone, email, hire_date, status, notes, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [worker.id, worker.name, worker.role, worker.hourly_rate, worker.phone, worker.email, 
+           worker.hire_date, worker.status, worker.notes, now, now]
+        );
+      });
+      
+      console.log('✅ Sample data added to fresh database');
+    } else {
+      console.log('📊 Existing data found - skipping sample data insertion');
     }
-  ];
-  
-  sampleWorkers.forEach(worker => {
-    db.run(`INSERT OR IGNORE INTO workers 
-            (id, name, role, hourly_rate, phone, email, hire_date, status, notes, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [worker.id, worker.name, worker.role, worker.hourly_rate, worker.phone, worker.email, 
-       worker.hire_date, worker.status, worker.notes, now, now]
-    );
   });
     
       // Resolve the promise after all tables are created
