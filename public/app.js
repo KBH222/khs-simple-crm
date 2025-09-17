@@ -119,12 +119,21 @@ function setupEventListeners() {
     });
   }
   
-  // Click outside modal to close
+  // Click outside modal to close (improved detection)
   document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', function(e) {
-      if (e.target === this) {
+      // Only close if clicking directly on the modal backdrop
+      // Check if the click target is the modal itself (not any child elements)
+      if (e.target === modal) {
         hideModals();
       }
+    });
+  });
+  
+  // Prevent modal content clicks from bubbling to the modal
+  document.querySelectorAll('.modal-content').forEach(content => {
+    content.addEventListener('click', function(e) {
+      e.stopPropagation(); // Prevent the click from reaching the modal
     });
   });
   
