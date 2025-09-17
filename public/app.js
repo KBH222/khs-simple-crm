@@ -45,8 +45,7 @@ function setupEventListeners() {
       if (customerModal.classList.contains('active')) {
         setTimeout(() => {
           setupPhoneFormatting();
-          setupCityAutoComplete();
-          setupAddressAutoComplete();
+          setupGoogleMapsAddressHelper();
         }, 10);
       }
     });
@@ -134,6 +133,19 @@ function setupEventListeners() {
   document.querySelectorAll('.modal-content').forEach(content => {
     content.addEventListener('click', function(e) {
       e.stopPropagation(); // Prevent the click from reaching the modal
+    });
+  });
+  
+  // Prevent all form element events from bubbling up and closing modals
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add event stopping to all form elements in modals
+    const formElements = 'input, textarea, select, button[type="button"], label';
+    document.querySelectorAll('.modal ' + formElements).forEach(element => {
+      ['click', 'focus', 'blur', 'input', 'change'].forEach(eventType => {
+        element.addEventListener(eventType, function(e) {
+          e.stopPropagation();
+        });
+      });
     });
   });
   
@@ -429,11 +441,10 @@ function showCustomerModal(customer = null) {
   
   modal.classList.add('active');
   
-  // 🚀 BEAST MODE setup - phone formatting, city auto-completion, and address validation
+  // 🚀 BEAST MODE setup - phone formatting and Google Maps helper
   setTimeout(() => {
     setupPhoneFormatting(); // Universal phone formatter!
-    setupCityAutoComplete();
-    setupAddressAutoComplete();
+    setupGoogleMapsAddressHelper();
   }, 50);
 }
 
@@ -4214,6 +4225,7 @@ const setupPhoneFormatting = (selector = 'input[type="tel"], #workerPhone, #cust
     input.value = formatPhoneNumber(input.value);
     
     const handleInput = (e) => {
+      e.stopPropagation(); // Prevent event bubbling
       const cursor = e.target.selectionStart;
       const oldLen = e.target.value.length;
       e.target.value = formatPhoneNumber(e.target.value);
@@ -4221,8 +4233,15 @@ const setupPhoneFormatting = (selector = 'input[type="tel"], #workerPhone, #cust
       requestAnimationFrame(() => e.target.setSelectionRange(cursor + diff, cursor + diff));
     };
     
+    const handlePaste = (e) => {
+      e.stopPropagation(); // Prevent event bubbling
+      setTimeout(() => input.value = formatPhoneNumber(input.value), 10);
+    };
+    
     input.addEventListener('input', handleInput);
-    input.addEventListener('paste', () => setTimeout(() => input.value = formatPhoneNumber(input.value), 10));
+    input.addEventListener('paste', handlePaste);
+    input.addEventListener('focus', (e) => e.stopPropagation());
+    input.addEventListener('blur', (e) => e.stopPropagation());
   });
 };
 
@@ -4274,338 +4293,73 @@ function parseAddress(addressString) {
   return result;
 }
 
-// Hawaiian cities for auto-completion
-const HAWAIIAN_CITIES = [
-  'Honolulu', 'Hilo', 'Kailua-Kona', 'Kaneohe', 'Waipahu', 'Pearl City', 'Hanalei', 'Kailua',
-  'Mililani', 'Kahului', 'Kihei', 'Lahaina', 'Wailuku', 'Kapaa', 'Lihue', 'Schofield Barracks',
-  'Wahiawa', 'Haleiwa', 'Waimanalo', 'Kaunakakai', 'Lanai City', 'Volcano', 'Pahoa', 'Waimea',
-  'Kamuela', 'Captain Cook', 'Holualoa', 'Kealakekua', 'Naalehu', 'Ocean View'
-];
-
-// Setup city auto-completion
-function setupCityAutoComplete() {
-  const cityInput = document.getElementById('customerCity');
-  if (!cityInput) {
-    log('City input not found for auto-completion');
-    return;
-  }
-  
-  log('Setting up city auto-completion');
-  let currentSuggestions = null;
-  
-  cityInput.addEventListener('input', function(e) {
-    const value = e.target.value.toLowerCase();
-    log('City input changed:', value);
-    
-    // Remove existing suggestions
-    if (currentSuggestions) {
-      currentSuggestions.remove();
-      currentSuggestions = null;
-    }
-    
-    if (value.length < 2) return;
-    
-    // Find matching cities
-    const matches = HAWAIIAN_CITIES.filter(city => 
-      city.toLowerCase().includes(value)
-    ).slice(0, 5); // Limit to 5 suggestions
-    
-    log('Found city matches:', matches);
-    
-    if (matches.length === 0) {
-      log('No city matches found for:', value);
-      return;
-    }
-    
-    // Create suggestions dropdown
-    currentSuggestions = document.createElement('div');
-    currentSuggestions.style.cssText = `
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid #D1D5DB;
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    `;
-    
-    matches.forEach(city => {
-      const suggestion = document.createElement('div');
-      suggestion.textContent = city;
-      suggestion.style.cssText = `
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #F3F4F6;
-      `;
-      
-      suggestion.addEventListener('mouseenter', () => {
-        suggestion.style.backgroundColor = '#F3F4F6';
-      });
-      
-      suggestion.addEventListener('mouseleave', () => {
-        suggestion.style.backgroundColor = 'white';
-      });
-      
-      suggestion.addEventListener('click', () => {
-        cityInput.value = city;
-        currentSuggestions.remove();
-        currentSuggestions = null;
-        cityInput.focus();
-      });
-      
-      currentSuggestions.appendChild(suggestion);
-    });
-    
-    // Position the suggestions relative to the input
-    const inputRect = cityInput.getBoundingClientRect();
-    cityInput.parentElement.style.position = 'relative';
-    cityInput.parentElement.appendChild(currentSuggestions);
-  });
-  
-  // Hide suggestions when clicking outside
-  document.addEventListener('click', (e) => {
-    if (currentSuggestions && !cityInput.contains(e.target) && !currentSuggestions.contains(e.target)) {
-      currentSuggestions.remove();
-      currentSuggestions = null;
-    }
-  });
-}
-
-// Address validation using USPS API
-async function validateAddress(street, city = '', state = 'HI', zip = '') {
-  try {
-    log('Validating address:', { street, city, state, zip });
-    
-    const response = await fetch('/api/validate-address', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ street, city, state, zip })
-    });
-    
-    const result = await response.json();
-    
-    if (response.ok && result.valid) {
-      log('Address validation successful:', result.address);
-      return result.address;
-    } else {
-      logError('Address validation failed:', result.error);
-      return null;
-    }
-  } catch (error) {
-    logError('Address validation error:', error);
-    return null;
-  }
-}
-
-// US Census Geocoding API - completely free for US addresses
-async function geocodeAddressWithCensus(streetAddress) {
-  try {
-    log('Geocoding address with US Census API:', streetAddress);
-    
-    // Clean up the address for the API
-    const cleanAddress = encodeURIComponent(streetAddress.trim());
-    
-    // US Census Geocoding API endpoint
-    const url = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${cleanAddress}&benchmark=2020&format=json`;
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Census API request failed: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.result && data.result.addressMatches && data.result.addressMatches.length > 0) {
-      const match = data.result.addressMatches[0];
-      const components = match.addressComponents;
-      
-      const parsedAddress = {
-        street: `${components.fromAddress} ${components.streetName}`,
-        city: components.city,
-        state: components.state,
-        zip: components.zip
-      };
-      
-      log('Census geocoding successful:', parsedAddress);
-      return parsedAddress;
-    } else {
-      log('No address matches found from Census API');
-      return null;
-    }
-  } catch (error) {
-    logError('Census geocoding error:', error);
-    return null;
-  }
-}
-
-// Setup Census-based address autocomplete with debounced lookup
-function setupCensusAddressLookup() {
+// Simple Google Maps address helper
+function setupGoogleMapsAddressHelper() {
   const streetInput = document.getElementById('customerStreet');
-  const cityInput = document.getElementById('customerCity');
-  const stateInput = document.getElementById('customerState');
-  const zipInput = document.getElementById('customerZip');
   
   if (!streetInput) {
-    log('Street input not found for address lookup');
-    return false;
-  }
-  
-  log('Setting up US Census address lookup');
-  
-  let lookupTimeout = null;
-  let isLookingUp = false;
-  
-  // Add a subtle indicator for when lookup is happening
-  function showLookupIndicator() {
-    if (cityInput) cityInput.placeholder = 'Looking up...';
-    if (zipInput) zipInput.placeholder = 'Looking up...';
-    streetInput.style.borderColor = '#3B82F6';
-    isLookingUp = true;
-  }
-  
-  function hideLookupIndicator() {
-    if (cityInput) cityInput.placeholder = 'Honolulu';
-    if (zipInput) zipInput.placeholder = '96815';
-    streetInput.style.borderColor = '';
-    isLookingUp = false;
-  }
-  
-  // Debounced lookup function
-  async function performLookup() {
-    const streetValue = streetInput.value.trim();
-    
-    // Only lookup if we have a reasonable street address (at least 5 characters)
-    if (streetValue.length < 5) {
-      hideLookupIndicator();
-      return;
-    }
-    
-    // Skip if city and zip are already filled
-    if (cityInput?.value.trim() && zipInput?.value.trim()) {
-      hideLookupIndicator();
-      return;
-    }
-    
-    showLookupIndicator();
-    
-    const geocodedAddress = await geocodeAddressWithCensus(streetValue);
-    
-    if (geocodedAddress) {
-      // Auto-fill city and ZIP if they're empty
-      if (cityInput && !cityInput.value.trim()) {
-        cityInput.value = geocodedAddress.city;
-        log('Auto-filled city:', geocodedAddress.city);
-      }
-      
-      if (stateInput && !stateInput.value.trim()) {
-        stateInput.value = geocodedAddress.state;
-        log('Auto-filled state:', geocodedAddress.state);
-      }
-      
-      if (zipInput && !zipInput.value.trim()) {
-        zipInput.value = geocodedAddress.zip;
-        log('Auto-filled ZIP:', geocodedAddress.zip);
-      }
-      
-      // Optionally update the street address with the standardized version
-      // streetInput.value = geocodedAddress.street;
-    }
-    
-    hideLookupIndicator();
-  }
-  
-  // Setup debounced input listener
-  streetInput.addEventListener('input', function() {
-    // Clear any existing timeout
-    if (lookupTimeout) {
-      clearTimeout(lookupTimeout);
-    }
-    
-    // Set a new timeout for 1.5 seconds after user stops typing
-    lookupTimeout = setTimeout(performLookup, 1500);
-  });
-  
-  // Also lookup on blur (when user leaves the field)
-  streetInput.addEventListener('blur', function() {
-    // Clear timeout and do immediate lookup if not already looking up
-    if (lookupTimeout) {
-      clearTimeout(lookupTimeout);
-      lookupTimeout = null;
-    }
-    
-    if (!isLookingUp) {
-      setTimeout(performLookup, 100); // Small delay to allow for smooth UX
-    }
-  });
-  
-  return true;
-}
-
-// Setup address auto-completion (using US Census API)
-function setupAddressAutoComplete() {
-  // Use US Census geocoding API
-  if (setupCensusAddressLookup()) {
-    log('US Census address lookup setup successfully');
+    log('Street input not found for Google Maps helper');
     return;
   }
   
-  // Fallback to original USPS validation method
-  log('Using fallback USPS address validation');
+  log('Setting up Google Maps address helper');
   
-  const streetInput = document.getElementById('customerStreet');
-  const cityInput = document.getElementById('customerCity');
-  const zipInput = document.getElementById('customerZip');
+  // Add a small Maps icon next to the street input
+  const mapsButton = document.createElement('button');
+  mapsButton.type = 'button';
+  mapsButton.innerHTML = '🗺️';
+  mapsButton.title = 'Search address in Google Maps';
+  mapsButton.style.cssText = `
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 10;
+    padding: 4px;
+  `;
   
-  if (!streetInput) {
-    log('Street input not found for address validation');
-    return;
-  }
+  // Make the street input container relative so we can position the button
+  streetInput.parentElement.style.position = 'relative';
+  streetInput.style.paddingRight = '35px'; // Make room for the button
+  streetInput.parentElement.appendChild(mapsButton);
   
-  log('Setting up fallback address auto-completion');
-  
-  // Validate address when street input loses focus
-  streetInput.addEventListener('blur', async function() {
-    const streetValue = streetInput.value.trim();
+  // Add click handler to open Google Maps
+  mapsButton.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     
-    if (streetValue.length < 5) return; // Too short to be a valid address
+    const address = streetInput.value.trim();
     
-    log('Street input lost focus, validating:', streetValue);
-    
-    // Show loading state
-    if (cityInput) cityInput.placeholder = 'Loading...';
-    if (zipInput) zipInput.placeholder = 'Loading...';
-    
-    const validatedAddress = await validateAddress(
-      streetValue,
-      cityInput?.value || '',
-      'HI',
-      zipInput?.value || ''
-    );
-    
-    if (validatedAddress) {
-      // Auto-fill city and ZIP if they're empty
-      if (cityInput && !cityInput.value) {
-        cityInput.value = validatedAddress.city;
-        log('Auto-filled city:', validatedAddress.city);
-      }
+    if (address) {
+      // Open Google Maps with the address
+      const encodedAddress = encodeURIComponent(address);
+      const mapsUrl = `https://www.google.com/maps/search/${encodedAddress}`;
+      window.open(mapsUrl, '_blank');
       
-      if (zipInput && !zipInput.value) {
-        zipInput.value = validatedAddress.zip;
-        log('Auto-filled ZIP:', validatedAddress.zip);
-      }
+      // Show helpful tip
+      setTimeout(() => {
+        alert('🗺️ Google Maps opened in a new tab!\n\nFind your address, then copy the city and ZIP code back to the form.');
+      }, 500);
+    } else {
+      alert('Please enter a street address first, then click the map icon.');
     }
+  });
+  
+  // Also allow clicking the input field itself to trigger maps
+  streetInput.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Restore placeholders
-    if (cityInput) cityInput.placeholder = 'Honolulu';
-    if (zipInput) zipInput.placeholder = '96815';
+    const address = streetInput.value.trim();
+    if (address) {
+      const encodedAddress = encodeURIComponent(address);
+      const mapsUrl = `https://www.google.com/maps/search/${encodedAddress}`;
+      window.open(mapsUrl, '_blank');
+    }
   });
 }
 
