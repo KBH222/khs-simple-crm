@@ -3473,6 +3473,90 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+// Data Export/Import Functions for UI
+async function exportUserData() {
+  try {
+    const response = await fetch('/api/data/export', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert(`✅ Data exported successfully!\n\nExported ${result.export.recordCount} records to data-export.json\n\nYou can now download the export file or it will be automatically imported after deployment.`);
+    } else {
+      alert('❌ Export failed: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    alert('❌ Export failed: ' + error.message);
+  }
+}
+
+async function downloadDataExport() {
+  try {
+    const response = await fetch('/api/data/export/download');
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'khs-crm-data-export.json';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      alert('✅ Export file downloaded successfully!');
+    } else {
+      const errorResult = await response.json();
+      alert('❌ Download failed: ' + errorResult.error);
+    }
+  } catch (error) {
+    console.error('Download error:', error);
+    alert('❌ Download failed: ' + error.message);
+  }
+}
+
+async function importUserData() {
+  if (!confirm('⚠️ Are you sure you want to import data?\n\nThis will import user data from the data-export.json file.\nThis should only be done after a fresh deployment.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/data/import', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      if (result.import.imported) {
+        alert(`✅ Data imported successfully!\n\nImported ${result.import.recordCount} records from data-export.json\n\nPlease refresh the page to see the imported data.`);
+        // Auto-refresh after a short delay
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      } else {
+        alert('📋 No import file found.\n\nMake sure you have a data-export.json file to import.');
+      }
+    } else {
+      alert('❌ Import failed: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Import error:', error);
+    alert('❌ Import failed: ' + error.message);
+  }
+}
+
 // Make functions globally accessible
 window.showPage = showPage;
 window.editCustomer = editCustomer;
@@ -3497,6 +3581,9 @@ window.selectDate = selectDate;
 window.viewEvent = viewEvent;
 window.deleteCalendarEvent = deleteCalendarEvent;
 window.createBackup = createBackup;
+window.exportUserData = exportUserData;
+window.downloadDataExport = downloadDataExport;
+window.importUserData = importUserData;
 
 // Workers Management
 let workers = [];

@@ -240,122 +240,39 @@ const initializeTables = () => {
     FOREIGN KEY (worker_id) REFERENCES workers (id)
   )`);
   
-  // Only add sample data if this is a completely fresh database
-  // Check if any customers exist first
-  db.get("SELECT COUNT(*) as count FROM customers", (err, row) => {
+  // Create default admin user (only if none exists)
+  db.get("SELECT COUNT(*) as count FROM users WHERE role = 'OWNER'", (err, row) => {
     if (err) {
-      console.error('Error checking customer count:', err);
+      console.error('Error checking admin users:', err);
       return;
     }
     
-    const customerCount = row.count;
-    console.log(`Found ${customerCount} existing customers in database`);
-    
-    // Only insert sample data if database is completely empty
-    if (customerCount === 0) {
-      console.log('🎯 Fresh database detected - adding initial sample data');
-      
-      // Create default admin user
+    if (row.count === 0) {
       const adminId = 'admin-' + Date.now();
-      db.run(`INSERT OR IGNORE INTO users (id, email, password, name, role) 
+      db.run(`INSERT INTO users (id, email, password, name, role) 
               VALUES (?, ?, ?, ?, ?)`,
-        [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER']
+        [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER'],
+        (err) => {
+          if (err) {
+            console.error('Error creating admin user:', err);
+          } else {
+            console.log('✅ Created default admin user');
+          }
+        }
       );
-      
-      // Add some sample customers for demo (only on first run)
-      const sampleCustomers = [
-        {
-          id: 'demo-customer-1',
-          name: 'John Smith',
-          phone: '(555) 123-4567',
-          email: 'john.smith@email.com',
-          address: '123 Main Street, Anytown, ST 12345',
-          notes: 'Regular customer, prefers morning appointments',
-          reference: 'HOD',
-          customer_type: 'CURRENT'
-        },
-        {
-          id: 'demo-customer-2', 
-          name: 'ABC Construction LLC',
-          phone: '(555) 987-6543',
-          email: 'contact@abcconstruction.com',
-          address: '456 Business Park Drive, Anytown, ST 12345',
-          notes: 'Commercial client, large projects',
-          reference: 'Cust',
-          customer_type: 'CURRENT'
-        },
-        {
-          id: 'demo-customer-3',
-          name: 'Sarah Johnson', 
-          phone: '(555) 456-7890',
-          email: 'sarah.j@example.com',
-          address: '789 Oak Avenue, Anytown, ST 12345',
-          notes: 'Interested in kitchen remodel - follow up needed',
-          reference: 'Yelp',
-          customer_type: 'LEADS'
-        }
-      ];
-      
-      const now = new Date().toISOString();
-      sampleCustomers.forEach(customer => {
-        db.run(`INSERT INTO customers 
-                (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [customer.id, customer.name, customer.phone, customer.email, customer.address, 
-           customer.notes, customer.reference, customer.customer_type, now, now]
-        );
-      });
-      
-      // Add sample workers (only on first run)
-      const sampleWorkers = [
-        {
-          id: 'worker-1',
-          name: 'Mike Johnson',
-          role: 'Foreman',
-          hourly_rate: 35.00,
-          phone: '(555) 111-2222',
-          email: 'mike.j@khsconstruction.com',
-          hire_date: '2023-01-15',
-          status: 'ACTIVE',
-          notes: 'Lead carpenter, 15+ years experience'
-        },
-        {
-          id: 'worker-2',
-          name: 'Carlos Rodriguez',
-          role: 'Carpenter',
-          hourly_rate: 28.00,
-          phone: '(555) 333-4444',
-          email: 'carlos.r@khsconstruction.com',
-          hire_date: '2023-03-20',
-          status: 'ACTIVE',
-          notes: 'Specialized in finish work'
-        },
-        {
-          id: 'worker-3',
-          name: 'David Thompson',
-          role: 'Apprentice',
-          hourly_rate: 18.00,
-          phone: '(555) 555-6666',
-          email: 'david.t@khsconstruction.com',
-          hire_date: '2024-01-08',
-          status: 'ACTIVE',
-          notes: 'New hire, eager to learn'
-        }
-      ];
-      
-      sampleWorkers.forEach(worker => {
-        db.run(`INSERT INTO workers 
-                (id, name, role, hourly_rate, phone, email, hire_date, status, notes, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [worker.id, worker.name, worker.role, worker.hourly_rate, worker.phone, worker.email, 
-           worker.hire_date, worker.status, worker.notes, now, now]
-        );
-      });
-      
-      console.log('✅ Sample data added to fresh database');
-    } else {
-      console.log('📊 Existing data found - skipping sample data insertion');
     }
+  });
+  
+  // Check for data import on startup
+  console.log('🔍 Checking for data import file...');
+  importUserData().then(result => {
+    if (result.imported) {
+      console.log(`🎯 Automatically imported ${result.recordCount} records from data-export.json`);
+    } else {
+      console.log('📋 No import file found - starting with clean database');
+    }
+  }).catch(err => {
+    console.error('Import error:', err);
   });
     
       // Resolve the promise after all tables are created
@@ -1678,6 +1595,188 @@ app.get('/api/timesheet', (req, res) => {
   });
 });
 
+// Data Export/Import Functions
+function exportUserData() {
+  return new Promise((resolve, reject) => {
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      version: '1.0',
+      data: {
+        customers: [],
+        jobs: [],
+        workers: [],
+        work_hours: [],
+        tasks: [],
+        extra_costs: [],
+        calendar_events: [],
+        materials: [],
+        job_photos: [],
+        worker_tasks: [],
+        worker_notes: []
+      }
+    };
+    
+    // Export all user data tables
+    const queries = [
+      { table: 'customers', query: 'SELECT * FROM customers WHERE id NOT LIKE "demo-%"' },
+      { table: 'jobs', query: 'SELECT * FROM jobs WHERE customer_id NOT IN (SELECT id FROM customers WHERE id LIKE "demo-%")' },
+      { table: 'workers', query: 'SELECT * FROM workers WHERE id NOT LIKE "worker-%"' },
+      { table: 'work_hours', query: 'SELECT * FROM work_hours WHERE worker_id NOT IN (SELECT id FROM workers WHERE id LIKE "worker-%")' },
+      { table: 'tasks', query: 'SELECT * FROM tasks WHERE job_id NOT IN (SELECT id FROM jobs WHERE customer_id IN (SELECT id FROM customers WHERE id LIKE "demo-%"))' },
+      { table: 'extra_costs', query: 'SELECT * FROM extra_costs WHERE job_id NOT IN (SELECT id FROM jobs WHERE customer_id IN (SELECT id FROM customers WHERE id LIKE "demo-%"))' },
+      { table: 'calendar_events', query: 'SELECT * FROM calendar_events WHERE customer_id NOT IN (SELECT id FROM customers WHERE id LIKE "demo-%") OR customer_id IS NULL' },
+      { table: 'materials', query: 'SELECT * FROM materials WHERE job_id NOT IN (SELECT id FROM jobs WHERE customer_id IN (SELECT id FROM customers WHERE id LIKE "demo-%"))' },
+      { table: 'job_photos', query: 'SELECT * FROM job_photos WHERE job_id NOT IN (SELECT id FROM jobs WHERE customer_id IN (SELECT id FROM customers WHERE id LIKE "demo-%"))' },
+      { table: 'worker_tasks', query: 'SELECT * FROM worker_tasks WHERE worker_id NOT IN (SELECT id FROM workers WHERE id LIKE "worker-%")' },
+      { table: 'worker_notes', query: 'SELECT * FROM worker_notes WHERE worker_id NOT IN (SELECT id FROM workers WHERE id LIKE "worker-%")' }
+    ];
+    
+    let completedQueries = 0;
+    
+    queries.forEach(({ table, query }) => {
+      db.all(query, (err, rows) => {
+        if (err) {
+          console.error(`Error exporting ${table}:`, err);
+          return reject(err);
+        }
+        
+        exportData.data[table] = rows;
+        completedQueries++;
+        
+        if (completedQueries === queries.length) {
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+          const exportPath = path.join(__dirname, 'data-export.json');
+          
+          fs.writeFile(exportPath, JSON.stringify(exportData, null, 2), (err) => {
+            if (err) {
+              return reject(err);
+            }
+            
+            console.log(`✅ User data exported to: data-export.json`);
+            console.log(`📊 Exported ${Object.values(exportData.data).reduce((sum, arr) => sum + arr.length, 0)} records`);
+            
+            resolve({
+              filename: 'data-export.json',
+              path: exportPath,
+              timestamp: exportData.timestamp,
+              recordCount: Object.values(exportData.data).reduce((sum, arr) => sum + arr.length, 0)
+            });
+          });
+        }
+      });
+    });
+  });
+}
+
+function importUserData() {
+  return new Promise((resolve, reject) => {
+    const importPath = path.join(__dirname, 'data-export.json');
+    
+    if (!fs.existsSync(importPath)) {
+      return resolve({ imported: false, message: 'No export file found' });
+    }
+    
+    fs.readFile(importPath, 'utf8', (err, data) => {
+      if (err) {
+        return reject(err);
+      }
+      
+      try {
+        const importData = JSON.parse(data);
+        
+        if (!importData.data) {
+          return reject(new Error('Invalid export file format'));
+        }
+        
+        console.log(`📥 Importing user data from ${importData.timestamp}`);
+        
+        // Import data in the correct order to respect foreign key constraints
+        const importOrder = [
+          'customers',
+          'workers', 
+          'jobs',
+          'tasks',
+          'extra_costs',
+          'calendar_events',
+          'materials',
+          'job_photos',
+          'work_hours',
+          'worker_tasks',
+          'worker_notes'
+        ];
+        
+        let totalImported = 0;
+        let currentIndex = 0;
+        
+        function importNext() {
+          if (currentIndex >= importOrder.length) {
+            console.log(`✅ User data import completed: ${totalImported} records`);
+            
+            // Move the import file to prevent re-import
+            const completedPath = path.join(__dirname, `data-export-imported-${Date.now()}.json`);
+            fs.rename(importPath, completedPath, (err) => {
+              if (err) console.error('Error moving import file:', err);
+            });
+            
+            return resolve({ imported: true, recordCount: totalImported });
+          }
+          
+          const table = importOrder[currentIndex];
+          const records = importData.data[table] || [];
+          
+          if (records.length === 0) {
+            currentIndex++;
+            return importNext();
+          }
+          
+          console.log(`📋 Importing ${records.length} ${table} records`);
+          
+          // Generate INSERT statements based on table structure
+          const insertStatements = {
+            customers: 'INSERT INTO customers (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            jobs: 'INSERT INTO jobs (id, customer_id, title, description, project_scope, status, priority, total_cost, start_date, end_date, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            workers: 'INSERT INTO workers (id, name, role, hourly_rate, phone, email, address, hire_date, status, notes, initials, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            work_hours: 'INSERT INTO work_hours (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, hours_worked, work_type, description, overtime_hours, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            tasks: 'INSERT INTO tasks (id, job_id, description, completed, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            extra_costs: 'INSERT INTO extra_costs (id, job_id, description, amount, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            calendar_events: 'INSERT INTO calendar_events (id, title, description, event_date, start_time, end_time, event_type, customer_id, job_id, all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            materials: 'INSERT INTO materials (id, job_id, item_name, quantity, unit, purchased, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            job_photos: 'INSERT INTO job_photos (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            worker_tasks: 'INSERT INTO worker_tasks (id, worker_id, job_id, title, description, status, priority, due_date, completed_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            worker_notes: 'INSERT INTO worker_notes (id, worker_id, category, title, content, is_private, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          };
+          
+          const stmt = db.prepare(insertStatements[table]);
+          
+          records.forEach(record => {
+            const values = Object.values(record);
+            stmt.run(values, (err) => {
+              if (err) {
+                console.error(`Error importing ${table} record:`, err);
+              } else {
+                totalImported++;
+              }
+            });
+          });
+          
+          stmt.finalize((err) => {
+            if (err) {
+              console.error(`Error finalizing ${table} import:`, err);
+            }
+            currentIndex++;
+            importNext();
+          });
+        }
+        
+        importNext();
+        
+      } catch (parseError) {
+        reject(new Error('Invalid JSON in export file: ' + parseError.message));
+      }
+    });
+  });
+}
+
 // Backup Functions
 function createBackup(reason = 'manual') {
   return new Promise((resolve, reject) => {
@@ -1800,6 +1899,60 @@ app.get('/api/backup/list', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Data Export/Import API Routes
+app.post('/api/data/export', async (req, res) => {
+  try {
+    const exportResult = await exportUserData();
+    res.json({
+      success: true,
+      export: exportResult
+    });
+  } catch (error) {
+    console.error('Data export failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/data/import', async (req, res) => {
+  try {
+    const importResult = await importUserData();
+    res.json({
+      success: true,
+      import: importResult
+    });
+  } catch (error) {
+    console.error('Data import failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/data/export/download', (req, res) => {
+  const exportPath = path.join(__dirname, 'data-export.json');
+  
+  if (!fs.existsSync(exportPath)) {
+    return res.status(404).json({
+      success: false,
+      error: 'No export file found'
+    });
+  }
+  
+  res.download(exportPath, 'khs-crm-data-export.json', (err) => {
+    if (err) {
+      console.error('Download failed:', err);
+      res.status(500).json({
+        success: false,
+        error: 'Download failed'
+      });
+    }
+  });
 });
 
 app.post('/api/backup/restore', async (req, res) => {

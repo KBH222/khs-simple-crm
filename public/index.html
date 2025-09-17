@@ -550,16 +550,42 @@
               
               <!-- Manual Backup -->
               <div class="backup-section">
-                <div class="backup-card">
-                  <div class="backup-card-header">
-                    <div class="backup-icon">💾</div>
-                    <div class="backup-info">
-                      <h4>Manual Backup</h4>
-                      <p id="backupStatus">Create backup of your data</p>
-                    </div>
+              <div class="backup-card">
+                <div class="backup-card-header">
+                  <div class="backup-icon">💾</div>
+                  <div class="backup-info">
+                    <h4>Manual Backup</h4>
+                    <p id="backupStatus">Create backup of your data</p>
                   </div>
-                  <button class="backup-btn" onclick="createBackup()">Create Backup Now</button>
                 </div>
+                <button class="backup-btn" onclick="createBackup()">Create Backup Now</button>
+              </div>
+              
+              <!-- Data Export/Import Section -->
+              <div class="backup-card" style="border: 2px solid #10B981; background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%);">
+                <div class="backup-card-header">
+                  <div class="backup-icon" style="color: #10B981;">📦</div>
+                  <div class="backup-info">
+                    <h4 style="color: #065F46;">Data Export</h4>
+                    <p style="color: #047857;">Export user data to file for deployment migration</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                  <button class="backup-btn" onclick="exportUserData()" style="background: #10B981; border-color: #059669;">Export Data</button>
+                  <button class="backup-btn" onclick="downloadDataExport()" style="background: #0891B2; border-color: #0E7490;">Download Export</button>
+                </div>
+              </div>
+              
+              <div class="backup-card" style="border: 2px solid #3B82F6; background: linear-gradient(135deg, #EBF8FF 0%, #F0F9FF 100%);">
+                <div class="backup-card-header">
+                  <div class="backup-icon" style="color: #3B82F6;">📥</div>
+                  <div class="backup-info">
+                    <h4 style="color: #1E40AF;">Data Import</h4>
+                    <p style="color: #1D4ED8;">Import user data from export file after deployment</p>
+                  </div>
+                </div>
+                <button class="backup-btn" onclick="importUserData()" style="background: #3B82F6; border-color: #2563EB;">Import Data</button>
+              </div>
               </div>
               
               <!-- Backup History -->
