@@ -1918,7 +1918,7 @@ function createBackup(reason = 'manual') {
     
     // Copy database file
     const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
-    const sourcePath = path.join(__dirname, dbPath);
+    const sourcePath = process.env.RAILWAY_ENVIRONMENT ? dbPath : path.join(__dirname, dbPath);
     
     if (!fs.existsSync(sourcePath)) {
       return reject(new Error('Source database file not found'));
@@ -2117,7 +2117,7 @@ app.post('/api/backup/restore', async (req, res) => {
   try {
     const backupPath = path.join(__dirname, 'backups', filename);
     const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
-    const mainDbPath = path.join(__dirname, dbPath);
+    const mainDbPath = process.env.RAILWAY_ENVIRONMENT ? dbPath : path.join(__dirname, dbPath);
     
     // Check if backup file exists
     if (!fs.existsSync(backupPath)) {
