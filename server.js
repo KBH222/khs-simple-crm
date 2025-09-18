@@ -5,6 +5,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const multer = require('multer');
 const crypto = require('crypto');
+const { initializeCustomers } = require('./init-data');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -275,10 +276,16 @@ const initializeTables = () => {
     }
   });
   
-  // Removed auto-import on startup - data should already be in database
-    
-      // Resolve the promise after all tables are created
+  // Initialize customers for Railway deployment if database is empty
+  initializeCustomers(db)
+    .then(() => {
+      console.log('✅ Database initialization complete');
       resolve();
+    })
+    .catch((err) => {
+      console.error('❌ Database initialization failed:', err);
+      resolve(); // Still resolve to allow app to start
+    });
     });
   });
 };
