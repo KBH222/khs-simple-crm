@@ -275,17 +275,7 @@ const initializeTables = () => {
     }
   });
   
-  // Check for data import on startup
-  console.log('🔍 Checking for data import file...');
-  importUserData().then(result => {
-    if (result.imported) {
-      console.log(`🎯 Automatically imported ${result.recordCount} records from data-export.json`);
-    } else {
-      console.log('📋 No import file found - starting with clean database');
-    }
-  }).catch(err => {
-    console.error('Import error:', err);
-  });
+  // Removed auto-import on startup - data should already be in database
     
       // Resolve the promise after all tables are created
       resolve();
