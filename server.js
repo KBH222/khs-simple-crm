@@ -1929,13 +1929,36 @@ function createBackup(reason = 'manual') {
         return reject(err);
       }
       
-      console.log(`✅ Backup created: ${backupName}`);
-      resolve({
-        filename: backupName,
-        path: backupPath,
-        timestamp: new Date().toISOString(),
-        reason: reason,
-        size: fs.statSync(backupPath).size
+      // Verify backup file is valid SQLite database
+      const sqlite3 = require('sqlite3');
+      const testDb = new sqlite3.Database(backupPath, sqlite3.OPEN_READONLY, (err) => {
+        if (err) {
+          console.error(`⚠️ Backup verification failed: ${backupName}`, err);
+          // Delete invalid backup
+          fs.unlink(backupPath, () => {});
+          return reject(new Error('Backup file verification failed - file is not a valid SQLite database'));
+        }
+        
+        // Test basic table existence
+        testDb.get("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'", (err, row) => {
+          testDb.close();
+          
+          if (err || !row) {
+            console.error(`⚠️ Backup verification failed: ${backupName} - missing expected tables`);
+            fs.unlink(backupPath, () => {});
+            return reject(new Error('Backup file verification failed - missing expected database structure'));
+          }
+          
+          console.log(`✅ Backup created and verified: ${backupName}`);
+          resolve({
+            filename: backupName,
+            path: backupPath,
+            timestamp: new Date().toISOString(),
+            reason: reason,
+            size: fs.statSync(backupPath).size,
+            verified: true
+          });
+        });
       });
     });
   });
@@ -2192,10 +2215,18 @@ async function startServer() {
     console.log('⏳ Waiting for database to fully initialize...');
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Auto backup on server start
+    // Auto backup on server start (detect if this is a deployment)
     try {
-      const backup = await createBackup('startup');
-      console.log(`🔄 Startup backup created: ${backup.filename}`);
+      const isDeployment = process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.VERCEL;
+      const backupReason = isDeployment ? 'deployment' : 'startup';
+      
+      const backup = await createBackup(backupReason);
+      console.log(`🔄 ${backupReason.charAt(0).toUpperCase() + backupReason.slice(1)} backup created: ${backup.filename}`);
+      console.log(`💾 Backup size: ${(backup.size / 1024 / 1024).toFixed(2)} MB`);
+      
+      if (isDeployment) {
+        console.log('🚀 Deployment detected - database safely backed up before new code deployment');
+      }
     } catch (err) {
       console.error('Failed to create startup backup:', err);
     }
@@ -2207,6 +2238,7 @@ async function startServer() {
       dailyBackupInterval = setInterval(() => {
         createBackup('daily').then(backup => {
           console.log(`📅 Daily backup created: ${backup.filename}`);
+          console.log(`💾 Daily backup size: ${(backup.size / 1024 / 1024).toFixed(2)} MB`);
           cleanupOldBackups();
         }).catch(err => {
           console.error('Daily backup failed:', err);
