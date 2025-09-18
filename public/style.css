@@ -1947,10 +1947,22 @@ button {
 }
 
 /* Task Management Styles */
+.tasks-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .task-input-container {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #E5E7EB;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #E5E7EB;
+  background: #F9FAFB;
+  /* Make input sticky at bottom */
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .task-input {
@@ -1974,12 +1986,16 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 400px;
+  max-height: 350px;
   overflow-y: auto;
   padding-right: 4px;
+  padding-bottom: 10px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overflow-scrolling: touch;
+  flex: 1;
+  /* Ensure proper scrolling with sticky input below */
+  margin-bottom: 10px;
 }
 
 /* Custom scrollbar for tasks container */

@@ -1114,28 +1114,32 @@ function renderTasks() {
   
   if (!currentJobTasks || currentJobTasks.length === 0) {
     tasksList.innerHTML = `
+      <div class="tasks-wrapper">
+        <p style="color: #6B7280; text-align: center; padding: 20px 20px 40px 20px;">No tasks yet. Add your first task below!</p>
+      </div>
       <div class="task-input-container">
         <input type="text" id="newTaskInput" placeholder="Add a task and press Enter..." class="task-input">
       </div>
-      <p style="color: #6B7280; text-align: center; padding: 20px;">No tasks yet. Add your first task above!</p>
     `;
   } else {
     tasksList.innerHTML = `
+      <div class="tasks-wrapper">
+        <div class="tasks-container" id="tasksContainer">
+          ${currentJobTasks.map(task => `
+            <div class="task-item" data-task-id="${task.id}" draggable="true">
+              <div class="task-content">
+                <input type="checkbox" class="task-checkbox" 
+                       ${task.completed ? 'checked' : ''} 
+                       onchange="toggleTask('${task.id}', this.checked)">
+                <span class="task-description ${task.completed ? 'completed' : ''}">${escapeHtml(task.description)}</span>
+              </div>
+              <button class="task-delete-btn" onclick="deleteTask('${task.id}')" title="Delete task">×</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
       <div class="task-input-container">
         <input type="text" id="newTaskInput" placeholder="Add a task and press Enter..." class="task-input">
-      </div>
-      <div class="tasks-container" id="tasksContainer">
-        ${currentJobTasks.map(task => `
-          <div class="task-item" data-task-id="${task.id}" draggable="true">
-            <div class="task-content">
-              <input type="checkbox" class="task-checkbox" 
-                     ${task.completed ? 'checked' : ''} 
-                     onchange="toggleTask('${task.id}', this.checked)">
-              <span class="task-description ${task.completed ? 'completed' : ''}">${escapeHtml(task.description)}</span>
-            </div>
-            <button class="task-delete-btn" onclick="deleteTask('${task.id}')" title="Delete task">×</button>
-          </div>
-        `).join('')}
       </div>
     `;
     
@@ -1177,50 +1181,28 @@ async function addTask(description) {
     
     if (response.ok) {
       await loadJobTasks(currentJob.id); // Reload tasks
-      // Auto-scroll to show the newly added task - iPhone keyboard compatible
+      // Auto-scroll to show the newly added task - optimized for bottom input
       setTimeout(() => {
         const tasksContainer = document.getElementById('tasksContainer');
         if (tasksContainer) {
           const lastTask = tasksContainer.lastElementChild;
           
-          // Detect if we're on iPhone and keyboard might be open
-          const isIPhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-          const inputFocused = document.activeElement && document.activeElement.tagName.toLowerCase() === 'input';
+          // Always scroll to bottom since input is now at bottom
+          tasksContainer.scrollTo({
+            top: tasksContainer.scrollHeight,
+            behavior: 'smooth'
+          });
           
-          if (isIPhone && inputFocused && lastTask) {
-            // iPhone with keyboard open - scroll more aggressively
-            // Scroll to show the task above the keyboard area
-            const taskRect = lastTask.getBoundingClientRect();
-            const containerRect = tasksContainer.getBoundingClientRect();
-            const keyboardHeight = window.innerHeight * 0.4; // Estimate keyboard height
-            const visibleAreaBottom = window.innerHeight - keyboardHeight;
+          // For mobile devices, ensure the new task is visible
+          if (lastTask) {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             
-            // Calculate how much to scroll to keep task visible above keyboard
-            const scrollOffset = taskRect.bottom - visibleAreaBottom + 50; // 50px padding
-            
-            if (scrollOffset > 0) {
-              tasksContainer.scrollTop = tasksContainer.scrollTop + scrollOffset;
-            }
-            
-            // Also try scrollIntoView with custom positioning
-            lastTask.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'center', // Center in viewport instead of end
-              inline: 'nearest'
-            });
-          } else {
-            // Desktop or keyboard not open - use normal scrolling
-            tasksContainer.scrollTop = tasksContainer.scrollHeight;
-            
-            tasksContainer.scrollTo({
-              top: tasksContainer.scrollHeight,
-              behavior: 'smooth'
-            });
-            
-            if (lastTask) {
+            if (isMobile) {
+              // Scroll to make the new task visible but not necessarily at bottom
+              // This works better with the input being at the bottom
               lastTask.scrollIntoView({ 
                 behavior: 'smooth', 
-                block: 'end',
+                block: 'nearest',
                 inline: 'nearest'
               });
             }
