@@ -1,4 +1,53 @@
 // Initial data for Railway deployment
+// Initial jobs data
+const initialJobs = [
+  {
+    id: "job-1758094061607-9d1me6la7",
+    customer_id: "cust-1758094030880-u886npesg",
+    title: "Kitchen",
+    description: "Demo/install kitchen cabinets",
+    status: "QUOTED",
+    priority: "medium",
+    total_cost: 0,
+    start_date: null,
+    end_date: null,
+    notes: "",
+    created_at: "2025-09-17T07:27:41.607Z",
+    updated_at: "2025-09-17T07:27:41.607Z",
+    project_scope: null
+  },
+  {
+    id: "job-1758095224167-mrgrhg19p",
+    customer_id: "cust-1758094934619-vb3vdt1qd",
+    title: "Bathroom",
+    description: "",
+    status: "QUOTED",
+    priority: "medium",
+    total_cost: 0,
+    start_date: null,
+    end_date: null,
+    notes: "",
+    created_at: "2025-09-17T07:47:04.167Z",
+    updated_at: "2025-09-17T07:47:04.167Z",
+    project_scope: null
+  },
+  {
+    id: "job-1758095366903-yfxb0fwki",
+    customer_id: "cust-1758095350124-oxu1cmyl6",
+    title: "Kitchen",
+    description: "",
+    status: "QUOTED",
+    priority: "medium",
+    total_cost: 0,
+    start_date: null,
+    end_date: null,
+    notes: "",
+    created_at: "2025-09-17T07:49:26.903Z",
+    updated_at: "2025-09-17T07:49:26.903Z",
+    project_scope: null
+  }
+];
+
 const initialCustomers = [
   {
     id: "cust-1758094934619-vb3vdt1qd",
@@ -89,4 +138,69 @@ function initializeCustomers(db) {
   });
 }
 
-module.exports = { initializeCustomers };
+function initializeJobs(db) {
+  return new Promise((resolve, reject) => {
+    // Check if jobs already exist
+    db.get("SELECT COUNT(*) as count FROM jobs", (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      if (row.count > 0) {
+        console.log("✅ Jobs already exist, skipping initialization");
+        resolve();
+        return;
+      }
+      
+      console.log("🔄 Initializing jobs data...");
+      
+      const stmt = db.prepare(`
+        INSERT INTO jobs (id, customer_id, title, description, status, priority, total_cost, start_date, end_date, notes, created_at, updated_at, project_scope) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      let completed = 0;
+      initialJobs.forEach(job => {
+        stmt.run([
+          job.id,
+          job.customer_id,
+          job.title,
+          job.description,
+          job.status,
+          job.priority,
+          job.total_cost,
+          job.start_date,
+          job.end_date,
+          job.notes,
+          job.created_at,
+          job.updated_at,
+          job.project_scope
+        ], (err) => {
+          if (err) {
+            console.error("Error inserting job:", err);
+          }
+          completed++;
+          if (completed === initialJobs.length) {
+            stmt.finalize();
+            console.log(`✅ Initialized ${initialJobs.length} jobs`);
+            resolve();
+          }
+        });
+      });
+    });
+  });
+}
+
+async function initializeAllData(db) {
+  try {
+    await initializeCustomers(db);
+    await initializeJobs(db);
+    console.log('✅ All data initialization complete');
+  } catch (error) {
+    console.error('❌ Data initialization error:', error);
+    throw error;
+  }
+}
+
+module.exports = { initializeCustomers, initializeJobs, initializeAllData };

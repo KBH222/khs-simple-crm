@@ -5,7 +5,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const multer = require('multer');
 const crypto = require('crypto');
-const { initializeCustomers } = require('./init-data');
+const { initializeAllData } = require('./init-data');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -276,8 +276,8 @@ const initializeTables = () => {
     }
   });
   
-  // Initialize customers for Railway deployment if database is empty
-  initializeCustomers(db)
+  // Initialize customers and jobs for Railway deployment if database is empty
+  initializeAllData(db)
     .then(() => {
       console.log('✅ Database initialization complete');
       resolve();
