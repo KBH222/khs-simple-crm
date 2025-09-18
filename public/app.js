@@ -790,6 +790,7 @@ function showJobDetailsModal(job) {
   switchJobTab('info');
   setupFileDropZones();
   loadJobTasks(job.id);
+  loadJobTools(job.id);
   loadJobFiles(job.id);
   loadExtraCosts(job.id);
   
@@ -896,6 +897,9 @@ function switchJobTab(tabName) {
     if (tabName === 'tasks') {
       log('📋 Loading tasks for job:', currentJob.id);
       loadJobTasks(currentJob.id);
+    } else if (tabName === 'tools') {
+      log('🔧 Loading tools for job:', currentJob.id);
+      loadJobTools(currentJob.id);
     } else if (tabName === 'extra') {
       log('💰 Loading extra costs for job:', currentJob.id);
       loadExtraCosts(currentJob.id);
@@ -1083,8 +1087,10 @@ let currentJobPics = [];
 
 // Task management variables
 let currentJobTasks = [];
+let currentJobTools = [];
 let currentJobExtraCosts = [];
 let taskDraggedElement = null;
+let toolDraggedElement = null;
 
 // Load and display tasks
 async function loadJobTasks(jobId) {
@@ -1337,6 +1343,260 @@ async function updateTaskOrder() {
     }
   } catch (error) {
     logError('Error updating task order:', error);
+  }
+}
+
+// Tool management functions - Similar to task management
+async function loadJobTools(jobId) {
+  log('loadJobTools called with jobId:', jobId);
+  try {
+    const url = `/api/jobs/${jobId}/tools`;
+    log('Fetching:', url);
+    const response = await fetch(url);
+    const tools = await response.json();
+    
+    log('API Response:', { status: response.status, tools });
+    
+    if (response.ok) {
+      currentJobTools = tools;
+      log('About to render tools:', tools);
+      renderTools();
+    } else {
+      logError('Failed to load tools:', tools.error);
+    }
+  } catch (error) {
+    logError('Error loading tools:', error);
+  }
+}
+
+function renderTools() {
+  const toolsList = document.getElementById('toolsList');
+  
+  if (!currentJobTools || currentJobTools.length === 0) {
+    toolsList.innerHTML = `
+      <div class="tools-wrapper">
+        <p style="color: #6B7280; text-align: center; padding: 20px 20px 40px 20px;">No tools yet. Add your first tool below!</p>
+      </div>
+      <div class="tool-input-container">
+        <input type="text" id="newToolInput" placeholder="Add a tool and press Enter..." class="tool-input">
+      </div>
+    `;
+  } else {
+    toolsList.innerHTML = `
+      <div class="tools-wrapper">
+        <div class="tools-container" id="toolsContainer">
+          ${currentJobTools.map(tool => `
+            <div class="tool-item" data-tool-id="${tool.id}" draggable="true">
+              <div class="tool-content">
+                <input type="checkbox" class="tool-checkbox" 
+                       ${tool.completed ? 'checked' : ''} 
+                       onchange="toggleTool('${tool.id}', this.checked)">
+                <span class="tool-description ${tool.completed ? 'completed' : ''}">${escapeHtml(tool.description)}</span>
+              </div>
+              <button class="tool-delete-btn" onclick="deleteTool('${tool.id}')" title="Delete tool">×</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="tool-input-container">
+        <input type="text" id="newToolInput" placeholder="Add a tool and press Enter..." class="tool-input">
+      </div>
+    `;
+    
+    setupToolDragAndDrop();
+  }
+  
+  setupToolInput();
+}
+
+function setupToolInput() {
+  const toolInput = document.getElementById('newToolInput');
+  if (toolInput) {
+    toolInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter' && toolInput.value.trim()) {
+        await addTool(toolInput.value.trim());
+        toolInput.value = '';
+        // Keep focus in the input for continuous tool adding
+        toolInput.focus();
+      }
+    });
+    // Auto-focus when the input is created
+    toolInput.focus();
+  }
+}
+
+async function addTool(description) {
+  if (!currentJob || !description) return;
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/tools`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ description }),
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      await loadJobTools(currentJob.id); // Reload tools
+      // Auto-scroll to show the newly added tool - optimized for bottom input
+      setTimeout(() => {
+        const toolsContainer = document.getElementById('toolsContainer');
+        if (toolsContainer) {
+          const lastTool = toolsContainer.lastElementChild;
+          
+          // Always scroll to bottom since input is now at bottom
+          toolsContainer.scrollTo({
+            top: toolsContainer.scrollHeight,
+            behavior: 'smooth'
+          });
+          
+          // For mobile devices, ensure the new tool is visible
+          if (lastTool) {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+              // Scroll to make the new tool visible but not necessarily at bottom
+              // This works better with the input being at the bottom
+              lastTool.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest',
+                inline: 'nearest'
+              });
+            }
+          }
+        }
+      }, 300);
+    } else {
+      logError('Failed to add tool:', result.error);
+    }
+  } catch (error) {
+    logError('Error adding tool:', error);
+  }
+}
+
+async function toggleTool(toolId, completed) {
+  try {
+    const response = await fetch(`/api/tools/${toolId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ completed }),
+    });
+    
+    if (response.ok) {
+      // Update local state
+      const tool = currentJobTools.find(t => t.id === toolId);
+      if (tool) {
+        tool.completed = completed;
+        renderTools();
+      }
+    } else {
+      logError('Failed to update tool');
+    }
+  } catch (error) {
+    logError('Error updating tool:', error);
+  }
+}
+
+async function deleteTool(toolId) {
+  try {
+    const response = await fetch(`/api/tools/${toolId}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.ok) {
+      await loadJobTools(currentJob.id); // Reload tools
+    } else {
+      logError('Failed to delete tool');
+    }
+  } catch (error) {
+    logError('Error deleting tool:', error);
+  }
+}
+
+// Drag and drop for tool reordering
+function setupToolDragAndDrop() {
+  const toolItems = document.querySelectorAll('.tool-item');
+  const toolsContainer = document.getElementById('toolsContainer');
+  
+  toolItems.forEach(item => {
+    item.addEventListener('dragstart', handleToolDragStart);
+    item.addEventListener('dragend', handleToolDragEnd);
+  });
+  
+  if (toolsContainer) {
+    toolsContainer.addEventListener('dragover', handleToolDragOver);
+    toolsContainer.addEventListener('drop', handleToolDrop);
+  }
+}
+
+function handleToolDragStart(e) {
+  toolDraggedElement = e.target;
+  e.target.classList.add('dragging');
+}
+
+function handleToolDragEnd(e) {
+  e.target.classList.remove('dragging');
+  toolDraggedElement = null;
+}
+
+function handleToolDragOver(e) {
+  e.preventDefault();
+  const container = e.currentTarget;
+  const afterElement = getDragAfterElementTool(container, e.clientY);
+  const draggable = document.querySelector('.tool-item.dragging');
+  
+  if (afterElement == null) {
+    container.appendChild(draggable);
+  } else {
+    container.insertBefore(draggable, afterElement);
+  }
+}
+
+function handleToolDrop(e) {
+  e.preventDefault();
+  updateToolOrder();
+}
+
+function getDragAfterElementTool(container, y) {
+  const draggableElements = [...container.querySelectorAll('.tool-item:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function updateToolOrder() {
+  const toolItems = document.querySelectorAll('.tool-item');
+  const toolIds = Array.from(toolItems).map(item => item.dataset.toolId);
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/tools/reorder`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ toolIds }),
+    });
+    
+    if (!response.ok) {
+      logError('Failed to update tool order');
+      // Reload tools to revert to original order
+      await loadJobTools(currentJob.id);
+    }
+  } catch (error) {
+    logError('Error updating tool order:', error);
   }
 }
 
@@ -3573,6 +3833,9 @@ window.switchJobTab = switchJobTab;
 window.addTask = addTask;
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
+window.addTool = addTool;
+window.toggleTool = toggleTool;
+window.deleteTool = deleteTool;
 window.addExtraNote = addExtraNote;
 window.deleteExtraNote = deleteExtraNote;
 window.clearAllExtraNotes = clearAllExtraNotes;

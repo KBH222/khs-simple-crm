@@ -183,6 +183,18 @@ const initializeTables = () => {
     FOREIGN KEY (job_id) REFERENCES jobs (id)
   )`);
   
+  // Tools table - Similar to tasks but for tools needed for each job
+  db.run(`CREATE TABLE IF NOT EXISTS tools (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    description TEXT NOT NULL,
+    completed BOOLEAN DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+  
   // Extra costs table
   db.run(`CREATE TABLE IF NOT EXISTS extra_costs (
     id TEXT PRIMARY KEY,
@@ -710,6 +722,130 @@ app.put('/api/jobs/:jobId/tasks/reorder', (req, res) => {
   
   Promise.all(promises)
     .then(() => res.json({ message: 'Task order updated' }))
+    .catch(err => res.status(500).json({ error: 'Database error' }));
+});
+
+// Tools API - Similar to Tasks API
+app.get('/api/jobs/:jobId/tools', (req, res) => {
+  const { jobId } = req.params;
+  db.all('SELECT * FROM tools WHERE job_id = ? ORDER BY sort_order, created_at', [jobId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/jobs/:jobId/tools', (req, res) => {
+  const { jobId } = req.params;
+  const { description } = req.body;
+  
+  if (!description || !description.trim()) {
+    return res.status(400).json({ error: 'Tool description is required' });
+  }
+  
+  const toolId = generateId('tool');
+  const now = new Date().toISOString();
+  
+  // Get max sort_order for this job
+  db.get('SELECT MAX(sort_order) as max_order FROM tools WHERE job_id = ?', [jobId], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    const sortOrder = (row.max_order || 0) + 1;
+    
+    db.run('INSERT INTO tools (id, job_id, description, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [toolId, jobId, description.trim(), sortOrder, now, now],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({
+          id: toolId,
+          job_id: jobId,
+          description: description.trim(),
+          completed: 0,
+          sort_order: sortOrder,
+          created_at: now
+        });
+      }
+    );
+  });
+});
+
+app.put('/api/tools/:id', (req, res) => {
+  const { id } = req.params;
+  const { completed, description } = req.body;
+  
+  const now = new Date().toISOString();
+  let query = 'UPDATE tools SET updated_at = ?';
+  let params = [now];
+  
+  if (typeof completed !== 'undefined') {
+    query += ', completed = ?';
+    params.push(completed ? 1 : 0);
+  }
+  
+  if (description && description.trim()) {
+    query += ', description = ?';
+    params.push(description.trim());
+  }
+  
+  query += ' WHERE id = ?';
+  params.push(id);
+  
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Tool not found' });
+    }
+    res.json({ message: 'Tool updated' });
+  });
+});
+
+app.delete('/api/tools/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM tools WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Tool not found' });
+    }
+    res.json({ message: 'Tool deleted' });
+  });
+});
+
+// Update tool order
+app.put('/api/jobs/:jobId/tools/reorder', (req, res) => {
+  const { jobId } = req.params;
+  const { toolIds } = req.body; // Array of tool IDs in new order
+  
+  if (!Array.isArray(toolIds)) {
+    return res.status(400).json({ error: 'Tool IDs array is required' });
+  }
+  
+  const now = new Date().toISOString();
+  
+  // Update each tool's sort_order
+  const promises = toolIds.map((toolId, index) => {
+    return new Promise((resolve, reject) => {
+      db.run('UPDATE tools SET sort_order = ?, updated_at = ? WHERE id = ? AND job_id = ?',
+        [index + 1, now, toolId, jobId],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+  });
+  
+  Promise.all(promises)
+    .then(() => res.json({ message: 'Tool order updated' }))
     .catch(err => res.status(500).json({ error: 'Database error' }));
 });
 

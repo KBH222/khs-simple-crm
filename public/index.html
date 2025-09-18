@@ -301,6 +301,7 @@
           <div class="job-tabs" style="display: flex; border-bottom: 1px solid #E5E7EB; background: #F9FAFB;">
             <button class="job-tab active" data-tab="info" onclick="switchJobTab('info')">Info</button>
             <button class="job-tab" data-tab="tasks" onclick="switchJobTab('tasks')">Task</button>
+            <button class="job-tab" data-tab="tools" onclick="switchJobTab('tools')">Tool</button>
             <button class="job-tab" data-tab="pics" onclick="switchJobTab('pics')">Pic</button>
             <button class="job-tab" data-tab="plans" onclick="switchJobTab('plans')">Plan</button>
             <button class="job-tab" data-tab="extra" onclick="switchJobTab('extra')">Xtra$</button>
@@ -346,6 +347,16 @@
               </div>
               <div id="tasksList" class="tasks-list">
                 <p style="color: #6B7280; text-align: center; padding: 20px;">Loading tasks...</p>
+              </div>
+            </div>
+            
+            <!-- Tool List Tab -->
+            <div id="jobTab-tools" class="job-tab-panel">
+              <div class="tool-header" style="margin-bottom: 20px;">
+                <h4 style="margin: 0; color: #111827;">Tools</h4>
+              </div>
+              <div id="toolsList" class="tools-list">
+                <p style="color: #6B7280; text-align: center; padding: 20px;">Loading tools...</p>
               </div>
             </div>
             
