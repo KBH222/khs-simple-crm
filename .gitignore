@@ -54,3 +54,6 @@ temp/
 
 # Data export/import files (contain user data)
 data-export*.json
+
+# Local-only frontend API override (do not commit)
+public/config.local.js

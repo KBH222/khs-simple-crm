@@ -4,8 +4,12 @@
     const BASE = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL.trim() : '';
     if (BASE) {
       const baseNoSlash = BASE.endsWith('/') ? BASE.slice(0, -1) : BASE;
+      
+      // Store original fetch before any modifications
       const originalFetch = window.fetch.bind(window);
-      window.fetch = function(resource, init) {
+      
+      // First wrap with API base URL rewriting
+      const fetchWithBase = function(resource, init) {
         try {
           if (typeof resource === 'string') {
             if (resource.startsWith('/api/')) {
@@ -21,12 +25,38 @@
         }
         return originalFetch(resource, init);
       };
+      
+      // Then wrap with reliable fetch if available
+      if (window.apiUtils && window.apiUtils.reliableFetch) {
+        // Override the reliableFetch to use our base-URL-aware fetch
+        const originalReliableFetch = window.apiUtils.reliableFetch;
+        window.apiUtils.reliableFetch = async function(url, options) {
+          // Apply base URL transformation
+          if (typeof url === 'string' && url.startsWith('/api/')) {
+            url = baseNoSlash + url;
+          }
+          // Use the original reliable fetch with transformed URL
+          return originalReliableFetch.call(this, url, options);
+        };
+        console.log('[API] Using reliable fetch with Railway base URL');
+      } else {
+        // Fallback to simple base URL wrapper
+        window.fetch = fetchWithBase;
+      }
+      
+      window.__API_BASE = baseNoSlash;
       console.log('[API_BASE_URL] Using remote API base:', baseNoSlash);
     }
   } catch (err) {
     console.warn('API base URL patch failed:', err);
+    window.__API_BASE = '';
   }
 })();
+
+// Helper function to get the appropriate fetch function
+function getReliableFetch() {
+  return (window.apiUtils && window.apiUtils.reliableFetch) ? window.apiUtils.reliableFetch : fetch;
+}
 
 // 🚀 BEAST MODE: Global state + optimized logging
 const isDev = location.hostname === 'localhost';
@@ -55,7 +85,26 @@ function formatTime(date) {
 }
 
 // Initialize app
+function updateEnvBadge() {
+  try {
+    const badge = document.getElementById('envBadge');
+    if (!badge) return;
+    const base = window.__API_BASE || '';
+    if (base) {
+      badge.textContent = 'API: Railway';
+      badge.style.backgroundColor = '#DBEAFE';
+      badge.style.color = '#1D4ED8';
+    } else {
+      badge.textContent = 'API: Local';
+      badge.style.backgroundColor = '#FEF3C7';
+      badge.style.color = '#92400E';
+    }
+  } catch {}
+}
+
+// Initialize app
 document.addEventListener('DOMContentLoaded', function() {
+  updateEnvBadge();
   log('DOM Content Loaded!');
   updateDateTime();
   setInterval(updateDateTime, 1000);
@@ -240,7 +289,8 @@ function updateDateTime() {
 // Customer Management
 async function loadCustomers() {
   try {
-    const response = await fetch('/api/customers');
+    const fetchFn = getReliableFetch();
+    const response = await fetchFn('/api/customers');
     const data = await response.json();
     
     if (response.ok) {
@@ -257,7 +307,8 @@ async function loadCustomers() {
 // Load jobs for a specific customer
 async function loadCustomerJobs(customerId) {
   try {
-    const response = await fetch(`/api/jobs?customer_id=${customerId}`);
+    const fetchFn = getReliableFetch();
+    const response = await fetchFn(`/api/jobs?customer_id=${customerId}`);
     const data = await response.json();
     
     const jobsContainer = document.querySelector(`#jobs-${customerId} .jobs-list`);
@@ -489,7 +540,8 @@ function editCustomer(customerId) {
 
 async function deleteCustomer(customerId) {
   try {
-    const response = await fetch(`/api/customers/${customerId}`, {
+    const fetchFn = getReliableFetch();
+    const response = await fetchFn(`/api/customers/${customerId}`, {
       method: 'DELETE'
     });
     
@@ -568,7 +620,8 @@ async function handleJobSubmit(e) {
   };
   
   try {
-    const response = await fetch('/api/jobs', {
+    const fetchFn = getReliableFetch();
+    const response = await fetchFn('/api/jobs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -638,7 +691,8 @@ async function handleCustomerSubmit(e) {
     const url = isEdit ? `/api/customers/${customerId}` : '/api/customers';
     const method = isEdit ? 'PUT' : 'POST';
     
-    const response = await fetch(url, {
+    const fetchFn = getReliableFetch();
+    const response = await fetchFn(url, {
       method,
       headers: {
         'Content-Type': 'application/json',

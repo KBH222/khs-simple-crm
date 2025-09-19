@@ -19,15 +19,17 @@
   <div id="appScreen" class="screen">
     <!-- Header -->
     <header class="app-header">
-      <div class="header-content">
-        <h1 class="app-title">
-          <div class="logo-placeholder">K</div>
-          <span>KHS CRM</span>
-        </h1>
-        <div class="header-user">
-          <span id="userName">Administrator</span>
+        <div class="header-content">
+          <h1 class="app-title">
+            <div class="logo-placeholder">K</div>
+            <span>KHS CRM</span>
+          </h1>
+          <div class="header-user">
+            <span id="connection-status" class="connection-status" style="margin-right: 10px;"></span>
+            <span id="envBadge" class="env-badge" title="Active API target"></span>
+            <span id="userName">Administrator</span>
+          </div>
         </div>
-      </div>
     </header>
 
     <!-- Main Content -->
@@ -1225,6 +1227,8 @@
   </div>
 
   <script src="config.js?v=20250919000000"></script>
+  <script src="config.local.js?v=20250919000000"></script>
+  <script src="api-utils.js?v=20250919000001"></script>
   <script src="app.js?v=20250914212500"></script>
 </body>
 </html>

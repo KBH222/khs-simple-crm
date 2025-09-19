@@ -11,42 +11,88 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
+// Track processed idempotency keys (in production, use Redis or database)
+const processedKeys = new Map();
+const IDEMPOTENCY_KEY_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
 // Database setup with error handling
 let db;
 let dbInitialized = false;
 
-// Promise-based database initialization
-const initializeDatabase = () => {
+// Promise-based database initialization with retry logic
+const initializeDatabase = (retryCount = 0, maxRetries = 3) => {
   return new Promise((resolve, reject) => {
-    try {
-      // Use persistent volume path for database in production
-      const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
-      
-      // Ensure directory exists for Railway deployment
-      if (process.env.RAILWAY_ENVIRONMENT) {
-        const dbDir = path.dirname(dbPath);
-        if (!fs.existsSync(dbDir)) {
-          fs.mkdirSync(dbDir, { recursive: true });
-          console.log(`📁 Created database directory: ${dbDir}`);
+    const attemptConnection = () => {
+      try {
+        // Use persistent volume path for database in production
+        const dbPath = process.env.RAILWAY_ENVIRONMENT ? '/app/data/crm.db' : 'crm.db';
+        
+        // Ensure directory exists for Railway deployment
+        if (process.env.RAILWAY_ENVIRONMENT) {
+          const dbDir = path.dirname(dbPath);
+          if (!fs.existsSync(dbDir)) {
+            fs.mkdirSync(dbDir, { recursive: true });
+            console.log(`📁 Created database directory: ${dbDir}`);
+          }
+        }
+        
+        console.log(`🔗 Connecting to database at: ${dbPath} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        
+        db = new sqlite3.Database(dbPath, (err) => {
+          if (err) {
+            console.error(`Database connection attempt ${retryCount + 1} failed:`, err);
+            
+            if (retryCount < maxRetries) {
+              const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+              console.log(`⏳ Retrying in ${delay}ms...`);
+              setTimeout(() => {
+                initializeDatabase(retryCount + 1, maxRetries)
+                  .then(resolve)
+                  .catch(reject);
+              }, delay);
+            } else {
+              reject(err);
+            }
+          } else {
+            console.log('✅ Connected to SQLite database');
+            
+            // Enable WAL mode for better concurrent access
+            db.run('PRAGMA journal_mode = WAL', (walErr) => {
+              if (walErr) {
+                console.warn('⚠️ Failed to enable WAL mode:', walErr);
+                // Continue anyway, not critical
+              } else {
+                console.log('✅ WAL mode enabled for better concurrency');
+              }
+            });
+            
+            // Optimize database performance
+            db.run('PRAGMA synchronous = NORMAL');
+            db.run('PRAGMA cache_size = 10000');
+            db.run('PRAGMA temp_store = MEMORY');
+            
+            dbInitialized = true;
+            resolve();
+          }
+        });
+      } catch (error) {
+        console.error(`Database initialization error (attempt ${retryCount + 1}):`, error);
+        
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`⏳ Retrying in ${delay}ms...`);
+          setTimeout(() => {
+            initializeDatabase(retryCount + 1, maxRetries)
+              .then(resolve)
+              .catch(reject);
+          }, delay);
+        } else {
+          reject(error);
         }
       }
-      
-      console.log(`🔗 Connecting to database at: ${dbPath}`);
-      
-      db = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-          console.error('Failed to connect to database:', err);
-          reject(err);
-        } else {
-          console.log('✅ Connected to SQLite database');
-          dbInitialized = true;
-          resolve();
-        }
-      });
-    } catch (error) {
-      console.error('Database initialization error:', error);
-      reject(error);
-    }
+    };
+    
+    attemptConnection();
   });
 };
 
@@ -292,10 +338,52 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Idempotency-Key');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
+  next();
+});
+
+// Idempotency middleware for write operations
+app.use((req, res, next) => {
+  // Only apply to write operations
+  if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    return next();
+  }
+  
+  const idempotencyKey = req.headers['x-idempotency-key'];
+  if (!idempotencyKey) {
+    // Idempotency key is optional but recommended
+    return next();
+  }
+  
+  // Clean up old keys
+  const now = Date.now();
+  for (const [key, data] of processedKeys.entries()) {
+    if (now - data.timestamp > IDEMPOTENCY_KEY_TTL) {
+      processedKeys.delete(key);
+    }
+  }
+  
+  // Check if we've already processed this request
+  if (processedKeys.has(idempotencyKey)) {
+    const cachedResponse = processedKeys.get(idempotencyKey);
+    console.log(`♻️ Returning cached response for idempotency key: ${idempotencyKey}`);
+    return res.status(cachedResponse.status).json(cachedResponse.body);
+  }
+  
+  // Store the response when it's sent
+  const originalSend = res.json.bind(res);
+  res.json = function(body) {
+    processedKeys.set(idempotencyKey, {
+      status: res.statusCode,
+      body: body,
+      timestamp: Date.now()
+    });
+    return originalSend(body);
+  };
+  
   next();
 });
 

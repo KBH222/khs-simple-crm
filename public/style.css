@@ -176,6 +176,48 @@ button {
   font-size: 14px;
 }
 
+.env-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Connection Status Indicator */
+.connection-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.connection-status.online {
+  background-color: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #10B981;
+}
+
+.connection-status.offline {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #EF4444;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 .logout-btn:hover {
   background-color: #DC2626;
 }
