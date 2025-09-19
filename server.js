@@ -276,16 +276,9 @@ const initializeTables = () => {
     }
   });
   
-  // Initialize customers and jobs for Railway deployment if database is empty
-  initializeAllData(db)
-    .then(() => {
-      console.log('✅ Database initialization complete');
-      resolve();
-    })
-    .catch((err) => {
-      console.error('❌ Database initialization failed:', err);
-      resolve(); // Still resolve to allow app to start
-    });
+  // Database initialization disabled - Railway volume now working
+  console.log('✅ Database tables created, skipping initialization (Railway volume active)');
+  resolve();
     });
   });
 };
