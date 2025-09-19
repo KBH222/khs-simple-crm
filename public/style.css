@@ -244,6 +244,43 @@ body.has-offline-banner .app-header {
   margin-top: 50px;
 }
 
+/* Schedule View Toggle */
+.schedule-view-toggle {
+  display: flex;
+  gap: 4px;
+  background: white;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid #E5E7EB;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn:hover {
+  background: #F3F4F6;
+}
+
+.toggle-btn.active {
+  background: #3B82F6;
+  color: white;
+}
+
+.schedule-view {
+  width: 100%;
+}
+
 .logout-btn:hover {
   background-color: #DC2626;
 }

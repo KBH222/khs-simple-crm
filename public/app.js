@@ -3037,8 +3037,61 @@ function sendText(phoneNumber) {
 function initializeCalendar() {
   log('Initializing calendar...');
   setupCalendarEventListeners();
+  setupScheduleViewToggle();
   renderCalendar();
   loadCalendarEvents();
+}
+
+// Schedule View Toggle
+function setupScheduleViewToggle() {
+  const calendarBtn = document.getElementById('calendarViewBtn');
+  const ganttBtn = document.getElementById('ganttViewBtn');
+  const calendarView = document.getElementById('calendarView');
+  const ganttView = document.getElementById('ganttView');
+  
+  if (!calendarBtn || !ganttBtn) return;
+  
+  // Calendar view button
+  calendarBtn.addEventListener('click', () => {
+    calendarBtn.classList.add('active');
+    ganttBtn.classList.remove('active');
+    if (calendarView) calendarView.style.display = 'block';
+    if (ganttView) ganttView.style.display = 'none';
+    
+    // Show add event button for calendar
+    const addEventBtn = document.getElementById('addEventBtn');
+    if (addEventBtn) addEventBtn.style.display = 'inline-block';
+  });
+  
+  // Gantt view button  
+  ganttBtn.addEventListener('click', () => {
+    ganttBtn.classList.add('active');
+    calendarBtn.classList.remove('active');
+    if (calendarView) calendarView.style.display = 'none';
+    if (ganttView) ganttView.style.display = 'block';
+    
+    // Hide add event button for Gantt (uses job creation instead)
+    const addEventBtn = document.getElementById('addEventBtn');
+    if (addEventBtn) addEventBtn.style.display = 'none';
+    
+    // Initialize Gantt chart if not already done
+    initializeGanttChart();
+  });
+}
+
+let ganttChart = null;
+
+function initializeGanttChart() {
+  if (!ganttChart) {
+    const container = document.getElementById('ganttChartContainer');
+    if (container) {
+      ganttChart = new GanttChart(container);
+      ganttChart.loadData();
+    }
+  } else {
+    // Refresh data if already initialized
+    ganttChart.loadData();
+  }
 }
 
 function setupCalendarEventListeners() {
