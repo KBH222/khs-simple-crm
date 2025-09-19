@@ -157,17 +157,47 @@ const initializeTables = () => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs (id)
-  `);
+  )`);
   
-  // Try to migrate old materials table structure if it exists
-  db.run(`ALTER TABLE materials ADD COLUMN description TEXT`, (err) => {
-    if (!err) {
-      db.run(`UPDATE materials SET description = item_name || ' - ' || quantity || ' ' || unit WHERE description IS NULL`);
+  // Fix materials table if it has wrong schema
+  db.all(`PRAGMA table_info(materials)`, (err, columns) => {
+    if (!err && columns) {
+      const hasItemName = columns.some(col => col.name === 'item_name');
+      const hasDescription = columns.some(col => col.name === 'description');
+      
+      // If table has old schema (item_name) but not new schema (description), recreate it
+      if (hasItemName && !hasDescription) {
+        console.log('🔧 Migrating materials table to new schema...');
+        db.serialize(() => {
+          // Backup existing data if any
+          db.run(`CREATE TEMPORARY TABLE materials_backup AS SELECT * FROM materials`);
+          // Drop old table
+          db.run(`DROP TABLE materials`);
+          // Create new table with correct schema
+          db.run(`CREATE TABLE materials (
+            id TEXT PRIMARY KEY,
+            job_id TEXT NOT NULL,
+            description TEXT NOT NULL,
+            completed BOOLEAN DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (job_id) REFERENCES jobs (id)
+          )`);
+          console.log('✅ Materials table recreated with correct schema');
+        });
+      }
+      // Try to add missing columns if needed
+      else {
+        if (!hasDescription) {
+          db.run(`ALTER TABLE materials ADD COLUMN description TEXT`, (err) => {});
+        }
+        db.run(`ALTER TABLE materials ADD COLUMN completed BOOLEAN DEFAULT 0`, (err) => {});
+        db.run(`ALTER TABLE materials ADD COLUMN sort_order INTEGER DEFAULT 0`, (err) => {});
+        db.run(`ALTER TABLE materials ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`, (err) => {});
+      }
     }
   });
-  db.run(`ALTER TABLE materials ADD COLUMN completed BOOLEAN DEFAULT 0`, (err) => {});
-  db.run(`ALTER TABLE materials ADD COLUMN sort_order INTEGER DEFAULT 0`, (err) => {});
-  db.run(`ALTER TABLE materials ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`, (err) => {});
   
   // Calendar events table
   db.run(`CREATE TABLE IF NOT EXISTS calendar_events (
