@@ -324,6 +324,7 @@
             <button class="job-tab active" data-tab="info" onclick="switchJobTab('info')">Info</button>
             <button class="job-tab" data-tab="tasks" onclick="switchJobTab('tasks')">Task</button>
             <button class="job-tab" data-tab="tools" onclick="switchJobTab('tools')">Tool</button>
+            <button class="job-tab" data-tab="materials" onclick="switchJobTab('materials')">MTLS</button>
             <button class="job-tab" data-tab="pics" onclick="switchJobTab('pics')">Pic</button>
             <button class="job-tab" data-tab="plans" onclick="switchJobTab('plans')">Plan</button>
             <button class="job-tab" data-tab="extra" onclick="switchJobTab('extra')">Xtra$</button>
@@ -379,6 +380,16 @@
               </div>
               <div id="toolsList" class="tools-list">
                 <p style="color: #6B7280; text-align: center; padding: 20px;">Loading tools...</p>
+              </div>
+            </div>
+            
+            <!-- Materials List Tab -->
+            <div id="jobTab-materials" class="job-tab-panel">
+              <div class="materials-header" style="margin-bottom: 20px;">
+                <h4 style="margin: 0; color: #111827;">Materials</h4>
+              </div>
+              <div id="materialsList" class="materials-list">
+                <p style="color: #6B7280; text-align: center; padding: 20px;">Loading materials...</p>
               </div>
             </div>
             
@@ -1244,6 +1255,14 @@
               <h3>🔧 All Tools</h3>
               <div id="masterToolsList" class="master-list">
                 <div class="loading">Loading tools...</div>
+              </div>
+            </div>
+            
+            <!-- Master Materials List -->
+            <div class="master-list-section">
+              <h3>📦 All Materials</h3>
+              <div id="masterMaterialsList" class="master-list">
+                <div class="loading">Loading materials...</div>
               </div>
             </div>
           </div>

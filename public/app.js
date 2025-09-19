@@ -877,6 +877,7 @@ function showJobDetailsModal(job) {
   setupFileDropZones();
   loadJobTasks(job.id);
   loadJobTools(job.id);
+  loadJobMaterials(job.id);
   loadJobFiles(job.id);
   loadExtraCosts(job.id);
   
@@ -986,6 +987,9 @@ function switchJobTab(tabName) {
     } else if (tabName === 'tools') {
       log('🔧 Loading tools for job:', currentJob.id);
       loadJobTools(currentJob.id);
+    } else if (tabName === 'materials') {
+      log('📦 Loading materials for job:', currentJob.id);
+      loadJobMaterials(currentJob.id);
     } else if (tabName === 'extra') {
       log('💰 Loading extra costs for job:', currentJob.id);
       loadExtraCosts(currentJob.id);
@@ -1683,6 +1687,245 @@ async function updateToolOrder() {
     }
   } catch (error) {
     logError('Error updating tool order:', error);
+  }
+}
+
+// Materials management functions - Similar to task/tool management
+let currentJobMaterials = [];
+let materialDraggedElement = null;
+
+async function loadJobMaterials(jobId) {
+  log('loadJobMaterials called with jobId:', jobId);
+  try {
+    const url = `/api/jobs/${jobId}/materials`;
+    log('Fetching:', url);
+    const response = await fetch(url);
+    const materials = await response.json();
+    
+    log('API Response:', { status: response.status, materials });
+    
+    if (response.ok) {
+      currentJobMaterials = materials;
+      log('About to render materials:', materials);
+      renderMaterials();
+    } else {
+      logError('Failed to load materials:', materials.error);
+    }
+  } catch (error) {
+    logError('Error loading materials:', error);
+  }
+}
+
+function renderMaterials() {
+  const materialsList = document.getElementById('materialsList');
+  
+  if (!currentJobMaterials || currentJobMaterials.length === 0) {
+    materialsList.innerHTML = `
+      <div class="materials-wrapper">
+        <p style="color: #6B7280; text-align: center; padding: 20px 20px 40px 20px;">No materials yet. Add your first material below!</p>
+      </div>
+      <div class="material-input-container">
+        <input type="text" id="newMaterialInput" placeholder="Add a material and press Enter..." class="material-input">
+      </div>
+    `;
+  } else {
+    materialsList.innerHTML = `
+      <div class="materials-wrapper">
+        <div class="materials-container" id="materialsContainer">
+          ${currentJobMaterials.map(material => `
+            <div class="material-item" data-material-id="${material.id}" draggable="true">
+              <div class="material-content">
+                <input type="checkbox" class="material-checkbox" 
+                       ${material.completed ? 'checked' : ''} 
+                       onchange="toggleMaterial('${material.id}', this.checked)">
+                <span class="material-description ${material.completed ? 'completed' : ''}">${escapeHtml(material.description)}</span>
+              </div>
+              <button class="material-delete-btn" onclick="deleteMaterial('${material.id}')" title="Delete material">×</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="material-input-container">
+        <input type="text" id="newMaterialInput" placeholder="Add a material and press Enter..." class="material-input">
+      </div>
+    `;
+    
+    setupMaterialDragAndDrop();
+  }
+  
+  setupMaterialInput();
+}
+
+function setupMaterialInput() {
+  const materialInput = document.getElementById('newMaterialInput');
+  if (materialInput) {
+    materialInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter' && materialInput.value.trim()) {
+        await addMaterial(materialInput.value.trim());
+        materialInput.value = '';
+        // Keep focus in the input for continuous material adding
+        materialInput.focus();
+      }
+    });
+    // Auto-focus when the input is created
+    materialInput.focus();
+  }
+}
+
+async function addMaterial(description) {
+  if (!currentJob || !description) return;
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/materials`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ description }),
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      await loadJobMaterials(currentJob.id); // Reload materials
+      // Auto-scroll to show the newly added material
+      setTimeout(() => {
+        const materialsContainer = document.getElementById('materialsContainer');
+        if (materialsContainer) {
+          materialsContainer.scrollTo({
+            top: materialsContainer.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 300);
+    } else {
+      logError('Failed to add material:', result.error);
+    }
+  } catch (error) {
+    logError('Error adding material:', error);
+  }
+}
+
+async function toggleMaterial(materialId, completed) {
+  try {
+    const response = await fetch(`/api/materials/${materialId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ completed }),
+    });
+    
+    if (response.ok) {
+      // Update local state
+      const material = currentJobMaterials.find(m => m.id === materialId);
+      if (material) {
+        material.completed = completed;
+        renderMaterials();
+      }
+    } else {
+      logError('Failed to update material');
+    }
+  } catch (error) {
+    logError('Error updating material:', error);
+  }
+}
+
+async function deleteMaterial(materialId) {
+  try {
+    const response = await fetch(`/api/materials/${materialId}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.ok) {
+      await loadJobMaterials(currentJob.id); // Reload materials
+    } else {
+      logError('Failed to delete material');
+    }
+  } catch (error) {
+    logError('Error deleting material:', error);
+  }
+}
+
+// Drag and drop for material reordering
+function setupMaterialDragAndDrop() {
+  const materialItems = document.querySelectorAll('.material-item');
+  const materialsContainer = document.getElementById('materialsContainer');
+  
+  materialItems.forEach(item => {
+    item.addEventListener('dragstart', handleMaterialDragStart);
+    item.addEventListener('dragend', handleMaterialDragEnd);
+  });
+  
+  if (materialsContainer) {
+    materialsContainer.addEventListener('dragover', handleMaterialDragOver);
+    materialsContainer.addEventListener('drop', handleMaterialDrop);
+  }
+}
+
+function handleMaterialDragStart(e) {
+  materialDraggedElement = e.target;
+  e.target.classList.add('dragging');
+}
+
+function handleMaterialDragEnd(e) {
+  e.target.classList.remove('dragging');
+  materialDraggedElement = null;
+}
+
+function handleMaterialDragOver(e) {
+  e.preventDefault();
+  const container = e.currentTarget;
+  const afterElement = getDragAfterElementMaterial(container, e.clientY);
+  const draggable = document.querySelector('.material-item.dragging');
+  
+  if (afterElement == null) {
+    container.appendChild(draggable);
+  } else {
+    container.insertBefore(draggable, afterElement);
+  }
+}
+
+function handleMaterialDrop(e) {
+  e.preventDefault();
+  updateMaterialOrder();
+}
+
+function getDragAfterElementMaterial(container, y) {
+  const draggableElements = [...container.querySelectorAll('.material-item:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function updateMaterialOrder() {
+  const materialItems = document.querySelectorAll('.material-item');
+  const materialIds = Array.from(materialItems).map(item => item.dataset.materialId);
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/materials/reorder`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ materialIds }),
+    });
+    
+    if (!response.ok) {
+      logError('Failed to update material order');
+      // Reload materials to revert to original order
+      await loadJobMaterials(currentJob.id);
+    }
+  } catch (error) {
+    logError('Error updating material order:', error);
   }
 }
 
@@ -3975,6 +4218,9 @@ window.deleteTask = deleteTask;
 window.addTool = addTool;
 window.toggleTool = toggleTool;
 window.deleteTool = deleteTool;
+window.addMaterial = addMaterial;
+window.toggleMaterial = toggleMaterial;
+window.deleteMaterial = deleteMaterial;
 window.addExtraNote = addExtraNote;
 window.deleteExtraNote = deleteExtraNote;
 window.clearAllExtraNotes = clearAllExtraNotes;
@@ -5338,6 +5584,7 @@ window.editWorkerFromDetail = editWorkerFromDetail;
 // Master Lists Management
 let masterTasks = {};
 let masterTools = {};
+let masterMaterials = {};
 
 // Load Master Lists Data
 async function loadMasterLists() {
@@ -5354,6 +5601,13 @@ async function loadMasterLists() {
     if (toolsResponse.ok) {
       masterTools = await toolsResponse.json();
       renderMasterTools();
+    }
+    
+    // Load master materials
+    const materialsResponse = await fetch('/api/materials/all');
+    if (materialsResponse.ok) {
+      masterMaterials = await materialsResponse.json();
+      renderMasterMaterials();
     }
   } catch (error) {
     logError('Error loading master lists:', error);
@@ -5520,7 +5774,88 @@ async function toggleMasterTool(toolId, completed) {
   }
 }
 
+// Render Master Materials
+function renderMasterMaterials() {
+  const container = document.getElementById('masterMaterialsList');
+  if (!container) return;
+  
+  const materialGroups = Object.keys(masterMaterials);
+  
+  if (materialGroups.length === 0) {
+    container.innerHTML = '<div class="loading">No materials found across all jobs.</div>';
+    return;
+  }
+  
+  const html = materialGroups.map(jobKey => {
+    const jobData = masterMaterials[jobKey];
+    const materials = jobData.materials;
+    
+    if (materials.length === 0) return '';
+    
+    const materialsHtml = materials.map(material => `
+      <div class="master-item master-material-item">
+        <input 
+          type="checkbox" 
+          class="master-item-checkbox" 
+          ${material.completed ? 'checked' : ''}
+          onchange="toggleMasterMaterial('${material.id}', this.checked)"
+        />
+        <span class="master-item-description ${material.completed ? 'completed' : ''}">
+          ${escapeHtml(material.description)}
+        </span>
+      </div>
+    `).join('');
+    
+    return `
+      <div class="master-job-group">
+        <div class="master-job-header">
+          <h4 class="master-job-title">${escapeHtml(jobKey)}</h4>
+        </div>
+        <div class="master-items-list">
+          ${materialsHtml}
+        </div>
+      </div>
+    `;
+  }).filter(html => html).join('');
+  
+  container.innerHTML = html || '<div class="loading">No materials found.</div>';
+}
+
+// Toggle Master Material Completion
+async function toggleMasterMaterial(materialId, completed) {
+  try {
+    const response = await fetch(`/api/materials/${materialId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ completed })
+    });
+    
+    if (response.ok) {
+      // Update the local data
+      Object.keys(masterMaterials).forEach(jobKey => {
+        const material = masterMaterials[jobKey].materials.find(m => m.id === materialId);
+        if (material) {
+          material.completed = completed;
+        }
+      });
+      
+      // Re-render to update visual state
+      renderMasterMaterials();
+    } else {
+      logError('Failed to update material');
+      // Reload to get correct state
+      loadMasterLists();
+    }
+  } catch (error) {
+    logError('Error updating material:', error);
+    loadMasterLists();
+  }
+}
+
 // Make Master Lists functions globally accessible
 window.loadMasterLists = loadMasterLists;
 window.toggleMasterTask = toggleMasterTask;
 window.toggleMasterTool = toggleMasterTool;
+window.toggleMasterMaterial = toggleMasterMaterial;

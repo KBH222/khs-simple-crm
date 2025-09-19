@@ -147,18 +147,27 @@ const initializeTables = () => {
     // Ignore error if column already exists
   });
 
-  // Materials table
+  // Materials table - Updated to match tasks/tools structure
   db.run(`CREATE TABLE IF NOT EXISTS materials (
     id TEXT PRIMARY KEY,
     job_id TEXT NOT NULL,
-    item_name TEXT NOT NULL,
-    quantity REAL NOT NULL,
-    unit TEXT DEFAULT 'each',
-    purchased BOOLEAN DEFAULT 0,
-    notes TEXT,
+    description TEXT NOT NULL,
+    completed BOOLEAN DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs (id)
-  )`);
+  `);
+  
+  // Try to migrate old materials table structure if it exists
+  db.run(`ALTER TABLE materials ADD COLUMN description TEXT`, (err) => {
+    if (!err) {
+      db.run(`UPDATE materials SET description = item_name || ' - ' || quantity || ' ' || unit WHERE description IS NULL`);
+    }
+  });
+  db.run(`ALTER TABLE materials ADD COLUMN completed BOOLEAN DEFAULT 0`, (err) => {});
+  db.run(`ALTER TABLE materials ADD COLUMN sort_order INTEGER DEFAULT 0`, (err) => {});
+  db.run(`ALTER TABLE materials ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`, (err) => {});
   
   // Calendar events table
   db.run(`CREATE TABLE IF NOT EXISTS calendar_events (
@@ -1006,6 +1015,130 @@ app.put('/api/jobs/:jobId/tools/reorder', (req, res) => {
     .catch(err => res.status(500).json({ error: 'Database error' }));
 });
 
+// Materials API - Similar to Tasks/Tools API
+app.get('/api/jobs/:jobId/materials', (req, res) => {
+  const { jobId } = req.params;
+  db.all('SELECT * FROM materials WHERE job_id = ? ORDER BY sort_order, created_at', [jobId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/jobs/:jobId/materials', (req, res) => {
+  const { jobId } = req.params;
+  const { description } = req.body;
+  
+  if (!description || !description.trim()) {
+    return res.status(400).json({ error: 'Material description is required' });
+  }
+  
+  const materialId = generateId('mat');
+  const now = new Date().toISOString();
+  
+  // Get max sort_order for this job
+  db.get('SELECT MAX(sort_order) as max_order FROM materials WHERE job_id = ?', [jobId], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    const sortOrder = (row.max_order || 0) + 1;
+    
+    db.run('INSERT INTO materials (id, job_id, description, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [materialId, jobId, description.trim(), sortOrder, now, now],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({
+          id: materialId,
+          job_id: jobId,
+          description: description.trim(),
+          completed: 0,
+          sort_order: sortOrder,
+          created_at: now
+        });
+      }
+    );
+  });
+});
+
+app.put('/api/materials/:id', (req, res) => {
+  const { id } = req.params;
+  const { completed, description } = req.body;
+  
+  const now = new Date().toISOString();
+  let query = 'UPDATE materials SET updated_at = ?';
+  let params = [now];
+  
+  if (typeof completed !== 'undefined') {
+    query += ', completed = ?';
+    params.push(completed ? 1 : 0);
+  }
+  
+  if (description && description.trim()) {
+    query += ', description = ?';
+    params.push(description.trim());
+  }
+  
+  query += ' WHERE id = ?';
+  params.push(id);
+  
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Material not found' });
+    }
+    res.json({ message: 'Material updated' });
+  });
+});
+
+app.delete('/api/materials/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM materials WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Material not found' });
+    }
+    res.json({ message: 'Material deleted' });
+  });
+});
+
+// Update material order
+app.put('/api/jobs/:jobId/materials/reorder', (req, res) => {
+  const { jobId } = req.params;
+  const { materialIds } = req.body; // Array of material IDs in new order
+  
+  if (!Array.isArray(materialIds)) {
+    return res.status(400).json({ error: 'Material IDs array is required' });
+  }
+  
+  const now = new Date().toISOString();
+  
+  // Update each material's sort_order
+  const promises = materialIds.map((materialId, index) => {
+    return new Promise((resolve, reject) => {
+      db.run('UPDATE materials SET sort_order = ?, updated_at = ? WHERE id = ? AND job_id = ?',
+        [index + 1, now, materialId, jobId],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+  });
+  
+  Promise.all(promises)
+    .then(() => res.json({ message: 'Material order updated' }))
+    .catch(err => res.status(500).json({ error: 'Database error' }));
+});
+
 // Extra Costs API
 app.get('/api/jobs/:jobId/extra-costs', (req, res) => {
   const { jobId } = req.params;
@@ -1414,6 +1547,45 @@ app.get('/api/tools/all', (req, res) => {
     });
     
     res.json(groupedTools);
+  });
+});
+
+app.get('/api/materials/all', (req, res) => {
+  const query = `
+    SELECT m.*, j.title as job_title, c.name as customer_name
+    FROM materials m 
+    JOIN jobs j ON m.job_id = j.id 
+    JOIN customers c ON j.customer_id = c.id
+    ORDER BY j.title, m.sort_order, m.created_at
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    // Group materials by job
+    const groupedMaterials = {};
+    rows.forEach(material => {
+      const jobKey = `${material.customer_name} - ${material.job_title}`;
+      if (!groupedMaterials[jobKey]) {
+        groupedMaterials[jobKey] = {
+          job_title: material.job_title,
+          customer_name: material.customer_name,
+          job_id: material.job_id,
+          materials: []
+        };
+      }
+      groupedMaterials[jobKey].materials.push({
+        id: material.id,
+        description: material.description,
+        completed: material.completed,
+        created_at: material.created_at,
+        updated_at: material.updated_at
+      });
+    });
+    
+    res.json(groupedMaterials);
   });
 });
 
