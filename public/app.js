@@ -821,14 +821,28 @@ function testNavigation() {
 
 // Job viewing and management
 let currentJob = null;
+let jobWorkers = []; // Store workers for task assignment
 
 async function viewJob(jobId) {
   try {
+    // Load job details
     const response = await fetch(`/api/jobs/${jobId}`);
     const job = await response.json();
     
     if (response.ok) {
       currentJob = job;
+      
+      // Load workers for task assignment
+      try {
+        const workersResponse = await fetch('/api/workers?status=ACTIVE');
+        if (workersResponse.ok) {
+          jobWorkers = await workersResponse.json();
+        }
+      } catch (err) {
+        logError('Failed to load workers:', err);
+        jobWorkers = [];
+      }
+      
       showJobDetailsModal(job);
     } else {
       logError('Failed to load job details');
@@ -1218,26 +1232,49 @@ function renderTasks() {
       </div>
     `;
   } else {
+    // Build worker options for dropdown
+    const workerOptions = jobWorkers.map(w => 
+      `<option value="${w.id}">${w.initials || w.name.split(' ').map(n => n[0]).join('').toUpperCase()}</option>`
+    ).join('');
+    
     tasksList.innerHTML = `
       <div class="tasks-wrapper">
         <div class="tasks-container" id="tasksContainer">
-          ${currentJobTasks.map(task => `
+          ${currentJobTasks.map(task => {
+            const workerInitials = task.worker_initials || '';
+            return `
             <div class="task-item" data-task-id="${task.id}" draggable="true">
               <div class="task-content">
                 <input type="checkbox" class="task-checkbox" 
                        ${task.completed ? 'checked' : ''} 
                        onchange="toggleTask('${task.id}', this.checked)">
                 <span class="task-description ${task.completed ? 'completed' : ''}">${escapeHtml(task.description)}</span>
+                <select class="task-worker-select" 
+                        onchange="assignWorkerToTask('${task.id}', this.value)"
+                        style="margin-left: 8px; padding: 2px 4px; font-size: 12px; border: 1px solid #D1D5DB; border-radius: 4px; background: white;">
+                  <option value="">--</option>
+                  ${workerOptions}
+                </select>
+                ${workerInitials ? `<span class="task-worker-initials" style="margin-left: 4px; color: #3B82F6; font-weight: 600; font-size: 11px;">[${workerInitials}]</span>` : ''}
               </div>
               <button class="task-delete-btn" onclick="deleteTask('${task.id}')" title="Delete task">×</button>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
       <div class="task-input-container">
         <input type="text" id="newTaskInput" placeholder="Add a task and press Enter..." class="task-input">
       </div>
     `;
+    
+    // Set selected workers in dropdowns
+    currentJobTasks.forEach(task => {
+      if (task.worker_id) {
+        const select = document.querySelector(`[data-task-id="${task.id}"] .task-worker-select`);
+        if (select) select.value = task.worker_id;
+      }
+    });
     
     setupTaskDragAndDrop();
   }
@@ -1335,6 +1372,27 @@ async function toggleTask(taskId, completed) {
     }
   } catch (error) {
     logError('Error updating task:', error);
+  }
+}
+
+async function assignWorkerToTask(taskId, workerId) {
+  try {
+    const response = await fetch(`/api/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ worker_id: workerId }),
+    });
+    
+    if (response.ok) {
+      // Reload tasks to get updated worker initials
+      await loadJobTasks(currentJob.id);
+    } else {
+      logError('Failed to assign worker to task');
+    }
+  } catch (error) {
+    logError('Error assigning worker:', error);
   }
 }
 
@@ -1732,17 +1790,50 @@ function renderMaterials() {
     materialsList.innerHTML = `
       <div class="materials-wrapper">
         <div class="materials-container" id="materialsContainer">
-          ${currentJobMaterials.map(material => `
+          ${currentJobMaterials.map(material => {
+            const supplierId = `supplier-${material.id}`;
+            return `
             <div class="material-item" data-material-id="${material.id}" draggable="true">
               <div class="material-content">
                 <input type="checkbox" class="material-checkbox" 
                        ${material.completed ? 'checked' : ''} 
                        onchange="toggleMaterial('${material.id}', this.checked)">
                 <span class="material-description ${material.completed ? 'completed' : ''}">${escapeHtml(material.description)}</span>
+                <div class="material-supplier-group" style="display: inline-flex; margin-left: 8px; gap: 6px; font-size: 11px;">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="${supplierId}" value="" 
+                           ${!material.supplier ? 'checked' : ''}
+                           onchange="updateMaterialSupplier('${material.id}', '')"
+                           style="margin-right: 2px; width: 12px; height: 12px;">
+                    <span style="color: #6B7280;">--</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="${supplierId}" value="HD" 
+                           ${material.supplier === 'HD' ? 'checked' : ''}
+                           onchange="updateMaterialSupplier('${material.id}', 'HD')"
+                           style="margin-right: 2px; width: 12px; height: 12px;">
+                    <span style="color: #EA580C; font-weight: 600;">HD</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="${supplierId}" value="Lowes" 
+                           ${material.supplier === 'Lowes' ? 'checked' : ''}
+                           onchange="updateMaterialSupplier('${material.id}', 'Lowes')"
+                           style="margin-right: 2px; width: 12px; height: 12px;">
+                    <span style="color: #0369A1; font-weight: 600;">LOW</span>
+                  </label>
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="${supplierId}" value="Grabber" 
+                           ${material.supplier === 'Grabber' ? 'checked' : ''}
+                           onchange="updateMaterialSupplier('${material.id}', 'Grabber')"
+                           style="margin-right: 2px; width: 12px; height: 12px;">
+                    <span style="color: #059669; font-weight: 600;">GRB</span>
+                  </label>
+                </div>
               </div>
               <button class="material-delete-btn" onclick="deleteMaterial('${material.id}')" title="Delete material">×</button>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
       <div class="material-input-container">
@@ -1828,6 +1919,30 @@ async function toggleMaterial(materialId, completed) {
     }
   } catch (error) {
     logError('Error updating material:', error);
+  }
+}
+
+async function updateMaterialSupplier(materialId, supplier) {
+  try {
+    const response = await fetch(`/api/materials/${materialId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ supplier }),
+    });
+    
+    if (response.ok) {
+      // Update local state
+      const material = currentJobMaterials.find(m => m.id === materialId);
+      if (material) {
+        material.supplier = supplier;
+      }
+    } else {
+      logError('Failed to update material supplier');
+    }
+  } catch (error) {
+    logError('Error updating material supplier:', error);
   }
 }
 
@@ -4215,12 +4330,14 @@ window.switchJobTab = switchJobTab;
 window.addTask = addTask;
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
+window.assignWorkerToTask = assignWorkerToTask;
 window.addTool = addTool;
 window.toggleTool = toggleTool;
 window.deleteTool = deleteTool;
 window.addMaterial = addMaterial;
 window.toggleMaterial = toggleMaterial;
 window.deleteMaterial = deleteMaterial;
+window.updateMaterialSupplier = updateMaterialSupplier;
 window.addExtraNote = addExtraNote;
 window.deleteExtraNote = deleteExtraNote;
 window.clearAllExtraNotes = clearAllExtraNotes;

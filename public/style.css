@@ -1644,6 +1644,63 @@ body.has-offline-banner .app-header {
   padding: 20px;
 }
 
+/* Worker Assignment and Supplier Selection */
+.task-worker-select {
+  margin-left: 8px;
+  padding: 2px 4px;
+  font-size: 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+.task-worker-select:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.task-worker-initials {
+  display: inline-block;
+  margin-left: 4px;
+  color: #3B82F6;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.material-supplier-group {
+  display: inline-flex;
+  margin-left: 8px;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.material-supplier-group label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.material-supplier-group label:hover {
+  background-color: #F3F4F6;
+}
+
+.material-supplier-group input[type="radio"] {
+  margin-right: 2px;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+
+.material-supplier-group span {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .about-item {
   display: flex;
   justify-content: space-between;

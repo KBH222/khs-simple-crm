@@ -153,11 +153,17 @@ const initializeTables = () => {
     job_id TEXT NOT NULL,
     description TEXT NOT NULL,
     completed BOOLEAN DEFAULT 0,
+    supplier TEXT DEFAULT '',
     sort_order INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs (id)
-  )`);
+  `);
+  
+  // Add supplier column if it doesn't exist (for existing databases)
+  db.run(`ALTER TABLE materials ADD COLUMN supplier TEXT DEFAULT ''`, (err) => {
+    // Ignore error if column already exists
+  });
   
   // Fix materials table if it has wrong schema
   db.all(`PRAGMA table_info(materials)`, (err, columns) => {
@@ -179,11 +185,12 @@ const initializeTables = () => {
             job_id TEXT NOT NULL,
             description TEXT NOT NULL,
             completed BOOLEAN DEFAULT 0,
+            supplier TEXT DEFAULT '',
             sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (job_id) REFERENCES jobs (id)
-          )`);
+          `);
           console.log('✅ Materials table recreated with correct schema');
         });
       }
@@ -193,6 +200,7 @@ const initializeTables = () => {
           db.run(`ALTER TABLE materials ADD COLUMN description TEXT`, (err) => {});
         }
         db.run(`ALTER TABLE materials ADD COLUMN completed BOOLEAN DEFAULT 0`, (err) => {});
+        db.run(`ALTER TABLE materials ADD COLUMN supplier TEXT DEFAULT ''`, (err) => {});
         db.run(`ALTER TABLE materials ADD COLUMN sort_order INTEGER DEFAULT 0`, (err) => {});
         db.run(`ALTER TABLE materials ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`, (err) => {});
       }
@@ -263,11 +271,18 @@ const initializeTables = () => {
     job_id TEXT NOT NULL,
     description TEXT NOT NULL,
     completed BOOLEAN DEFAULT 0,
+    worker_id TEXT,
     sort_order INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (job_id) REFERENCES jobs (id)
-  )`);
+    FOREIGN KEY (job_id) REFERENCES jobs (id),
+    FOREIGN KEY (worker_id) REFERENCES workers (id)
+  `);
+  
+  // Add worker_id column if it doesn't exist (for existing databases)
+  db.run(`ALTER TABLE tasks ADD COLUMN worker_id TEXT`, (err) => {
+    // Ignore error if column already exists
+  });
   
   // Tools table - Similar to tasks but for tools needed for each job
   db.run(`CREATE TABLE IF NOT EXISTS tools (
@@ -800,7 +815,14 @@ app.put('/api/jobs/:id/scope', (req, res) => {
 // Tasks API
 app.get('/api/jobs/:jobId/tasks', (req, res) => {
   const { jobId } = req.params;
-  db.all('SELECT * FROM tasks WHERE job_id = ? ORDER BY sort_order, created_at', [jobId], (err, rows) => {
+  const query = `
+    SELECT t.*, w.initials as worker_initials
+    FROM tasks t
+    LEFT JOIN workers w ON t.worker_id = w.id
+    WHERE t.job_id = ?
+    ORDER BY t.sort_order, t.created_at
+  `;
+  db.all(query, [jobId], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
@@ -849,7 +871,7 @@ app.post('/api/jobs/:jobId/tasks', (req, res) => {
 
 app.put('/api/tasks/:id', (req, res) => {
   const { id } = req.params;
-  const { completed, description } = req.body;
+  const { completed, description, worker_id } = req.body;
   
   const now = new Date().toISOString();
   let query = 'UPDATE tasks SET updated_at = ?';
@@ -863,6 +885,11 @@ app.put('/api/tasks/:id', (req, res) => {
   if (description && description.trim()) {
     query += ', description = ?';
     params.push(description.trim());
+  }
+  
+  if (typeof worker_id !== 'undefined') {
+    query += ', worker_id = ?';
+    params.push(worker_id || null);
   }
   
   query += ' WHERE id = ?';
@@ -1097,7 +1124,7 @@ app.post('/api/jobs/:jobId/materials', (req, res) => {
 
 app.put('/api/materials/:id', (req, res) => {
   const { id } = req.params;
-  const { completed, description } = req.body;
+  const { completed, description, supplier } = req.body;
   
   const now = new Date().toISOString();
   let query = 'UPDATE materials SET updated_at = ?';
@@ -1111,6 +1138,11 @@ app.put('/api/materials/:id', (req, res) => {
   if (description && description.trim()) {
     query += ', description = ?';
     params.push(description.trim());
+  }
+  
+  if (typeof supplier !== 'undefined') {
+    query += ', supplier = ?';
+    params.push(supplier || '');
   }
   
   query += ' WHERE id = ?';
