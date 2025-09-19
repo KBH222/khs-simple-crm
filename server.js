@@ -165,40 +165,74 @@ const initializeTables = () => {
     // Ignore error if column already exists
   });
   
-  // Fix materials table if it has wrong schema
+  // Fix materials table if it has wrong schema - FORCE MIGRATION
   db.all(`PRAGMA table_info(materials)`, (err, columns) => {
     if (!err && columns) {
       const hasItemName = columns.some(col => col.name === 'item_name');
       const hasDescription = columns.some(col => col.name === 'description');
       
-      // If table has old schema (item_name) but not new schema (description), recreate it
-      if (hasItemName && !hasDescription) {
-        console.log('🔧 Migrating materials table to new schema...');
+      console.log('🔍 Materials table columns:', columns.map(c => c.name).join(', '));
+      
+      // If table has old schema (item_name), force recreate it
+      if (hasItemName) {
+        console.log('🔧 FORCE MIGRATING materials table from old schema...');
         db.serialize(() => {
+          // Count existing materials
+          db.get(`SELECT COUNT(*) as count FROM materials`, (err, row) => {
+            if (!err) {
+              console.log(`📦 Found ${row.count} existing materials to migrate`);
+            }
+          });
+          
           // Backup existing data if any
-          db.run(`CREATE TEMPORARY TABLE materials_backup AS SELECT * FROM materials`);
+          db.run(`CREATE TEMPORARY TABLE IF NOT EXISTS materials_backup AS SELECT * FROM materials`, (err) => {
+            if (err) console.error('Backup error:', err);
+          });
+          
           // Drop old table
-          db.run(`DROP TABLE materials`);
-          // Create new table with correct schema
-          db.run(`CREATE TABLE materials (
-            id TEXT PRIMARY KEY,
-            job_id TEXT NOT NULL,
-            description TEXT NOT NULL,
-            completed BOOLEAN DEFAULT 0,
-            supplier TEXT DEFAULT '',
-            sort_order INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (job_id) REFERENCES jobs (id)
-          `);
-          console.log('✅ Materials table recreated with correct schema');
+          db.run(`DROP TABLE IF EXISTS materials`, (err) => {
+            if (err) {
+              console.error('Drop table error:', err);
+            } else {
+              console.log('📤 Old materials table dropped');
+              
+              // Create new table with correct schema
+              db.run(`CREATE TABLE materials (
+                id TEXT PRIMARY KEY,
+                job_id TEXT NOT NULL,
+                description TEXT NOT NULL,
+                completed BOOLEAN DEFAULT 0,
+                supplier TEXT DEFAULT '',
+                sort_order INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (job_id) REFERENCES jobs (id)
+              )`, (err) => {
+                if (err) {
+                  console.error('Create table error:', err);
+                } else {
+                  console.log('✅ Materials table recreated with new schema');
+                  
+                  // Try to migrate old data if any
+                  db.run(`INSERT INTO materials (id, job_id, description, created_at)
+                          SELECT id, job_id, 
+                                 COALESCE(item_name || ' - ' || quantity || ' ' || unit, 'Migrated Item'),
+                                 created_at
+                          FROM materials_backup`, (err) => {
+                    if (!err) {
+                      console.log('📥 Migrated old materials data');
+                    }
+                  });
+                }
+              });
+            }
+          });
         });
       }
       // Try to add missing columns if needed
-      else {
-        if (!hasDescription) {
-          db.run(`ALTER TABLE materials ADD COLUMN description TEXT`, (err) => {});
-        }
+      else if (!hasDescription) {
+        console.log('⚠️ Materials table missing description column');
+        db.run(`ALTER TABLE materials ADD COLUMN description TEXT`, (err) => {});
         db.run(`ALTER TABLE materials ADD COLUMN completed BOOLEAN DEFAULT 0`, (err) => {});
         db.run(`ALTER TABLE materials ADD COLUMN supplier TEXT DEFAULT ''`, (err) => {});
         db.run(`ALTER TABLE materials ADD COLUMN sort_order INTEGER DEFAULT 0`, (err) => {});
