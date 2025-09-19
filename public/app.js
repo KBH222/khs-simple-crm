@@ -187,6 +187,8 @@ function showPage(pageName) {
     loadBackupHistory();
   } else if (pageName === 'workers') {
     initializeTeamMembers();
+  } else if (pageName === 'materials') {
+    loadMasterLists();
   }
 }
 
@@ -5195,3 +5197,193 @@ window.openWorkerDetailModal = openWorkerDetailModal;
 window.showWorkerTab = showWorkerTab;
 window.deleteWorkerFromTile = deleteWorkerFromTile;
 window.editWorkerFromDetail = editWorkerFromDetail;
+
+// Master Lists Management
+let masterTasks = {};
+let masterTools = {};
+
+// Load Master Lists Data
+async function loadMasterLists() {
+  try {
+    // Load master tasks
+    const tasksResponse = await fetch('/api/tasks/all');
+    if (tasksResponse.ok) {
+      masterTasks = await tasksResponse.json();
+      renderMasterTasks();
+    }
+    
+    // Load master tools
+    const toolsResponse = await fetch('/api/tools/all');
+    if (toolsResponse.ok) {
+      masterTools = await toolsResponse.json();
+      renderMasterTools();
+    }
+  } catch (error) {
+    logError('Error loading master lists:', error);
+  }
+}
+
+// Render Master Tasks
+function renderMasterTasks() {
+  const container = document.getElementById('masterTasksList');
+  if (!container) return;
+  
+  const taskGroups = Object.keys(masterTasks);
+  
+  if (taskGroups.length === 0) {
+    container.innerHTML = '<div class="loading">No tasks found across all jobs.</div>';
+    return;
+  }
+  
+  const html = taskGroups.map(jobKey => {
+    const jobData = masterTasks[jobKey];
+    const tasks = jobData.tasks;
+    
+    if (tasks.length === 0) return '';
+    
+    const tasksHtml = tasks.map(task => `
+      <div class="master-item master-task-item">
+        <input 
+          type="checkbox" 
+          class="master-item-checkbox" 
+          ${task.completed ? 'checked' : ''}
+          onchange="toggleMasterTask('${task.id}', this.checked)"
+        />
+        <span class="master-item-description ${task.completed ? 'completed' : ''}">
+          ${escapeHtml(task.description)}
+        </span>
+      </div>
+    `).join('');
+    
+    return `
+      <div class="master-job-group">
+        <div class="master-job-header">
+          <h4 class="master-job-title">${escapeHtml(jobKey)}</h4>
+        </div>
+        <div class="master-items-list">
+          ${tasksHtml}
+        </div>
+      </div>
+    `;
+  }).filter(html => html).join('');
+  
+  container.innerHTML = html || '<div class="loading">No tasks found.</div>';
+}
+
+// Render Master Tools
+function renderMasterTools() {
+  const container = document.getElementById('masterToolsList');
+  if (!container) return;
+  
+  const toolGroups = Object.keys(masterTools);
+  
+  if (toolGroups.length === 0) {
+    container.innerHTML = '<div class="loading">No tools found across all jobs.</div>';
+    return;
+  }
+  
+  const html = toolGroups.map(jobKey => {
+    const jobData = masterTools[jobKey];
+    const tools = jobData.tools;
+    
+    if (tools.length === 0) return '';
+    
+    const toolsHtml = tools.map(tool => `
+      <div class="master-item master-tool-item">
+        <input 
+          type="checkbox" 
+          class="master-item-checkbox" 
+          ${tool.completed ? 'checked' : ''}
+          onchange="toggleMasterTool('${tool.id}', this.checked)"
+        />
+        <span class="master-item-description ${tool.completed ? 'completed' : ''}">
+          ${escapeHtml(tool.description)}
+        </span>
+      </div>
+    `).join('');
+    
+    return `
+      <div class="master-job-group">
+        <div class="master-job-header">
+          <h4 class="master-job-title">${escapeHtml(jobKey)}</h4>
+        </div>
+        <div class="master-items-list">
+          ${toolsHtml}
+        </div>
+      </div>
+    `;
+  }).filter(html => html).join('');
+  
+  container.innerHTML = html || '<div class="loading">No tools found.</div>';
+}
+
+// Toggle Master Task Completion
+async function toggleMasterTask(taskId, completed) {
+  try {
+    const response = await fetch(`/api/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ completed })
+    });
+    
+    if (response.ok) {
+      // Update the local data
+      Object.keys(masterTasks).forEach(jobKey => {
+        const task = masterTasks[jobKey].tasks.find(t => t.id === taskId);
+        if (task) {
+          task.completed = completed;
+        }
+      });
+      
+      // Re-render to update visual state
+      renderMasterTasks();
+    } else {
+      logError('Failed to update task');
+      // Reload to get correct state
+      loadMasterLists();
+    }
+  } catch (error) {
+    logError('Error updating task:', error);
+    loadMasterLists();
+  }
+}
+
+// Toggle Master Tool Completion
+async function toggleMasterTool(toolId, completed) {
+  try {
+    const response = await fetch(`/api/tools/${toolId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ completed })
+    });
+    
+    if (response.ok) {
+      // Update the local data
+      Object.keys(masterTools).forEach(jobKey => {
+        const tool = masterTools[jobKey].tools.find(t => t.id === toolId);
+        if (tool) {
+          tool.completed = completed;
+        }
+      });
+      
+      // Re-render to update visual state
+      renderMasterTools();
+    } else {
+      logError('Failed to update tool');
+      // Reload to get correct state
+      loadMasterLists();
+    }
+  } catch (error) {
+    logError('Error updating tool:', error);
+    loadMasterLists();
+  }
+}
+
+// Make Master Lists functions globally accessible
+window.loadMasterLists = loadMasterLists;
+window.toggleMasterTask = toggleMasterTask;
+window.toggleMasterTool = toggleMasterTool;

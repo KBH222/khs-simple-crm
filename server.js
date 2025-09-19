@@ -1172,6 +1172,85 @@ app.delete('/api/calendar/events/:id', (req, res) => {
   });
 });
 
+// Master Lists API - Aggregate tasks and tools from all jobs
+app.get('/api/tasks/all', (req, res) => {
+  const query = `
+    SELECT t.*, j.title as job_title, c.name as customer_name
+    FROM tasks t 
+    JOIN jobs j ON t.job_id = j.id 
+    JOIN customers c ON j.customer_id = c.id
+    ORDER BY j.title, t.sort_order, t.created_at
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    // Group tasks by job
+    const groupedTasks = {};
+    rows.forEach(task => {
+      const jobKey = `${task.customer_name} - ${task.job_title}`;
+      if (!groupedTasks[jobKey]) {
+        groupedTasks[jobKey] = {
+          job_title: task.job_title,
+          customer_name: task.customer_name,
+          job_id: task.job_id,
+          tasks: []
+        };
+      }
+      groupedTasks[jobKey].tasks.push({
+        id: task.id,
+        description: task.description,
+        completed: task.completed,
+        created_at: task.created_at,
+        updated_at: task.updated_at
+      });
+    });
+    
+    res.json(groupedTasks);
+  });
+});
+
+app.get('/api/tools/all', (req, res) => {
+  const query = `
+    SELECT t.*, j.title as job_title, c.name as customer_name
+    FROM tools t 
+    JOIN jobs j ON t.job_id = j.id 
+    JOIN customers c ON j.customer_id = c.id
+    ORDER BY j.title, t.sort_order, t.created_at
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    // Group tools by job
+    const groupedTools = {};
+    rows.forEach(tool => {
+      const jobKey = `${tool.customer_name} - ${tool.job_title}`;
+      if (!groupedTools[jobKey]) {
+        groupedTools[jobKey] = {
+          job_title: tool.job_title,
+          customer_name: tool.customer_name,
+          job_id: tool.job_id,
+          tools: []
+        };
+      }
+      groupedTools[jobKey].tools.push({
+        id: tool.id,
+        description: tool.description,
+        completed: tool.completed,
+        created_at: tool.created_at,
+        updated_at: tool.updated_at
+      });
+    });
+    
+    res.json(groupedTools);
+  });
+});
+
 // Workers API
 app.get('/api/workers', (req, res) => {
   const { status } = req.query;

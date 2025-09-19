@@ -3803,3 +3803,129 @@ button {
   }
 }
 
+/* Master Lists Styles */
+.master-lists-container {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.master-list-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.master-list-section h3 {
+  background: #F9FAFB;
+  padding: 20px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.master-list {
+  padding: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.master-job-group {
+  margin-bottom: 24px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.master-job-header {
+  background: #F3F4F6;
+  padding: 12px 16px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.master-job-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.master-items-list {
+  padding: 0;
+}
+
+.master-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #F3F4F6;
+  transition: background-color 0.2s;
+}
+
+.master-item:last-child {
+  border-bottom: none;
+}
+
+.master-item:hover {
+  background: #F9FAFB;
+}
+
+.master-item-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.master-item-description {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+}
+
+.master-item-description.completed {
+  text-decoration: line-through;
+  color: #6B7280;
+}
+
+.master-task-item {
+  background: #F8FAFC;
+  border-left: 4px solid #3B82F6;
+}
+
+.master-tool-item {
+  background: #F0FDF4;
+  border-left: 4px solid #10B981;
+}
+
+.loading {
+  text-align: center;
+  color: #6B7280;
+  padding: 40px 20px;
+  font-style: italic;
+}
+
+/* Mobile responsive for master lists */
+@media (max-width: 768px) {
+  .master-lists-container {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .master-list {
+    max-height: 400px;
+  }
+  
+  .master-job-title {
+    font-size: 15px;
+  }
+  
+  .master-item {
+    padding: 10px 16px;
+  }
+}
+
