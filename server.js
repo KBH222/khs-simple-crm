@@ -306,8 +306,12 @@ app.use(express.static('public'));
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const jobId = req.params.jobId;
-    const uploadDir = path.join(__dirname, 'uploads', 'photos', jobId);
-    
+    // Use persistent volume path on Railway, local folder otherwise
+    const uploadsBase = process.env.RAILWAY_ENVIRONMENT
+      ? path.join('/app/data', 'uploads', 'photos')
+      : path.join(__dirname, 'uploads', 'photos');
+    const uploadDir = path.join(uploadsBase, jobId);
+
     // Create directory if it doesn't exist
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
@@ -953,7 +957,8 @@ app.post('/api/jobs/:jobId/photos', upload.array('photos', 20), (req, res) => {
     // Process each uploaded file
     req.files.forEach(file => {
       const photoId = generateId('photo');
-      const filePath = path.relative(__dirname, file.path);
+      // Store absolute path on Railway for persistence outside app dir; relative locally
+      const filePath = process.env.RAILWAY_ENVIRONMENT ? file.path : path.relative(__dirname, file.path);
       
       db.run(`INSERT INTO job_photos 
               (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) 
@@ -1002,7 +1007,10 @@ app.get('/api/photos/:photoId', (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-    const filePath = path.join(__dirname, photo.file_path);
+    // Support both relative and absolute stored paths
+    const filePath = path.isAbsolute(photo.file_path)
+      ? photo.file_path
+      : path.join(__dirname, photo.file_path);
     
     // Check if file exists
     if (!fs.existsSync(filePath)) {
@@ -1047,7 +1055,9 @@ app.delete('/api/photos/:photoId', (req, res) => {
       }
       
       // Try to delete the physical file
-      const filePath = path.join(__dirname, photo.file_path);
+      const filePath = path.isAbsolute(photo.file_path)
+        ? photo.file_path
+        : path.join(__dirname, photo.file_path);
       fs.unlink(filePath, (fsErr) => {
         if (fsErr) {
           console.error('Failed to delete photo file:', fsErr);
@@ -1850,7 +1860,8 @@ function exportUserData() {
         
         if (completedQueries === queries.length) {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-          const exportPath = path.join(__dirname, 'data-export.json');
+          const baseDir = process.env.RAILWAY_ENVIRONMENT ? path.join('/app/data') : __dirname;
+          const exportPath = path.join(baseDir, 'data-export.json');
           
           fs.writeFile(exportPath, JSON.stringify(exportData, null, 2), (err) => {
             if (err) {
@@ -1875,7 +1886,8 @@ function exportUserData() {
 
 function importUserData() {
   return new Promise((resolve, reject) => {
-    const importPath = path.join(__dirname, 'data-export.json');
+    const baseDir = process.env.RAILWAY_ENVIRONMENT ? path.join('/app/data') : __dirname;
+    const importPath = path.join(baseDir, 'data-export.json');
     
     if (!fs.existsSync(importPath)) {
       return resolve({ imported: false, message: 'No export file found' });
@@ -1918,7 +1930,8 @@ function importUserData() {
             console.log(`✅ User data import completed: ${totalImported} records`);
             
             // Move the import file to prevent re-import
-            const completedPath = path.join(__dirname, `data-export-imported-${Date.now()}.json`);
+            const baseDir = process.env.RAILWAY_ENVIRONMENT ? path.join('/app/data') : __dirname;
+            const completedPath = path.join(baseDir, `data-export-imported-${Date.now()}.json`);
             fs.rename(importPath, completedPath, (err) => {
               if (err) console.error('Error moving import file:', err);
             });
@@ -1986,11 +1999,12 @@ function importUserData() {
 function createBackup(reason = 'manual') {
   return new Promise((resolve, reject) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const backupName = `crm-backup-${reason}-${timestamp}.db`;
-    const backupPath = path.join(__dirname, 'backups', backupName);
-    
-    // Create backup directory if it doesn't exist
-    const backupDir = path.join(__dirname, 'backups');
+  const backupName = `crm-backup-${reason}-${timestamp}.db`;
+  const baseDir = process.env.RAILWAY_ENVIRONMENT ? path.join('/app/data') : __dirname;
+  const backupPath = path.join(baseDir, 'backups', backupName);
+  
+  // Create backup directory if it doesn't exist
+  const backupDir = path.join(baseDir, 'backups');
     if (!fs.existsSync(backupDir)) {
       fs.mkdirSync(backupDir, { recursive: true });
     }
