@@ -1,3 +1,33 @@
+// API base URL patching for local UI using Railway API
+(function() {
+  try {
+    const BASE = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL.trim() : '';
+    if (BASE) {
+      const baseNoSlash = BASE.endsWith('/') ? BASE.slice(0, -1) : BASE;
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = function(resource, init) {
+        try {
+          if (typeof resource === 'string') {
+            if (resource.startsWith('/api/')) {
+              resource = baseNoSlash + resource;
+            }
+          } else if (resource instanceof Request) {
+            if (resource.url && resource.url.startsWith('/api/')) {
+              resource = new Request(baseNoSlash + resource.url, resource);
+            }
+          }
+        } catch (e) {
+          // no-op
+        }
+        return originalFetch(resource, init);
+      };
+      console.log('[API_BASE_URL] Using remote API base:', baseNoSlash);
+    }
+  } catch (err) {
+    console.warn('API base URL patch failed:', err);
+  }
+})();
+
 // 🚀 BEAST MODE: Global state + optimized logging
 const isDev = location.hostname === 'localhost';
 const log = (...args) => isDev && console.log(...args);
