@@ -1102,11 +1102,12 @@ app.post('/api/jobs/:jobId/materials', (req, res) => {
     
     const sortOrder = (row.max_order || 0) + 1;
     
-    db.run('INSERT INTO materials (id, job_id, description, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-      [materialId, jobId, description.trim(), sortOrder, now, now],
+    db.run('INSERT INTO materials (id, job_id, description, sort_order, created_at, updated_at, supplier) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [materialId, jobId, description.trim(), sortOrder, now, now, ''],
       function(err) {
         if (err) {
-          return res.status(500).json({ error: 'Database error' });
+          console.error('Error inserting material:', err);
+          return res.status(500).json({ error: 'Database error: ' + err.message });
         }
         
         res.json({
@@ -1114,6 +1115,7 @@ app.post('/api/jobs/:jobId/materials', (req, res) => {
           job_id: jobId,
           description: description.trim(),
           completed: 0,
+          supplier: '',
           sort_order: sortOrder,
           created_at: now
         });
