@@ -218,6 +218,32 @@ button {
   }
 }
 
+/* Offline Banner */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #FEF2F2;
+  color: #991B1B;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  border-bottom: 2px solid #EF4444;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.offline-banner.show {
+  transform: translateY(0);
+}
+
+body.has-offline-banner .app-header {
+  margin-top: 50px;
+}
+
 .logout-btn:hover {
   background-color: #DC2626;
 }

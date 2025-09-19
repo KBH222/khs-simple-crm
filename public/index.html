@@ -30,6 +30,11 @@
   <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
 </head>
 <body>
+  <!-- Offline Banner -->
+  <div id="offlineBanner" class="offline-banner">
+    🔴 You're offline - Changes will sync when reconnected
+  </div>
+  
   <!-- Main App Screen -->
   <div id="appScreen" class="screen">
     <!-- Header -->
@@ -1244,6 +1249,7 @@
   <script src="config.js?v=20250919000000"></script>
   <script src="config.local.js?v=20250919000000"></script>
   <script src="api-utils.js?v=20250919000001"></script>
+  <script src="sw-register.js?v=20250919100000"></script>
   <script src="app.js?v=20250914212500"></script>
 </body>
 </html>

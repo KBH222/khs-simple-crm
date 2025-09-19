@@ -211,13 +211,33 @@ window.apiUtils = {
 // Display connection status
 function updateConnectionStatus() {
   const statusEl = document.getElementById('connection-status');
-  if (statusEl) {
-    if (isOnline()) {
+  const offlineBanner = document.getElementById('offlineBanner');
+  const body = document.body;
+  
+  if (isOnline()) {
+    // Online state
+    if (statusEl) {
       statusEl.textContent = '🟢 Online';
       statusEl.className = 'connection-status online';
-    } else {
+    }
+    if (offlineBanner) {
+      offlineBanner.classList.remove('show');
+      body.classList.remove('has-offline-banner');
+    }
+    // Process any queued requests
+    if (offlineQueue.queue.length > 0) {
+      console.log('🔄 Back online - processing queued requests...');
+      offlineQueue.processQueue();
+    }
+  } else {
+    // Offline state
+    if (statusEl) {
       statusEl.textContent = '🔴 Offline';
       statusEl.className = 'connection-status offline';
+    }
+    if (offlineBanner) {
+      offlineBanner.classList.add('show');
+      body.classList.add('has-offline-banner');
     }
   }
 }
