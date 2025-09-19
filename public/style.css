@@ -4104,10 +4104,50 @@ body.has-offline-banner .app-header {
 }
 
 /* Master Lists Styles */
+.master-lists-toggles {
+  display: flex;
+  gap: 20px;
+  padding: 15px 20px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.list-toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.list-toggle-option:hover {
+  background: #F3F4F6;
+}
+
+.list-toggle-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.list-toggle-option span {
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  user-select: none;
+}
+
 .master-lists-container {
-  display: grid;
-  gap: 32px;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .master-list-section {

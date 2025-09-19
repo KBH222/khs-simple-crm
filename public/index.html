@@ -1241,9 +1241,25 @@
             <h2>Master Lists</h2>
           </div>
           
+          <!-- List Toggle Controls -->
+          <div class="master-lists-toggles">
+            <label class="list-toggle-option">
+              <input type="checkbox" id="toggleTasks" checked onchange="toggleMasterList('tasks', this.checked)">
+              <span>📋 All Tasks</span>
+            </label>
+            <label class="list-toggle-option">
+              <input type="checkbox" id="toggleTools" checked onchange="toggleMasterList('tools', this.checked)">
+              <span>🔧 All Tools</span>
+            </label>
+            <label class="list-toggle-option">
+              <input type="checkbox" id="toggleMaterials" checked onchange="toggleMasterList('materials', this.checked)">
+              <span>📦 All Materials</span>
+            </label>
+          </div>
+          
           <div class="master-lists-container">
             <!-- Master Tasks List -->
-            <div class="master-list-section">
+            <div id="masterTasksSection" class="master-list-section">
               <h3>📋 All Tasks</h3>
               <div id="masterTasksList" class="master-list">
                 <div class="loading">Loading tasks...</div>
@@ -1251,7 +1267,7 @@
             </div>
             
             <!-- Master Tools List -->
-            <div class="master-list-section">
+            <div id="masterToolsSection" class="master-list-section">
               <h3>🔧 All Tools</h3>
               <div id="masterToolsList" class="master-list">
                 <div class="loading">Loading tools...</div>
@@ -1259,7 +1275,7 @@
             </div>
             
             <!-- Master Materials List -->
-            <div class="master-list-section">
+            <div id="masterMaterialsSection" class="master-list-section">
               <h3>📦 All Materials</h3>
               <div id="masterMaterialsList" class="master-list">
                 <div class="loading">Loading materials...</div>

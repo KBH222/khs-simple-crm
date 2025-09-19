@@ -268,6 +268,7 @@ function showPage(pageName) {
     initializeTeamMembers();
   } else if (pageName === 'materials') {
     loadMasterLists();
+    loadMasterListPreferences();
   }
 }
 
@@ -5971,8 +5972,45 @@ async function toggleMasterMaterial(materialId, completed) {
   }
 }
 
+// Toggle visibility of master list sections
+function toggleMasterList(listType, show) {
+  const sectionId = `master${listType.charAt(0).toUpperCase() + listType.slice(1)}Section`;
+  const section = document.getElementById(sectionId);
+  
+  if (section) {
+    section.style.display = show ? 'block' : 'none';
+    
+    // Save preference to localStorage
+    localStorage.setItem(`showMaster${listType.charAt(0).toUpperCase() + listType.slice(1)}`, show);
+  }
+}
+
+// Load saved preferences for master list visibility
+function loadMasterListPreferences() {
+  // Load saved preferences or default to all shown
+  const showTasks = localStorage.getItem('showMasterTasks') !== 'false';
+  const showTools = localStorage.getItem('showMasterTools') !== 'false';
+  const showMaterials = localStorage.getItem('showMasterMaterials') !== 'false';
+  
+  // Set checkbox states
+  const tasksCheckbox = document.getElementById('toggleTasks');
+  const toolsCheckbox = document.getElementById('toggleTools');
+  const materialsCheckbox = document.getElementById('toggleMaterials');
+  
+  if (tasksCheckbox) tasksCheckbox.checked = showTasks;
+  if (toolsCheckbox) toolsCheckbox.checked = showTools;
+  if (materialsCheckbox) materialsCheckbox.checked = showMaterials;
+  
+  // Apply visibility
+  toggleMasterList('tasks', showTasks);
+  toggleMasterList('tools', showTools);
+  toggleMasterList('materials', showMaterials);
+}
+
 // Make Master Lists functions globally accessible
 window.loadMasterLists = loadMasterLists;
 window.toggleMasterTask = toggleMasterTask;
 window.toggleMasterTool = toggleMasterTool;
 window.toggleMasterMaterial = toggleMasterMaterial;
+window.toggleMasterList = toggleMasterList;
+window.loadMasterListPreferences = loadMasterListPreferences;
