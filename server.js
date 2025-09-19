@@ -367,6 +367,81 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Storage status - verify persistence and paths
+app.get('/api/storage-status', (req, res) => {
+  try {
+    const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
+    const baseDir = isRailway ? '/app/data' : __dirname;
+
+    // Resolve important paths consistently with app behavior
+    const dbPath = isRailway ? '/app/data/crm.db' : path.join(__dirname, 'crm.db');
+    const uploadsDir = isRailway ? path.join('/app/data', 'uploads', 'photos') : path.join(__dirname, 'uploads', 'photos');
+    const backupsDir = isRailway ? path.join('/app/data', 'backups') : path.join(__dirname, 'backups');
+
+    // Helpers
+    const exists = (p) => {
+      try { return fs.existsSync(p); } catch { return false; }
+    };
+    const statSafe = (p) => {
+      try { return fs.statSync(p); } catch { return null; }
+    };
+    const canWrite = (p) => {
+      try {
+        fs.accessSync(p, fs.constants.W_OK);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const baseExists = exists(baseDir);
+    const baseWritable = baseExists && canWrite(baseDir);
+
+    const dbExists = exists(dbPath);
+    const dbStat = dbExists ? statSafe(dbPath) : null;
+
+    const uploadsExists = exists(uploadsDir);
+    const backupsExists = exists(backupsDir);
+
+    const payload = {
+      environment: isRailway ? 'railway' : 'local',
+      base_dir: baseDir,
+      base_dir_exists: baseExists,
+      base_dir_writable: baseWritable,
+      database: {
+        path: dbPath,
+        exists: dbExists,
+        size_bytes: dbStat ? dbStat.size : 0,
+        modified_at: dbStat ? new Date(dbStat.mtime).toISOString() : null
+      },
+      uploads: {
+        path: uploadsDir,
+        exists: uploadsExists
+      },
+      backups: {
+        path: backupsDir,
+        exists: backupsExists
+      },
+      timestamp: new Date().toISOString(),
+      uptime_seconds: Math.round(process.uptime()),
+      warnings: []
+    };
+
+    if (isRailway && (!baseExists || !baseWritable)) {
+      payload.warnings.push('Persistent volume at /app/data is not mounted or not writable. Data may not persist across deployments.');
+    }
+
+    if (isRailway && !dbExists) {
+      payload.warnings.push('Database file /app/data/crm.db not found. The app may have started with an empty database.');
+    }
+
+    return res.json(payload);
+  } catch (err) {
+    console.error('storage-status error:', err);
+    return res.status(500).json({ error: 'Failed to compute storage status' });
+  }
+});
+
 
 
 
