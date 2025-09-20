@@ -1664,6 +1664,7 @@ app.get('/api/tasks/all', (req, res) => {
       }
       groupedTasks[jobKey].tasks.push({
         id: task.id,
+        job_id: task.job_id,
         description: task.description,
         completed: task.completed,
         created_at: task.created_at,
@@ -1703,6 +1704,7 @@ app.get('/api/tools/all', (req, res) => {
       }
       groupedTools[jobKey].tools.push({
         id: tool.id,
+        job_id: tool.job_id,
         description: tool.description,
         completed: tool.completed,
         created_at: tool.created_at,
@@ -1742,7 +1744,9 @@ app.get('/api/materials/all', (req, res) => {
       }
       groupedMaterials[jobKey].materials.push({
         id: material.id,
+        job_id: material.job_id,
         description: material.description,
+        supplier: material.supplier,
         completed: material.completed,
         created_at: material.created_at,
         updated_at: material.updated_at

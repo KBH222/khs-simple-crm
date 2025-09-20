@@ -5867,7 +5867,7 @@ function renderMasterTasks() {
       </div>
     `).join('');
     
-    const jobId = jobData.tasks[0]?.job_id; // Get job ID from first task
+    const jobId = jobData.job_id; // Get job ID from jobData
     return `
       <div class="master-job-group" data-job-id="${jobId}">
         <div class="master-job-header">
@@ -5920,7 +5920,7 @@ function renderMasterTools() {
       </div>
     `).join('');
     
-    const jobId = jobData.tools[0]?.job_id; // Get job ID from first tool
+    const jobId = jobData.job_id; // Get job ID from jobData
     return `
       <div class="master-job-group" data-job-id="${jobId}">
         <div class="master-job-header">
@@ -6039,7 +6039,7 @@ function renderMasterMaterials() {
       </div>
     `).join('');
     
-    const jobId = jobData.materials[0]?.job_id; // Get job ID from first material
+    const jobId = jobData.job_id; // Get job ID from jobData
     return `
       <div class="master-job-group" data-job-id="${jobId}">
         <div class="master-job-header">
@@ -6174,7 +6174,7 @@ async function clearSelectedTasks() {
   // Count total tasks in selected jobs
   let totalTasks = 0;
   selectedJobIds.forEach(jobId => {
-    const jobData = Object.values(masterTasks).find(job => job.tasks[0]?.job_id === jobId);
+    const jobData = Object.values(masterTasks).find(job => job.job_id === jobId);
     if (jobData) {
       totalTasks += jobData.tasks.length;
     }
@@ -6216,7 +6216,7 @@ async function clearSelectedTools() {
   // Count total tools in selected jobs
   let totalTools = 0;
   selectedJobIds.forEach(jobId => {
-    const jobData = Object.values(masterTools).find(job => job.tools[0]?.job_id === jobId);
+    const jobData = Object.values(masterTools).find(job => job.job_id === jobId);
     if (jobData) {
       totalTools += jobData.tools.length;
     }
@@ -6258,7 +6258,7 @@ async function clearSelectedMaterials() {
   // Count total materials in selected jobs
   let totalMaterials = 0;
   selectedJobIds.forEach(jobId => {
-    const jobData = Object.values(masterMaterials).find(job => job.materials[0]?.job_id === jobId);
+    const jobData = Object.values(masterMaterials).find(job => job.job_id === jobId);
     if (jobData) {
       totalMaterials += jobData.materials.length;
     }
