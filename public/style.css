@@ -1644,6 +1644,39 @@ body.has-offline-banner .app-header {
   padding: 20px;
 }
 
+/* List Management Actions */
+.list-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background: #FEF2F2;
+  border-bottom: 1px solid #FCA5A5;
+  margin-bottom: 0;
+}
+
+.clear-list-btn {
+  background: #EF4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.clear-list-btn:hover {
+  background: #DC2626;
+}
+
+.clear-list-btn span {
+  font-size: 14px;
+}
+
 /* Worker Assignment and Supplier Selection */
 .task-worker-select {
   margin-left: 8px;
@@ -4157,14 +4190,45 @@ body.has-offline-banner .app-header {
   overflow: hidden;
 }
 
-.master-list-section h3 {
+.master-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   background: #F9FAFB;
   padding: 20px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.master-list-header h3 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: #111827;
-  border-bottom: 1px solid #E5E7EB;
+}
+
+.clear-master-list-btn {
+  background: #F87171;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.clear-master-list-btn:hover {
+  background: #EF4444;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.clear-master-list-btn span {
+  font-size: 15px;
 }
 
 .master-list {

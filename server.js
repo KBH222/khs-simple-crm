@@ -953,6 +953,28 @@ app.delete('/api/tasks/:id', (req, res) => {
   });
 });
 
+// Clear all tasks for a specific job
+app.delete('/api/jobs/:jobId/tasks/clear', (req, res) => {
+  const { jobId } = req.params;
+  
+  db.run('DELETE FROM tasks WHERE job_id = ?', [jobId], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'All tasks cleared', count: this.changes });
+  });
+});
+
+// Clear all tasks across all jobs
+app.delete('/api/tasks/clear-all', (req, res) => {
+  db.run('DELETE FROM tasks', function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'All tasks cleared', count: this.changes });
+  });
+});
+
 // Update task order
 app.put('/api/jobs/:jobId/tasks/reorder', (req, res) => {
   const { jobId } = req.params;
@@ -1074,6 +1096,28 @@ app.delete('/api/tools/:id', (req, res) => {
       return res.status(404).json({ error: 'Tool not found' });
     }
     res.json({ message: 'Tool deleted' });
+  });
+});
+
+// Clear all tools for a specific job
+app.delete('/api/jobs/:jobId/tools/clear', (req, res) => {
+  const { jobId } = req.params;
+  
+  db.run('DELETE FROM tools WHERE job_id = ?', [jobId], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'All tools cleared', count: this.changes });
+  });
+});
+
+// Clear all tools across all jobs
+app.delete('/api/tools/clear-all', (req, res) => {
+  db.run('DELETE FROM tools', function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'All tools cleared', count: this.changes });
   });
 });
 
@@ -1205,6 +1249,28 @@ app.delete('/api/materials/:id', (req, res) => {
       return res.status(404).json({ error: 'Material not found' });
     }
     res.json({ message: 'Material deleted' });
+  });
+});
+
+// Clear all materials for a specific job
+app.delete('/api/jobs/:jobId/materials/clear', (req, res) => {
+  const { jobId } = req.params;
+  
+  db.run('DELETE FROM materials WHERE job_id = ?', [jobId], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'All materials cleared', count: this.changes });
+  });
+});
+
+// Clear all materials across all jobs
+app.delete('/api/materials/clear-all', (req, res) => {
+  db.run('DELETE FROM materials', function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'All materials cleared', count: this.changes });
   });
 });
 

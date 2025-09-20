@@ -1239,6 +1239,11 @@ function renderTasks() {
     ).join('');
     
     tasksList.innerHTML = `
+      <div class="list-header-actions">
+        <button class="clear-list-btn" onclick="clearJobTasks()" title="Clear all tasks">
+          <span>🗑️</span> Clear List
+        </button>
+      </div>
       <div class="tasks-wrapper">
         <div class="tasks-container" id="tasksContainer">
           ${currentJobTasks.map(task => {
@@ -1532,6 +1537,11 @@ function renderTools() {
     `;
   } else {
     toolsList.innerHTML = `
+      <div class="list-header-actions">
+        <button class="clear-list-btn" onclick="clearJobTools()" title="Clear all tools">
+          <span>🗑️</span> Clear List
+        </button>
+      </div>
       <div class="tools-wrapper">
         <div class="tools-container" id="toolsContainer">
           ${currentJobTools.map(tool => `
@@ -1789,6 +1799,11 @@ function renderMaterials() {
     `;
   } else {
     materialsList.innerHTML = `
+      <div class="list-header-actions">
+        <button class="clear-list-btn" onclick="clearJobMaterials()" title="Clear all materials">
+          <span>🗑️</span> Clear List
+        </button>
+      </div>
       <div class="materials-wrapper">
         <div class="materials-container" id="materialsContainer">
           ${currentJobMaterials.map(material => {
@@ -4328,17 +4343,98 @@ window.deleteJob = deleteJob;
 window.deleteJobFromTile = deleteJobFromTile;
 window.sendText = sendText;
 window.switchJobTab = switchJobTab;
+// Clear all tasks for current job
+async function clearJobTasks() {
+  if (!currentJob) return;
+  
+  if (!confirm(`Are you sure you want to clear all tasks for this job?\n\nThis will delete ${currentJobTasks.length} task(s) and cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/tasks/clear`, {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      log(`Cleared ${result.count} tasks`);
+      await loadJobTasks(currentJob.id);
+    } else {
+      logError('Failed to clear tasks:', result.error);
+    }
+  } catch (error) {
+    logError('Error clearing tasks:', error);
+  }
+}
+
+// Clear all tools for current job
+async function clearJobTools() {
+  if (!currentJob) return;
+  
+  if (!confirm(`Are you sure you want to clear all tools for this job?\n\nThis will delete ${currentJobTools.length} tool(s) and cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/tools/clear`, {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      log(`Cleared ${result.count} tools`);
+      await loadJobTools(currentJob.id);
+    } else {
+      logError('Failed to clear tools:', result.error);
+    }
+  } catch (error) {
+    logError('Error clearing tools:', error);
+  }
+}
+
+// Clear all materials for current job
+async function clearJobMaterials() {
+  if (!currentJob) return;
+  
+  if (!confirm(`Are you sure you want to clear all materials for this job?\n\nThis will delete ${currentJobMaterials.length} material(s) and cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/jobs/${currentJob.id}/materials/clear`, {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      log(`Cleared ${result.count} materials`);
+      await loadJobMaterials(currentJob.id);
+    } else {
+      logError('Failed to clear materials:', result.error);
+    }
+  } catch (error) {
+    logError('Error clearing materials:', error);
+  }
+}
+
 window.addTask = addTask;
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
 window.assignWorkerToTask = assignWorkerToTask;
+window.clearJobTasks = clearJobTasks;
 window.addTool = addTool;
 window.toggleTool = toggleTool;
 window.deleteTool = deleteTool;
+window.clearJobTools = clearJobTools;
 window.addMaterial = addMaterial;
 window.toggleMaterial = toggleMaterial;
 window.deleteMaterial = deleteMaterial;
 window.updateMaterialSupplier = updateMaterialSupplier;
+window.clearJobMaterials = clearJobMaterials;
 window.addExtraNote = addExtraNote;
 window.deleteExtraNote = deleteExtraNote;
 window.clearAllExtraNotes = clearAllExtraNotes;
@@ -6007,6 +6103,84 @@ function loadMasterListPreferences() {
   toggleMasterList('materials', showMaterials);
 }
 
+// Clear all master tasks across all jobs
+async function clearAllMasterTasks() {
+  const taskCount = Object.values(masterTasks).reduce((total, job) => total + job.tasks.length, 0);
+  
+  if (!confirm(`Are you sure you want to clear ALL tasks across ALL jobs?\n\nThis will delete ${taskCount} task(s) from the entire system and cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/tasks/clear-all', {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      log(`Cleared ${result.count} tasks from all jobs`);
+      await loadMasterLists();
+    } else {
+      logError('Failed to clear all tasks:', result.error);
+    }
+  } catch (error) {
+    logError('Error clearing all tasks:', error);
+  }
+}
+
+// Clear all master tools across all jobs
+async function clearAllMasterTools() {
+  const toolCount = Object.values(masterTools).reduce((total, job) => total + job.tools.length, 0);
+  
+  if (!confirm(`Are you sure you want to clear ALL tools across ALL jobs?\n\nThis will delete ${toolCount} tool(s) from the entire system and cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/tools/clear-all', {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      log(`Cleared ${result.count} tools from all jobs`);
+      await loadMasterLists();
+    } else {
+      logError('Failed to clear all tools:', result.error);
+    }
+  } catch (error) {
+    logError('Error clearing all tools:', error);
+  }
+}
+
+// Clear all master materials across all jobs
+async function clearAllMasterMaterials() {
+  const materialCount = Object.values(masterMaterials).reduce((total, job) => total + job.materials.length, 0);
+  
+  if (!confirm(`Are you sure you want to clear ALL materials across ALL jobs?\n\nThis will delete ${materialCount} material(s) from the entire system and cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/materials/clear-all', {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      log(`Cleared ${result.count} materials from all jobs`);
+      await loadMasterLists();
+    } else {
+      logError('Failed to clear all materials:', result.error);
+    }
+  } catch (error) {
+    logError('Error clearing all materials:', error);
+  }
+}
+
 // Make Master Lists functions globally accessible
 window.loadMasterLists = loadMasterLists;
 window.toggleMasterTask = toggleMasterTask;
@@ -6014,3 +6188,6 @@ window.toggleMasterTool = toggleMasterTool;
 window.toggleMasterMaterial = toggleMasterMaterial;
 window.toggleMasterList = toggleMasterList;
 window.loadMasterListPreferences = loadMasterListPreferences;
+window.clearAllMasterTasks = clearAllMasterTasks;
+window.clearAllMasterTools = clearAllMasterTools;
+window.clearAllMasterMaterials = clearAllMasterMaterials;

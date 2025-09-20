@@ -1260,7 +1260,12 @@
           <div class="master-lists-container">
             <!-- Master Tasks List -->
             <div id="masterTasksSection" class="master-list-section">
-              <h3>📋 All Tasks</h3>
+              <div class="master-list-header">
+                <h3>📋 All Tasks</h3>
+                <button class="clear-master-list-btn" onclick="clearAllMasterTasks()" title="Clear all tasks from all jobs">
+                  <span>🗑️</span> Clear All
+                </button>
+              </div>
               <div id="masterTasksList" class="master-list">
                 <div class="loading">Loading tasks...</div>
               </div>
@@ -1268,7 +1273,12 @@
             
             <!-- Master Tools List -->
             <div id="masterToolsSection" class="master-list-section">
-              <h3>🔧 All Tools</h3>
+              <div class="master-list-header">
+                <h3>🔧 All Tools</h3>
+                <button class="clear-master-list-btn" onclick="clearAllMasterTools()" title="Clear all tools from all jobs">
+                  <span>🗑️</span> Clear All
+                </button>
+              </div>
               <div id="masterToolsList" class="master-list">
                 <div class="loading">Loading tools...</div>
               </div>
@@ -1276,7 +1286,12 @@
             
             <!-- Master Materials List -->
             <div id="masterMaterialsSection" class="master-list-section">
-              <h3>📦 All Materials</h3>
+              <div class="master-list-header">
+                <h3>📦 All Materials</h3>
+                <button class="clear-master-list-btn" onclick="clearAllMasterMaterials()" title="Clear all materials from all jobs">
+                  <span>🗑️</span> Clear All
+                </button>
+              </div>
               <div id="masterMaterialsList" class="master-list">
                 <div class="loading">Loading materials...</div>
               </div>
