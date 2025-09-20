@@ -1262,9 +1262,17 @@
             <div id="masterTasksSection" class="master-list-section">
               <div class="master-list-header">
                 <h3>📋 All Tasks</h3>
-                <button class="clear-master-list-btn" onclick="clearAllMasterTasks()" title="Clear all tasks from all jobs">
-                  <span>🗑️</span> Clear All
-                </button>
+                <div class="master-list-controls">
+                  <button class="select-all-btn" onclick="selectAllJobs('tasks', true)" title="Select all jobs">
+                    Select All
+                  </button>
+                  <button class="select-none-btn" onclick="selectAllJobs('tasks', false)" title="Deselect all jobs">
+                    Select None
+                  </button>
+                  <button class="clear-master-list-btn" onclick="clearSelectedTasks()" title="Clear tasks from selected jobs">
+                    <span>🗑️</span> Clear Selected
+                  </button>
+                </div>
               </div>
               <div id="masterTasksList" class="master-list">
                 <div class="loading">Loading tasks...</div>
@@ -1275,9 +1283,17 @@
             <div id="masterToolsSection" class="master-list-section">
               <div class="master-list-header">
                 <h3>🔧 All Tools</h3>
-                <button class="clear-master-list-btn" onclick="clearAllMasterTools()" title="Clear all tools from all jobs">
-                  <span>🗑️</span> Clear All
-                </button>
+                <div class="master-list-controls">
+                  <button class="select-all-btn" onclick="selectAllJobs('tools', true)" title="Select all jobs">
+                    Select All
+                  </button>
+                  <button class="select-none-btn" onclick="selectAllJobs('tools', false)" title="Deselect all jobs">
+                    Select None
+                  </button>
+                  <button class="clear-master-list-btn" onclick="clearSelectedTools()" title="Clear tools from selected jobs">
+                    <span>🗑️</span> Clear Selected
+                  </button>
+                </div>
               </div>
               <div id="masterToolsList" class="master-list">
                 <div class="loading">Loading tools...</div>
@@ -1288,9 +1304,17 @@
             <div id="masterMaterialsSection" class="master-list-section">
               <div class="master-list-header">
                 <h3>📦 All Materials</h3>
-                <button class="clear-master-list-btn" onclick="clearAllMasterMaterials()" title="Clear all materials from all jobs">
-                  <span>🗑️</span> Clear All
-                </button>
+                <div class="master-list-controls">
+                  <button class="select-all-btn" onclick="selectAllJobs('materials', true)" title="Select all jobs">
+                    Select All
+                  </button>
+                  <button class="select-none-btn" onclick="selectAllJobs('materials', false)" title="Deselect all jobs">
+                    Select None
+                  </button>
+                  <button class="clear-master-list-btn" onclick="clearSelectedMaterials()" title="Clear materials from selected jobs">
+                    <span>🗑️</span> Clear Selected
+                  </button>
+                </div>
               </div>
               <div id="masterMaterialsList" class="master-list">
                 <div class="loading">Loading materials...</div>

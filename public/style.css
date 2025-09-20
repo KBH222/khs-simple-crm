@@ -4199,6 +4199,12 @@ body.has-offline-banner .app-header {
   border-bottom: 1px solid #E5E7EB;
 }
 
+.master-list-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .master-list-header h3 {
   margin: 0;
   font-size: 20px;
@@ -4229,6 +4235,41 @@ body.has-offline-banner .app-header {
 
 .clear-master-list-btn span {
   font-size: 15px;
+}
+
+.select-all-btn,
+.select-none-btn {
+  background: #E5E7EB;
+  color: #374151;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.select-all-btn:hover,
+.select-none-btn:hover {
+  background: #D1D5DB;
+}
+
+.job-select-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.master-job-group.selected {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+}
+
+.master-job-group.selected .master-job-header {
+  background: #FDE68A;
 }
 
 .master-list {

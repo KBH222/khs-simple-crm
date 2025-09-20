@@ -5800,6 +5800,13 @@ let masterTasks = {};
 let masterTools = {};
 let masterMaterials = {};
 
+// Track selected jobs for each list type
+let selectedJobs = {
+  tasks: new Set(),
+  tools: new Set(),
+  materials: new Set()
+};
+
 // Load Master Lists Data
 async function loadMasterLists() {
   try {
@@ -5860,9 +5867,15 @@ function renderMasterTasks() {
       </div>
     `).join('');
     
+    const jobId = jobData.tasks[0]?.job_id; // Get job ID from first task
     return `
-      <div class="master-job-group">
+      <div class="master-job-group" data-job-id="${jobId}">
         <div class="master-job-header">
+          <input type="checkbox" 
+                 class="job-select-checkbox" 
+                 data-job-id="${jobId}"
+                 data-list-type="tasks"
+                 onchange="toggleJobSelection('tasks', '${jobId}', this.checked)">
           <h4 class="master-job-title">${escapeHtml(jobKey)}</h4>
         </div>
         <div class="master-items-list">
@@ -5907,9 +5920,15 @@ function renderMasterTools() {
       </div>
     `).join('');
     
+    const jobId = jobData.tools[0]?.job_id; // Get job ID from first tool
     return `
-      <div class="master-job-group">
+      <div class="master-job-group" data-job-id="${jobId}">
         <div class="master-job-header">
+          <input type="checkbox" 
+                 class="job-select-checkbox" 
+                 data-job-id="${jobId}"
+                 data-list-type="tools"
+                 onchange="toggleJobSelection('tools', '${jobId}', this.checked)">
           <h4 class="master-job-title">${escapeHtml(jobKey)}</h4>
         </div>
         <div class="master-items-list">
@@ -6020,9 +6039,15 @@ function renderMasterMaterials() {
       </div>
     `).join('');
     
+    const jobId = jobData.materials[0]?.job_id; // Get job ID from first material
     return `
-      <div class="master-job-group">
+      <div class="master-job-group" data-job-id="${jobId}">
         <div class="master-job-header">
+          <input type="checkbox" 
+                 class="job-select-checkbox" 
+                 data-job-id="${jobId}"
+                 data-list-type="materials"
+                 onchange="toggleJobSelection('materials', '${jobId}', this.checked)">
           <h4 class="master-job-title">${escapeHtml(jobKey)}</h4>
         </div>
         <div class="master-items-list">
@@ -6101,6 +6126,166 @@ function loadMasterListPreferences() {
   toggleMasterList('tasks', showTasks);
   toggleMasterList('tools', showTools);
   toggleMasterList('materials', showMaterials);
+}
+
+// Toggle job selection
+function toggleJobSelection(listType, jobId, selected) {
+  if (selected) {
+    selectedJobs[listType].add(jobId);
+  } else {
+    selectedJobs[listType].delete(jobId);
+  }
+  
+  // Update visual feedback
+  const jobGroup = document.querySelector(`#master${listType.charAt(0).toUpperCase() + listType.slice(1)}Section [data-job-id="${jobId}"]`);
+  if (jobGroup) {
+    if (selected) {
+      jobGroup.classList.add('selected');
+    } else {
+      jobGroup.classList.remove('selected');
+    }
+  }
+}
+
+// Select all or none jobs for a list type
+function selectAllJobs(listType, select) {
+  const section = document.getElementById(`master${listType.charAt(0).toUpperCase() + listType.slice(1)}Section`);
+  if (!section) return;
+  
+  const checkboxes = section.querySelectorAll('.job-select-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = select;
+    const jobId = checkbox.dataset.jobId;
+    if (jobId) {
+      toggleJobSelection(listType, jobId, select);
+    }
+  });
+}
+
+// Clear selected tasks
+async function clearSelectedTasks() {
+  const selectedJobIds = Array.from(selectedJobs.tasks);
+  
+  if (selectedJobIds.length === 0) {
+    alert('Please select at least one job to clear tasks from.');
+    return;
+  }
+  
+  // Count total tasks in selected jobs
+  let totalTasks = 0;
+  selectedJobIds.forEach(jobId => {
+    const jobData = Object.values(masterTasks).find(job => job.tasks[0]?.job_id === jobId);
+    if (jobData) {
+      totalTasks += jobData.tasks.length;
+    }
+  });
+  
+  if (!confirm(`Are you sure you want to clear ${totalTasks} task(s) from ${selectedJobIds.length} selected job(s)?\n\nThis cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    // Clear tasks for each selected job
+    for (const jobId of selectedJobIds) {
+      const response = await fetch(`/api/jobs/${jobId}/tasks/clear`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        logError(`Failed to clear tasks for job ${jobId}`);
+      }
+    }
+    
+    // Reload and reset selection
+    selectedJobs.tasks.clear();
+    await loadMasterLists();
+  } catch (error) {
+    logError('Error clearing selected tasks:', error);
+  }
+}
+
+// Clear selected tools
+async function clearSelectedTools() {
+  const selectedJobIds = Array.from(selectedJobs.tools);
+  
+  if (selectedJobIds.length === 0) {
+    alert('Please select at least one job to clear tools from.');
+    return;
+  }
+  
+  // Count total tools in selected jobs
+  let totalTools = 0;
+  selectedJobIds.forEach(jobId => {
+    const jobData = Object.values(masterTools).find(job => job.tools[0]?.job_id === jobId);
+    if (jobData) {
+      totalTools += jobData.tools.length;
+    }
+  });
+  
+  if (!confirm(`Are you sure you want to clear ${totalTools} tool(s) from ${selectedJobIds.length} selected job(s)?\n\nThis cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    // Clear tools for each selected job
+    for (const jobId of selectedJobIds) {
+      const response = await fetch(`/api/jobs/${jobId}/tools/clear`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        logError(`Failed to clear tools for job ${jobId}`);
+      }
+    }
+    
+    // Reload and reset selection
+    selectedJobs.tools.clear();
+    await loadMasterLists();
+  } catch (error) {
+    logError('Error clearing selected tools:', error);
+  }
+}
+
+// Clear selected materials
+async function clearSelectedMaterials() {
+  const selectedJobIds = Array.from(selectedJobs.materials);
+  
+  if (selectedJobIds.length === 0) {
+    alert('Please select at least one job to clear materials from.');
+    return;
+  }
+  
+  // Count total materials in selected jobs
+  let totalMaterials = 0;
+  selectedJobIds.forEach(jobId => {
+    const jobData = Object.values(masterMaterials).find(job => job.materials[0]?.job_id === jobId);
+    if (jobData) {
+      totalMaterials += jobData.materials.length;
+    }
+  });
+  
+  if (!confirm(`Are you sure you want to clear ${totalMaterials} material(s) from ${selectedJobIds.length} selected job(s)?\n\nThis cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    // Clear materials for each selected job
+    for (const jobId of selectedJobIds) {
+      const response = await fetch(`/api/jobs/${jobId}/materials/clear`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        logError(`Failed to clear materials for job ${jobId}`);
+      }
+    }
+    
+    // Reload and reset selection
+    selectedJobs.materials.clear();
+    await loadMasterLists();
+  } catch (error) {
+    logError('Error clearing selected materials:', error);
+  }
 }
 
 // Clear all master tasks across all jobs
@@ -6191,3 +6376,8 @@ window.loadMasterListPreferences = loadMasterListPreferences;
 window.clearAllMasterTasks = clearAllMasterTasks;
 window.clearAllMasterTools = clearAllMasterTools;
 window.clearAllMasterMaterials = clearAllMasterMaterials;
+window.toggleJobSelection = toggleJobSelection;
+window.selectAllJobs = selectAllJobs;
+window.clearSelectedTasks = clearSelectedTasks;
+window.clearSelectedTools = clearSelectedTools;
+window.clearSelectedMaterials = clearSelectedMaterials;
