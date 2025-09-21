@@ -512,6 +512,22 @@ body.has-offline-banner .app-header {
   gap: 12px;
 }
 
+/* Quick action button next to customer status */
+.text-to-sub-btn {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #F59E0B;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.text-to-sub-btn:hover {
+  background: #F59E0B;
+  color: white;
+  border-color: #F59E0B;
+}
+
 /* Old customer-card styles removed - using customer-card-grid instead */
 
 /* CSS Grid Layout for Customer Cards - BULLETPROOF spacing control */
@@ -1407,6 +1423,44 @@ body.has-offline-banner .app-header {
   border-bottom: 1px solid #E5E7EB;
   margin-bottom: 24px;
   border-radius: 8px 8px 0 0;
+}
+
+/* Text Send Tab styles */
+.textsend-section {
+  margin-bottom: 24px;
+}
+.textsend-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 10px 0;
+}
+.contact-list-wrapper {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.contact-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.contact-table thead {
+  background: #374151;
+  color: white;
+}
+.contact-table th, .contact-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #E5E7EB;
+  text-align: left;
+  font-size: 14px;
+}
+.contact-table th:first-child, .contact-table td:first-child { width: 30%; }
+.contact-table th:nth-child(2), .contact-table td:nth-child(2) { width: 20%; }
+.contact-table th:nth-child(3), .contact-table td:nth-child(3) { width: 50%; }
+.placeholder-row td {
+  color: #6B7280;
+  text-align: center;
 }
 
 .settings-tab {

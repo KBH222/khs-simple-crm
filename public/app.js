@@ -400,8 +400,11 @@ function renderCustomers() {
       <div class="customer-name-cell">
         <div style="display: flex; align-items: center; gap: 12px; margin: 0; padding: 0;">
           <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
-          <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 2px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0;">
-            ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+          <div style="display: inline-flex; align-items: center; gap: 8px;">
+            <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 2px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0;">
+              ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+            </div>
+            <button class="text-to-sub-btn" title="Send text to a sub">Text to Sub</button>
           </div>
         </div>
       </div>
@@ -421,16 +424,16 @@ function renderCustomers() {
         <div style="margin: 0; padding: 0; line-height: 1.4;">
           <div style="margin-bottom: 8px; font-size: 16.1px; margin-top: 16px; padding-top: 0;">
             <strong>Email:</strong>
-            ${customer.email ? `<a href="mailto:${customer.email}" style="color: #3B82F6; text-decoration: none; margin-left: 4px;">${escapeHtml(customer.email)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+            ${customer.email ? `<a href=\"mailto:${customer.email}\" style=\"color: #3B82F6; text-decoration: none; margin-left: 4px;\">${escapeHtml(customer.email)}</a>` : '<span style=\"color: #6B7280; margin-left: 4px;\">Not provided</span>'}
           </div>
           <div style="margin-bottom: 8px; font-size: 16.1px; display: flex; align-items: center; gap: 12px;">
             <div>
               <strong>Phone:</strong> 
-              ${customer.phone ? `<a href="tel:${customer.phone}" style="color: #10B981; text-decoration: none; margin-left: 4px;">${formatPhoneNumber(customer.phone)}</a>` : '<span style="color: #6B7280; margin-left: 4px;">Not provided</span>'}
+              ${customer.phone ? `<a href=\"tel:${customer.phone}\" style=\"color: #10B981; text-decoration: none; margin-left: 4px;\">${formatPhoneNumber(customer.phone)}</a>` : '<span style=\"color: #6B7280; margin-left: 4px;\">Not provided</span>'}
             </div>
-            ${customer.phone ? `<button onclick="sendText('${customer.phone}')" style="background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; padding: 0; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; min-width: 40px;" onmouseover="this.style.backgroundColor='#F59E0B'; this.style.color='white'; this.style.borderColor='#F59E0B';" onmouseout="this.style.backgroundColor='#FEF3C7'; this.style.color='#92400E'; this.style.borderColor='#F59E0B';">Text</button>` : ''}
+            ${customer.phone ? `<button onclick=\"sendText('${customer.phone}')\" style=\"background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; padding: 0; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; min-width: 40px;\" onmouseover=\"this.style.backgroundColor='#F59E0B'; this.style.color='white'; this.style.borderColor='#F59E0B';\" onmouseout=\"this.style.backgroundColor='#FEF3C7'; this.style.color='#92400E'; this.style.borderColor='#F59E0B';\">Text</button>` : ''}
           </div>
-          ${customer.address ? `<div style="margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;"><div style="display: flex; align-items: flex-start;"><strong style="margin-right: 4px; flex-shrink: 0;">Site:</strong><a href="https://maps.google.com/?q=${encodeURIComponent(customer.address)}" target="_blank" style="color: #3B82F6; text-decoration: none; flex: 1;">${formatAddress(customer.address)}</a></div></div>` : ''}
+          ${customer.address ? `<div style=\"margin-bottom: 8px; font-size: 16.1px; line-height: 1.3;\"><div style=\"display: flex; align-items: flex-start;\"><strong style=\"margin-right: 4px; flex-shrink: 0;\">Site:</strong><a href=\"https://maps.google.com/?q=${encodeURIComponent(customer.address)}\" target=\"_blank\" style=\"color: #3B82F6; text-decoration: none; flex: 1;\">${formatAddress(customer.address)}</a></div></div>` : ''}
           
           <div class="customer-jobs" id="jobs-${customer.id}" style="margin: 0 !important; padding: 0 !important;">
             <div class="jobs-header" style="margin: 0 !important; padding: 0 !important; margin-top: 8px !important; margin-bottom: 4px !important; font-weight: 600; color: #374151; font-size: 16.1px; display: flex; align-items: center;">
