@@ -332,7 +332,7 @@ async function loadCustomerJobs(customerId) {
                 <strong class="job-title" style="font-size: 14px;">${escapeHtml(job.title)}</strong>
                 ${job.total_cost > 0 ? `<span style="color: #6B7280; margin-left: 8px; font-size: 13px;">$${job.total_cost.toFixed(2)}</span>` : ''}
               </div>
-<button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0; line-height: 1; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+<button onclick="deleteJobFromTile('${job.id}'); event.stopPropagation();" style="background: none; border: none; color: #EF4444; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0; line-height: 1; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">×</button>
             </div>
             ${job.description ? `<div onclick="viewJob('${job.id}')" style="color: #6B7280; margin-top: 6px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">${escapeHtml(job.description.substring(0, 30))}${job.description.length > 30 ? '...' : ''}</div>` : ''}
           </div>
