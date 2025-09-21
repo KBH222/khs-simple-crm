@@ -88,7 +88,10 @@ function formatTime(date) {
 function updateEnvBadge() {
   try {
     const badge = document.getElementById('envBadge');
-    if (!badge) return;
+    if (!badge) {
+      console.warn('envBadge element not found');
+      return;
+    }
     const base = window.__API_BASE || '';
     if (base) {
       badge.textContent = 'API: Railway';
@@ -99,7 +102,10 @@ function updateEnvBadge() {
       badge.style.backgroundColor = '#FEF3C7';
       badge.style.color = '#92400E';
     }
-  } catch {}
+    console.log('Environment badge updated:', badge.textContent);
+  } catch (error) {
+    console.error('Error updating environment badge:', error);
+  }
 }
 
 // Initialize app
@@ -113,6 +119,11 @@ document.addEventListener('DOMContentLoaded', function() {
   setupEventListeners();
   setTimeout(() => testNavigation(), 1000);
 });
+
+// Fallback for environment badge if DOMContentLoaded doesn't fire
+setTimeout(() => {
+  updateEnvBadge();
+}, 100);
 
 function setupEventListeners() {
   // Contact form
