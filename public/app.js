@@ -401,23 +401,18 @@ function renderCustomers() {
           <div style="display: flex; gap: 12px; margin: 0; padding: 0; flex-wrap: wrap;">
             <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;">
-              <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 4px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0; display: flex; align-items: center;">
-                ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+<div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 4px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0; display: flex; align-items: center;">
+                ${customer.customer_type === 'CURRENT' ? 'C' : 'L'}
               </div>
               <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" title="Send text to a sub">Text to Sub</button>
           </div>
         </div>
       </div>
       
-      <div class="customer-buttons-cell">
-        <div class="customer-buttons-top">
-          <button onclick="editCustomer('${customer.id}')" style="background: #DBEAFE; border: 1px solid #3B82F6; color: #1E40AF; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; margin-bottom: 12px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden;" onmouseover="this.style.backgroundColor='#3B82F6'; this.style.color='white'; this.style.borderColor='#3B82F6';" onmouseout="this.style.backgroundColor='#DBEAFE'; this.style.color='#1E40AF'; this.style.borderColor='#3B82F6';">Edit</button>
-          <button onclick="createJob('${customer.id}')" style="background: #DCFCE7; border: 1px solid #10B981; color: #065F46; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden;" onmouseover="this.style.backgroundColor='#10B981'; this.style.color='white'; this.style.borderColor='#10B981';" onmouseout="this.style.backgroundColor='#DCFCE7'; this.style.color='#065F46'; this.style.borderColor='#10B981';">+Job</button>
-        </div>
-        
-        <div class="customer-buttons-bottom">
-          <button onclick="deleteCustomer('${customer.id}')" style="background: #DC2626; border: 1px solid #991B1B; color: #FFFFFF; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden; font-weight: 600;" onmouseover="this.style.backgroundColor='#B91C1C'; this.style.color='#FFFFFF'; this.style.borderColor='#7F1D1D';" onmouseout="this.style.backgroundColor='#DC2626'; this.style.color='#FFFFFF'; this.style.borderColor='#991B1B';">Del</button>
-        </div>
+      <div class="customer-buttons-cell" style="display: flex !important; flex-direction: column !important; gap: 4px !important;">
+        <button onclick="editCustomer('${customer.id}')" style="background: #DBEAFE; border: 1px solid #3B82F6; color: #1E40AF; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden;" onmouseover="this.style.backgroundColor='#3B82F6'; this.style.color='white'; this.style.borderColor='#3B82F6';" onmouseout="this.style.backgroundColor='#DBEAFE'; this.style.color='#1E40AF'; this.style.borderColor='#3B82F6';">Edit</button>
+        <button onclick="createJob('${customer.id}')" style="background: #DCFCE7; border: 1px solid #10B981; color: #065F46; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden;" onmouseover="this.style.backgroundColor='#10B981'; this.style.color='white'; this.style.borderColor='#10B981';" onmouseout="this.style.backgroundColor='#DCFCE7'; this.style.color='#065F46'; this.style.borderColor='#10B981';">Job</button>
+        <button onclick="deleteCustomer('${customer.id}')" style="background: #DC2626; border: 1px solid #991B1B; color: #FFFFFF; padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 50px; transition: all 0.2s; text-align: center; white-space: nowrap; overflow: hidden; font-weight: 600;" onmouseover="this.style.backgroundColor='#B91C1C'; this.style.color='#FFFFFF'; this.style.borderColor='#7F1D1D';" onmouseout="this.style.backgroundColor='#DC2626'; this.style.color='#FFFFFF'; this.style.borderColor='#991B1B';">Del</button>
       </div>
       
       <div class="customer-info-cell">
