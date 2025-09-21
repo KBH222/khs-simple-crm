@@ -570,11 +570,10 @@ body.has-offline-banner .app-header {
 .customer-card-grid {
   display: grid !important;
   grid-template-columns: 1fr auto !important;
-  grid-template-rows: auto 1fr auto !important;
+  grid-template-rows: auto 1fr !important;
   grid-template-areas:
     "name name"
-    "info info"
-    ". buttons" !important;
+    "info buttons" !important;
   gap: 0 !important;
   row-gap: 8px !important;
   column-gap: 8px !important;
@@ -605,8 +604,8 @@ body.has-offline-banner .app-header {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: flex-end !important;
-  margin: 0 !important;
+  justify-content: flex-start !important;
+  margin: 120px 0 0 0 !important;
   padding: 0 !important;
   width: 54px !important;
   gap: 24px !important;
