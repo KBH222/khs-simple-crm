@@ -516,7 +516,7 @@ body.has-offline-banner .app-header {
 
 /* Quick action button next to customer status */
 .text-to-sub-btn {
-  padding-top: 11px !important;
+  padding-top: 12.1px !important;
   margin-top: 0 !important;
   background: #FB923C !important;
   color: black !important;
@@ -527,7 +527,7 @@ body.has-offline-banner .app-header {
   white-space: nowrap !important;
   cursor: pointer !important;
   transition: all 0.2s !important;
-  width: 110px !important;
+  width: 75px !important;
   text-align: center !important;
 }
 .text-to-sub-btn:hover {
