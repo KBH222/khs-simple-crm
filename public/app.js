@@ -328,7 +328,7 @@ async function loadCustomerJobs(customerId) {
         jobsContainer.innerHTML = data.map(job => `
 <div class="job-item job-${job.title.toLowerCase()}" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; padding: 12px 5px; margin: 4px 0 2px 0; font-size: 16.1px; width: 120px; transition: background-color 0.2s;"
 <div style="display: flex; justify-content: flex-start; align-items: center; gap: 4px; min-height: 24px;">
-<div onclick="viewJob('${job.id}')" style="cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+<div onclick="viewJob('${job.id}')" style="cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85px;">
                 <strong class="job-title" style="font-size: 14px;">${escapeHtml(job.title)}</strong>
                 ${job.total_cost > 0 ? `<span style="color: #6B7280; margin-left: 8px; font-size: 13px;">$${job.total_cost.toFixed(2)}</span>` : ''}
               </div>
