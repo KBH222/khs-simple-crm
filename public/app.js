@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setInterval(updateDateTime, 1000);
   loadCustomers();
   loadBackupInfo();
+  loadTextSendContacts(); // Load Text Send contacts
   setupEventListeners();
   setTimeout(() => testNavigation(), 1000);
 });
@@ -430,8 +431,8 @@ function renderCustomers() {
                 ${customer.customer_type === 'CURRENT' ? 'C' : 'L'}
               </div>
             </div>
-            <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" 
-              title="Share customer info">Share Info</button>
+            <button class="text-to-sub-btn" onclick="shareCustomerInfo('${customer.id}')" 
+              title="Share customer info">📤 Share Info</button>
           </div>
       </div>
       
@@ -4144,7 +4145,7 @@ async function handleContactSubmit(e) {
   e.preventDefault();
   
   const form = e.target;
-  const contactId = form.dataset.contactId;
+  const formData = new FormData(form);
   
   // Get and clean phone number (remove formatting)
   const phoneValue = document.getElementById('contactPhone').value.trim();
@@ -4155,109 +4156,32 @@ async function handleContactSubmit(e) {
   }
   const cleanPhone = phoneValidation.cleanPhone;
   
-  const contactData = {
-    name: document.getElementById('contactName').value,
-    phone: cleanPhone,
-    address: document.getElementById('contactAddress').value,
-    type: document.querySelector('input[name="contactType"]:checked').value,
-    notes: document.getElementById('contactNotes').value
-  };
+  // Update the form data with cleaned phone
+  formData.set('contactPhone', cleanPhone);
   
-  try {
-    const url = contactId ? `/api/contacts/${contactId}` : '/api/contacts';
-    const method = contactId ? 'PUT' : 'POST';
-    
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(contactData),
-    });
-    
-    if (response.ok) {
-      hideModals();
-      loadTextSendContacts(); // Reload the contacts
-    } else {
-      const data = await response.json();
-      alert(data.message || 'Failed to save contact');
-    }
-  } catch (error) {
-    logError('Error saving contact:', error);
-    alert('Error saving contact');
-  }
+  await saveContact(formData);
 }
 
-async function loadTextSendContacts() {
-  try {
-    const response = await fetch('/api/contacts');
-    const contacts = await response.json();
-
-    // Update the contact tables
-    updateContactTable('subs', contacts.filter(c => c.type === 'SUB'));
-    updateContactTable('workers', contacts.filter(c => c.type === 'WORKER'));
-    updateContactTable('others', contacts.filter(c => c.type === 'OTHER'));
-  } catch (error) {
-    logError('Error loading contacts:', error);
-  }
-}
-
-function updateContactTable(type, contacts) {
-  const table = document.querySelector(`#textsendTab .contact-table:nth-child(${type === 'subs' ? 1 : type === 'workers' ? 2 : 3}) tbody`);
-  
-  if (!contacts || contacts.length === 0) {
-    table.innerHTML = `<tr class="placeholder-row"><td colspan="3">No ${type} to display</td></tr>`;
-    return;
-  }
-
-  table.innerHTML = contacts.map(contact => `
-    <tr>
-      <td>${escapeHtml(contact.name)}</td>
-      <td>${formatPhoneNumber(contact.phone)}</td>
-      <td>${escapeHtml(contact.address || '')}</td>
-      <td class="contact-actions">
-        <button onclick="editContact('${contact.id}')" class="edit-contact-btn" title="Edit contact">
-          Edit
-        </button>
-        <button onclick="deleteContact('${contact.id}')" class="delete-contact-btn" title="Delete contact">
-          Delete
-        </button>
-      </td>
-    </tr>
-  `).join('');
-}
 
 function editContact(contactId) {
-  // Fetch contact details and open modal
-  fetch(`/api/contacts/${contactId}`)
-    .then(r => r.json())
-    .then(contact => {
-      showContactModal(contact);
-    })
-    .catch(err => {
-      logError('Failed to load contact', err);
-      alert('Failed to load contact');
-    });
-}
-
-async function deleteContact(contactId) {
-  if (!confirm('Are you sure you want to delete this contact?')) return;
-
-  try {
-    const response = await fetch(`/api/contacts/${contactId}`, {
-      method: 'DELETE'
-    });
-
-    if (response.ok) {
-      loadTextSendContacts(); // Reload the contacts
-    } else {
-      alert('Failed to delete contact');
-    }
-  } catch (error) {
-    logError('Error deleting contact:', error);
-    alert('Error deleting contact');
+  // Find contact in our loaded contacts
+  const contact = textSendContacts.find(c => c.id === contactId);
+  if (contact) {
+    showContactModal(contact);
+  } else {
+    // Fallback: fetch from server
+    fetch(`/api/contacts/${contactId}`)
+      .then(r => r.json())
+      .then(contact => {
+        showContactModal(contact);
+      })
+      .catch(err => {
+        logError('Failed to load contact', err);
+        alert('Failed to load contact');
+      });
   }
 }
+
 
 function setupSettingsTabListeners() {
   // Remove existing listeners first
@@ -6617,6 +6541,314 @@ async function clearAllMasterMaterials() {
     logError('Error clearing all materials:', error);
   }
 }
+
+// Text Send functionality
+let textSendContacts = [];
+let currentContactFilter = 'all';
+
+async function loadTextSendContacts() {
+  try {
+    const response = await fetch('/api/contacts');
+    if (response.ok) {
+      textSendContacts = await response.json();
+      renderContactsTable();
+      populateTestCustomerSelect();
+    } else {
+      console.error('Failed to load contacts');
+    }
+  } catch (error) {
+    console.error('Error loading contacts:', error);
+  }
+}
+
+function renderContactsTable() {
+  const tbody = document.getElementById('contactsTableBody');
+  if (!tbody) return;
+
+  const filteredContacts = currentContactFilter === 'all' 
+    ? textSendContacts 
+    : textSendContacts.filter(contact => contact.contact_type === currentContactFilter);
+
+  if (filteredContacts.length === 0) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="5">No contacts found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filteredContacts.map(contact => `
+    <tr>
+      <td>${contact.name}</td>
+      <td>${contact.phone}</td>
+      <td>${contact.address || 'Not provided'}</td>
+      <td><span class="contact-type-badge ${contact.contact_type}">${contact.contact_type}</span></td>
+      <td>
+        <div class="contact-actions">
+          <button class="edit-contact-btn" onclick="editContact('${contact.id}')">Edit</button>
+          <button class="delete-contact-btn" onclick="deleteContact('${contact.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterContacts(type) {
+  currentContactFilter = type;
+  
+  // Update active tab
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.querySelector(`[data-type="${type}"]`).classList.add('active');
+  
+  renderContactsTable();
+}
+
+async function showContactModal(contact = null) {
+  const modal = document.getElementById('contactModal');
+  const title = document.getElementById('contactModalTitle');
+  const form = document.getElementById('contactForm');
+  
+  if (contact) {
+    title.textContent = 'Edit Contact';
+    document.getElementById('contactName').value = contact.name;
+    document.getElementById('contactPhone').value = contact.phone;
+    document.getElementById('contactAddress').value = contact.address || '';
+    document.querySelector(`input[name="contactType"][value="${contact.contact_type}"]`).checked = true;
+    document.getElementById('contactNotes').value = contact.notes || '';
+    form.dataset.contactId = contact.id;
+  } else {
+    title.textContent = 'Add Contact';
+    form.reset();
+    delete form.dataset.contactId;
+  }
+  
+  modal.style.display = 'block';
+}
+
+async function saveContact(formData) {
+  const contactData = {
+    name: formData.get('contactName'),
+    phone: formData.get('contactPhone'),
+    address: formData.get('contactAddress'),
+    contact_type: formData.get('contactType'),
+    notes: formData.get('contactNotes')
+  };
+
+  const contactId = formData.get('contactId');
+  const url = contactId ? `/api/contacts/${contactId}` : '/api/contacts';
+  const method = contactId ? 'PUT' : 'POST';
+
+  try {
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(contactData)
+    });
+
+    if (response.ok) {
+      await loadTextSendContacts();
+      closeModal('contactModal');
+      showMessage('Contact saved successfully', 'success');
+    } else {
+      const error = await response.json();
+      showMessage(error.error || 'Failed to save contact', 'error');
+    }
+  } catch (error) {
+    console.error('Error saving contact:', error);
+    showMessage('Error saving contact', 'error');
+  }
+}
+
+async function deleteContact(contactId) {
+  if (!confirm('Are you sure you want to delete this contact?')) return;
+
+  try {
+    const response = await fetch(`/api/contacts/${contactId}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      await loadTextSendContacts();
+      showMessage('Contact deleted successfully', 'success');
+    } else {
+      const error = await response.json();
+      showMessage(error.error || 'Failed to delete contact', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting contact:', error);
+    showMessage('Error deleting contact', 'error');
+  }
+}
+
+async function testTextSend() {
+  const customerSelect = document.getElementById('testCustomerSelect');
+  const customerId = customerSelect.value;
+  
+  if (!customerId) {
+    showMessage('Please select a customer to test with', 'error');
+    return;
+  }
+
+  if (textSendContacts.length === 0) {
+    showMessage('No contacts available. Please add some contacts first.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/text-send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customer_id: customerId,
+        contact_ids: textSendContacts.map(c => c.id)
+      })
+    });
+
+    const result = await response.json();
+    const resultDiv = document.getElementById('testMessageResult');
+    
+    if (response.ok) {
+      resultDiv.innerHTML = `
+        <div style="background: #ECFDF5; color: #065F46; padding: 10px; border-radius: 4px; border: 1px solid #A7F3D0;">
+          <strong>✅ Test Message Sent Successfully!</strong><br>
+          Customer: ${result.customer}<br>
+          Recipients: ${result.recipients} contacts<br>
+          <details style="margin-top: 10px;">
+            <summary>Message Preview</summary>
+            <pre style="background: white; padding: 8px; border-radius: 4px; margin-top: 5px; font-size: 12px;">${result.message_preview}</pre>
+          </details>
+        </div>
+      `;
+    } else {
+      resultDiv.innerHTML = `
+        <div style="background: #FEE2E2; color: #991B1B; padding: 10px; border-radius: 4px; border: 1px solid #FECACA;">
+          <strong>❌ Error:</strong> ${result.error}
+        </div>
+      `;
+    }
+    
+    resultDiv.style.display = 'block';
+  } catch (error) {
+    console.error('Error sending test message:', error);
+    showMessage('Error sending test message', 'error');
+  }
+}
+
+function populateTestCustomerSelect() {
+  const select = document.getElementById('testCustomerSelect');
+  if (!select) return;
+
+  // Clear existing options except the first one
+  select.innerHTML = '<option value="">Select a customer...</option>';
+  
+  // Add customer options
+  customers.forEach(customer => {
+    const option = document.createElement('option');
+    option.value = customer.id;
+    option.textContent = customer.name;
+    select.appendChild(option);
+  });
+}
+
+// Add Share Info button to customer cards
+function addShareInfoButton(customer) {
+  return `
+    <div class="customer-actions" style="display: flex; gap: 8px; margin-top: 10px;">
+      <button class="share-info-btn" onclick="shareCustomerInfo('${customer.id}')" 
+              style="padding: 6px 12px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+        📤 Share Info
+      </button>
+    </div>
+  `;
+}
+
+async function shareCustomerInfo(customerId) {
+  if (textSendContacts.length === 0) {
+    showMessage('No contacts available. Please add contacts in Settings > Text Send first.', 'error');
+    return;
+  }
+
+  // Show contact selection modal
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Share Customer Info</h3>
+        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+      </div>
+      <div style="padding: 20px;">
+        <p>Select contacts to send customer information to:</p>
+        <div id="contactCheckboxes" style="max-height: 300px; overflow-y: auto; margin: 15px 0;">
+          ${textSendContacts.map(contact => `
+            <label style="display: flex; align-items: center; padding: 8px; border: 1px solid #E5E7EB; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" value="${contact.id}" style="margin-right: 10px;">
+              <div>
+                <div style="font-weight: 500;">${contact.name}</div>
+                <div style="font-size: 12px; color: #6B7280;">${contact.phone} • ${contact.contact_type}</div>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+          <button onclick="sendCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">Send Info</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+async function sendCustomerInfo(customerId) {
+  const checkboxes = document.querySelectorAll('#contactCheckboxes input[type="checkbox"]:checked');
+  const contactIds = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (contactIds.length === 0) {
+    showMessage('Please select at least one contact', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/text-send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customer_id: customerId,
+        contact_ids: contactIds
+      })
+    });
+
+    const result = await response.json();
+    
+    if (response.ok) {
+      showMessage(`Customer info sent to ${result.recipients} contact(s) successfully!`, 'success');
+      document.querySelector('.modal').remove();
+    } else {
+      showMessage(result.error || 'Failed to send customer info', 'error');
+    }
+  } catch (error) {
+    console.error('Error sending customer info:', error);
+    showMessage('Error sending customer info', 'error');
+  }
+}
+
+// Make functions globally accessible
+window.loadTextSendContacts = loadTextSendContacts;
+window.filterContacts = filterContacts;
+window.showContactModal = showContactModal;
+window.saveContact = saveContact;
+window.deleteContact = deleteContact;
+window.testTextSend = testTextSend;
+window.shareCustomerInfo = shareCustomerInfo;
+window.sendCustomerInfo = sendCustomerInfo;
 
 // Make Master Lists functions globally accessible
 window.loadMasterLists = loadMasterLists;

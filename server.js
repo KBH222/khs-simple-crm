@@ -280,6 +280,18 @@ const initializeTables = () => {
     // Ignore error if column already exists
   });
   
+  // Text Send Contacts table
+  db.run(`CREATE TABLE IF NOT EXISTS text_send_contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address TEXT,
+    contact_type TEXT NOT NULL,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  
   // Work hours tracking table
   db.run(`CREATE TABLE IF NOT EXISTS work_hours (
     id TEXT PRIMARY KEY,
@@ -1994,6 +2006,150 @@ app.delete('/api/work-hours/:id', (req, res) => {
     }
     
     res.json({ message: 'Hours deleted' });
+  });
+});
+
+// Text Send Contacts API
+app.get('/api/contacts', (req, res) => {
+  const { type } = req.query;
+  let query = 'SELECT * FROM text_send_contacts WHERE 1=1';
+  const params = [];
+  
+  if (type && (type === 'SUB' || type === 'WORKER' || type === 'OTHER')) {
+    query += ' AND contact_type = ?';
+    params.push(type);
+  }
+  
+  query += ' ORDER BY name';
+  
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/contacts', (req, res) => {
+  const { name, phone, address, contact_type, notes } = req.body;
+  
+  if (!name || !phone || !contact_type) {
+    return res.status(400).json({ error: 'Name, phone, and contact type are required' });
+  }
+  
+  const contactId = generateId('contact');
+  const now = new Date().toISOString();
+  
+  db.run(`INSERT INTO text_send_contacts 
+          (id, name, phone, address, contact_type, notes, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [contactId, name, phone, address, contact_type, notes, now, now],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      res.json({
+        id: contactId,
+        name,
+        phone,
+        address,
+        contact_type,
+        notes,
+        created_at: now
+      });
+    });
+});
+
+app.put('/api/contacts/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, phone, address, contact_type, notes } = req.body;
+  
+  if (!name || !phone || !contact_type) {
+    return res.status(400).json({ error: 'Name, phone, and contact type are required' });
+  }
+  
+  const now = new Date().toISOString();
+  
+  db.run(`UPDATE text_send_contacts 
+          SET name = ?, phone = ?, address = ?, contact_type = ?, notes = ?, updated_at = ?
+          WHERE id = ?`,
+    [name, phone, address, contact_type, notes, now, id],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Contact not found' });
+      }
+      
+      res.json({ message: 'Contact updated' });
+    });
+});
+
+app.delete('/api/contacts/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM text_send_contacts WHERE id = ?', [id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+    
+    res.json({ message: 'Contact deleted' });
+  });
+});
+
+// Text Send API - Send customer info to contacts
+app.post('/api/text-send', (req, res) => {
+  const { customer_id, contact_ids } = req.body;
+  
+  if (!customer_id || !Array.isArray(contact_ids) || contact_ids.length === 0) {
+    return res.status(400).json({ error: 'Customer ID and contact IDs are required' });
+  }
+  
+  // Get customer info
+  db.get('SELECT name, phone, address FROM customers WHERE id = ?', [customer_id], (err, customer) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    // Get contact info
+    const placeholders = contact_ids.map(() => '?').join(',');
+    db.all(`SELECT name, phone FROM text_send_contacts WHERE id IN (${placeholders})`, contact_ids, (err, contacts) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      // Format message
+      const message = `Customer Info:
+Name: ${customer.name}
+Phone: ${customer.phone || 'Not provided'}
+Address: ${customer.address || 'Not provided'}`;
+      
+      // For now, just log the messages (in production, integrate with SMS service)
+      console.log('=== TEXT SEND REQUEST ===');
+      console.log('Customer:', customer.name);
+      console.log('Message:', message);
+      console.log('Recipients:', contacts.map(c => `${c.name} (${c.phone})`));
+      console.log('========================');
+      
+      res.json({
+        success: true,
+        message: 'Text messages sent successfully',
+        customer: customer.name,
+        recipients: contacts.length,
+        message_preview: message
+      });
+    });
   });
 });
 

@@ -4168,6 +4168,135 @@ body.has-offline-banner .app-header {
   max-width: 100%;
 }
 
+/* Text Send Filter Tabs */
+.contact-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.filter-tab {
+  padding: 8px 16px;
+  border: 1px solid #D1D5DB;
+  background: #F9FAFB;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.filter-tab.active {
+  background: #3B82F6;
+  color: white;
+  border-color: #3B82F6;
+}
+
+/* Contact Table */
+.contact-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.contact-table th {
+  background: #374151;
+  color: white;
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.contact-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 14px;
+}
+
+.contact-table tbody tr:hover {
+  background: #F9FAFB;
+}
+
+.contact-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.contact-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.contact-type-badge.SUB {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.contact-type-badge.WORKER {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.contact-type-badge.OTHER {
+  background: #F3E8FF;
+  color: #7C3AED;
+}
+
+.contact-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.contact-actions button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.edit-contact-btn {
+  background: #3B82F6;
+  color: white;
+}
+
+.edit-contact-btn:hover {
+  background: #2563EB;
+}
+
+.delete-contact-btn {
+  background: #EF4444;
+  color: white;
+}
+
+.delete-contact-btn:hover {
+  background: #DC2626;
+}
+
+.loading-row {
+  text-align: center;
+  color: #6B7280;
+  font-style: italic;
+}
+
+.test-btn:hover {
+  background: #2563EB;
+}
+
 .worker-notes-header {
   display: flex;
   justify-content: space-between;

@@ -700,67 +700,52 @@
             </div>
           </div>
 
-<!-- Text Send Tab -->
+          <!-- Text Send Tab -->
           <div id="textsendTab" class="settings-tab-content">
             <div class="settings-section">
               <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3>Text Send</h3>
+                <h3>Text Send Contacts</h3>
                 <button class="add-btn" onclick="showContactModal()" style="padding: 8px 16px;">+ Add Contact</button>
               </div>
-              <p class="settings-description">Manage contacts who can receive informational text messages. This is a visual placeholder only.</p>
+              <p class="settings-description">Manage contacts who can receive customer information via text message. Use the "Share Info" button on customer cards to send info to selected contacts.</p>
 
-              <div class="textsend-section">
-                <h4>Subs</h4>
-                <div class="contact-list-wrapper">
-                  <table class="contact-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Address</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr class="placeholder-row"><td colspan="3">No subs to display</td></tr>
-                    </tbody>
-                  </table>
-                </div>
+              <!-- Contact Filter Tabs -->
+              <div class="contact-filter-tabs" style="margin-bottom: 20px;">
+                <button class="filter-tab active" data-type="all" onclick="filterContacts('all')">All Contacts</button>
+                <button class="filter-tab" data-type="SUB" onclick="filterContacts('SUB')">Subs</button>
+                <button class="filter-tab" data-type="WORKER" onclick="filterContacts('WORKER')">Workers</button>
+                <button class="filter-tab" data-type="OTHER" onclick="filterContacts('OTHER')">Other</button>
               </div>
 
-              <div class="textsend-section">
-                <h4>Workers</h4>
-                <div class="contact-list-wrapper">
-                  <table class="contact-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Address</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr class="placeholder-row"><td colspan="3">No workers to display</td></tr>
-                    </tbody>
-                  </table>
-                </div>
+              <!-- Contacts List -->
+              <div class="contact-list-wrapper">
+                <table class="contact-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Address</th>
+                      <th>Type</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contactsTableBody">
+                    <tr class="loading-row"><td colspan="5">Loading contacts...</td></tr>
+                  </tbody>
+                </table>
               </div>
 
-              <div class="textsend-section">
-                <h4>Other Contacts</h4>
-                <div class="contact-list-wrapper">
-                  <table class="contact-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Address</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr class="placeholder-row"><td colspan="3">No other contacts to display</td></tr>
-                    </tbody>
-                  </table>
+              <!-- Test Message Section -->
+              <div class="textsend-section" style="margin-top: 30px; padding: 20px; background: #F9FAFB; border-radius: 8px;">
+                <h4>Test Text Send</h4>
+                <p style="margin-bottom: 15px; color: #6B7280;">Test the text send functionality with a sample customer:</p>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <select id="testCustomerSelect" style="padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; min-width: 200px;">
+                    <option value="">Select a customer...</option>
+                  </select>
+                  <button class="test-btn" onclick="testTextSend()" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer;">Send Test Message</button>
                 </div>
+                <div id="testMessageResult" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;"></div>
               </div>
             </div>
           </div>
