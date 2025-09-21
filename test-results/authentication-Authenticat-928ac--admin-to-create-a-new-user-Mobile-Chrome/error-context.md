@@ -1,0 +1,51 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]: 🔴 You're offline - Changes will sync when reconnected
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - heading "K KHS CRM" [level=1] [ref=e6]:
+        - generic [ref=e7]: K
+        - generic [ref=e8]: KHS CRM
+    - main [ref=e9]:
+      - generic [ref=e11]:
+        - heading "Quick Access" [level=2] [ref=e13]
+        - generic [ref=e14]:
+          - generic [ref=e17] [cursor=pointer]:
+            - generic [ref=e18] [cursor=pointer]: 👥
+            - generic [ref=e19] [cursor=pointer]:
+              - heading "Customers" [level=3] [ref=e20] [cursor=pointer]
+              - paragraph [ref=e21] [cursor=pointer]: View and manage customer information
+            - generic [ref=e22] [cursor=pointer]: →
+          - generic [ref=e25] [cursor=pointer]:
+            - generic [ref=e26] [cursor=pointer]: ⚙️
+            - generic [ref=e27] [cursor=pointer]:
+              - heading "Settings" [level=3] [ref=e28] [cursor=pointer]
+              - paragraph [ref=e29] [cursor=pointer]: App settings and data backup
+            - generic [ref=e30] [cursor=pointer]: →
+          - generic [ref=e33] [cursor=pointer]:
+            - generic [ref=e34] [cursor=pointer]: 📋
+            - generic [ref=e35] [cursor=pointer]:
+              - heading "Schedule" [level=3] [ref=e36] [cursor=pointer]
+              - paragraph [ref=e37] [cursor=pointer]: View and manage work schedule
+            - generic [ref=e38] [cursor=pointer]: →
+          - generic [ref=e41] [cursor=pointer]:
+            - generic [ref=e42] [cursor=pointer]: 👷
+            - generic [ref=e43] [cursor=pointer]:
+              - heading "Workers" [level=3] [ref=e44] [cursor=pointer]
+              - paragraph [ref=e45] [cursor=pointer]: Manage team assignments
+            - generic [ref=e46] [cursor=pointer]: →
+          - generic [ref=e49] [cursor=pointer]:
+            - generic [ref=e50] [cursor=pointer]: 📋
+            - generic [ref=e51] [cursor=pointer]:
+              - heading "Master Lists" [level=3] [ref=e52] [cursor=pointer]
+              - paragraph [ref=e53] [cursor=pointer]: All tasks and tools from all jobs
+            - generic [ref=e54] [cursor=pointer]: →
+          - generic [ref=e57] [cursor=pointer]:
+            - generic [ref=e58] [cursor=pointer]: ⚙️
+            - generic [ref=e59] [cursor=pointer]:
+              - heading "Profile" [level=3] [ref=e60] [cursor=pointer]
+              - paragraph [ref=e61] [cursor=pointer]: User account and preferences
+            - generic [ref=e62] [cursor=pointer]: →
+```
