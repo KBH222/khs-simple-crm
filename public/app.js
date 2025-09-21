@@ -730,12 +730,26 @@ function escapeHtml(text) {
 }
 
 // Text to Sub functionality
-function textToSub(customerId, name, phone, address) {
+function textToSub(name, phone, address) {
   // Create the message text
   const messageLines = [];
   messageLines.push(`Customer: ${name}`);
   if (phone) messageLines.push(`Phone: ${formatPhoneNumber(phone)}`);
-  if (address) messageLines.push(`Address: ${address}`);
+  
+  // Format address with city, state, zip if available
+  if (address) {
+    const addressParts = parseAddress(address);
+    if (addressParts.street) {
+      messageLines.push(`Address: ${addressParts.street}`);
+      const cityStateZip = `${addressParts.city}${addressParts.state ? ', ' + addressParts.state : ''}${addressParts.zip ? ' ' + addressParts.zip : ''}`;
+      if (cityStateZip.trim()) {
+        messageLines.push(`         ${cityStateZip}`);
+      }
+    } else {
+      // Fallback to full address if parsing fails
+      messageLines.push(`Address: ${address}`);
+    }
+  }
   
   // URL encode the message for SMS
   const message = encodeURIComponent(messageLines.join('\n'));
