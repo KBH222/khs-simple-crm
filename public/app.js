@@ -396,17 +396,16 @@ function renderCustomers() {
   container.innerHTML = filteredCustomers.map(customer => `
     <div class="customer-card-grid">
       <div class="customer-name-cell">
-          <div style="display: flex; gap: 12px; margin: 0; padding: 0;">
+          <div style="display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0;">
+            <div style="display: flex; gap: 12px; margin: 0; padding: 0;">
               <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
               <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 4px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0; display: flex; align-items: center;">
                 ${customer.customer_type === 'CURRENT' ? 'Client' : 'Lead'}
               </div>
-          </div>
-          <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" 
-              style="background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 10px;"
-              onmouseover="this.style.backgroundColor='#F59E0B'; this.style.color='white'; this.style.borderColor='#F59E0B';"
-              onmouseout="this.style.backgroundColor='#FEF3C7'; this.style.color='#92400E'; this.style.borderColor='#F59E0B';"
+            </div>
+            <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" 
               title="Send text to a sub">Text to Sub</button>
+          </div>
       </div>
       
       <div class="customer-buttons-cell">

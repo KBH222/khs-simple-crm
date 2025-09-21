@@ -516,22 +516,22 @@ body.has-offline-banner .app-header {
 
 /* Quick action button next to customer status */
 .text-to-sub-btn {
-  background: #FEF3C7;
-  color: #92400E;
-  border: 1px solid #F59E0B;
-  padding: 4px 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  white-space: nowrap;
-  margin-left: 4px;
-  min-height: 28px;
-  cursor: pointer;
-  transition: all 0.2s;
+  padding-top: 10px !important;
+  margin-top: 0 !important;
+  background: #FEF3C7 !important;
+  color: #92400E !important;
+  border: 1px solid #F59E0B !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
 }
 .text-to-sub-btn:hover {
-  background: #F59E0B;
-  color: white;
-  border-color: #F59E0B;
+  background: #F59E0B !important;
+  color: white !important;
+  border-color: #F59E0B !important;
 }
 
 @media (max-width: 480px) {
