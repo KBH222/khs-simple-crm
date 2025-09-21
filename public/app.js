@@ -401,10 +401,10 @@ function renderCustomers() {
         <div style="display: flex; align-items: center; gap: 12px; margin: 0; padding: 0;">
           <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
           <div style="display: inline-flex; align-items: center; gap: 8px;">
-            <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 2px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0;">
-              ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
-            </div>
-            <button class="text-to-sub-btn" title="Send text to a sub">Text to Sub</button>
+              <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 2px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0;">
+                ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
+              </div>
+              <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" title="Send text to a sub">Text to Sub</button>
           </div>
         </div>
       </div>
@@ -732,6 +732,21 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Text to Sub functionality
+function textToSub(customerId, name, phone, address) {
+  // Create the message text
+  const messageLines = [];
+  messageLines.push(`Customer: ${name}`);
+  if (phone) messageLines.push(`Phone: ${formatPhoneNumber(phone)}`);
+  if (address) messageLines.push(`Address: ${address}`);
+  
+  // URL encode the message for SMS
+  const message = encodeURIComponent(messageLines.join('\n'));
+  
+  // Try to use the native SMS app
+  window.location.href = `sms:?body=${message}`;
 }
 
 // Format address into two lines: street, then city/state/zip
