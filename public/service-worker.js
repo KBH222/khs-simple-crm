@@ -1,7 +1,7 @@
 // Service Worker for KHS CRM
 // Version 1.0.0 - Update this when you want to force cache refresh
 
-const CACHE_NAME = 'khs-crm-v1.0.0';
+const CACHE_NAME = 'khs-crm-v1.0.1';
 const API_CACHE = 'khs-crm-api-v1';
 
 // Files to cache for offline use
