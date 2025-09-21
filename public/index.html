@@ -700,10 +700,13 @@
             </div>
           </div>
 
-          <!-- Text Send Tab -->
+<!-- Text Send Tab -->
           <div id="textsendTab" class="settings-tab-content">
             <div class="settings-section">
-              <h3>Text Send</h3>
+              <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Text Send</h3>
+                <button class="add-btn" onclick="showContactModal()" style="padding: 8px 16px;">+ Add Contact</button>
+              </div>
               <p class="settings-description">Manage contacts who can receive informational text messages. This is a visual placeholder only.</p>
 
               <div class="textsend-section">
@@ -1397,6 +1400,55 @@
         </div>
       </div>
     </main>
+  </div>
+
+<!-- Contact Modal -->
+  <div id="contactModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="contactModalTitle">Add Contact</h3>
+        <button class="close-btn">&times;</button>
+      </div>
+      <form id="contactForm">
+        <div class="form-group">
+          <label for="contactName">Name *</label>
+          <input type="text" id="contactName" required>
+        </div>
+        <div class="form-group">
+          <label for="contactPhone">Phone *</label>
+          <input type="tel" id="contactPhone" placeholder="(808) 387-6129" maxlength="14" required>
+        </div>
+        <div class="form-group">
+          <label for="contactAddress">Address</label>
+          <input type="text" id="contactAddress">
+        </div>
+        <div class="form-group">
+          <label>Contact Type *</label>
+          <div class="contact-type-options" style="display: flex; gap: 15px; margin-top: 8px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+              <input type="radio" name="contactType" value="SUB" required style="margin-right: 6px;">
+              Sub
+            </label>
+            <label style="display: flex; align-items: center; cursor: pointer;">
+              <input type="radio" name="contactType" value="WORKER" required style="margin-right: 6px;">
+              Worker
+            </label>
+            <label style="display: flex; align-items: center; cursor: pointer;">
+              <input type="radio" name="contactType" value="OTHER" required style="margin-right: 6px;">
+              Other
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="contactNotes">Notes</label>
+          <textarea id="contactNotes"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn">Cancel</button>
+          <button type="submit" class="save-btn">Save Contact</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="config.js?v=20250919000000"></script>

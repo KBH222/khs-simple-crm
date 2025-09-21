@@ -115,6 +115,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function setupEventListeners() {
+  // Contact form
+  const contactForm = document.getElementById('contactForm');
+  if (contactForm) {
+    contactForm.addEventListener('submit', handleContactSubmit);
+  }
   log('Setting up event listeners...');
   
   // 🚀 BEAST MODE: Customer modal setup
@@ -4034,6 +4039,206 @@ function getTimeAgo(date) {
 
 // Settings page functionality
 function setupSettingsTabs() {
+  const tabs = document.querySelectorAll('.settings-tab');
+  const contents = document.querySelectorAll('.settings-tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+
+      // Remove active class from all tabs and contents
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+
+      // Add active class to selected tab and content
+      tab.classList.add('active');
+      document.getElementById(tabName + 'Tab').classList.add('active');
+
+      // Load tab-specific data
+      if (tabName === 'backup') {
+        loadBackupHistory();
+      } else if (tabName === 'textsend') {
+        loadTextSendContacts();
+      }
+    });
+  });
+}
+
+function showContactModal(contact = null) {
+  const modal = document.getElementById('contactModal');
+  const form = document.getElementById('contactForm');
+  const title = modal.querySelector('.modal-header h3');
+  
+  if (contact) {
+    // Edit mode
+    title.textContent = 'Edit Contact';
+    document.getElementById('contactName').value = contact.name;
+    document.getElementById('contactPhone').value = formatPhoneNumber(contact.phone || '');
+    document.getElementById('contactAddress').value = contact.address || '';
+    document.getElementById('contactNotes').value = contact.notes || '';
+    
+    const typeRadio = document.querySelector(`input[name="contactType"][value="${contact.type}"]`);
+    if (typeRadio) {
+      typeRadio.checked = true;
+    }
+    
+    form.dataset.contactId = contact.id;
+  } else {
+    // Add mode
+    title.textContent = 'Add Contact';
+    form.reset();
+    delete form.dataset.contactId;
+  }
+  
+  modal.classList.add('active');
+  
+  // Setup phone formatting
+  const phoneInput = document.getElementById('contactPhone');
+  phoneInput.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 0) {
+      if (value.length <= 3) {
+        value = `(${value}`;
+      } else if (value.length <= 6) {
+        value = `(${value.slice(0,3)}) ${value.slice(3)}`;
+      } else {
+        value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6,10)}`;
+      }
+    }
+    e.target.value = value;
+  });
+}
+
+function validatePhoneNumber(phone) {
+  const cleanPhone = phone.replace(/\D/g, '');
+  // Check for either a 7-digit (local) or 10-digit number
+  if (cleanPhone.length !== 7 && cleanPhone.length !== 10) {
+    return { valid: false, message: 'Phone number must be 7 or 10 digits' };
+  }
+  return { valid: true, cleanPhone };
+}
+
+async function handleContactSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const contactId = form.dataset.contactId;
+  
+  // Get and clean phone number (remove formatting)
+  const phoneValue = document.getElementById('contactPhone').value.trim();
+  const phoneValidation = validatePhoneNumber(phoneValue);
+  if (!phoneValidation.valid) {
+    alert(phoneValidation.message);
+    return;
+  }
+  const cleanPhone = phoneValidation.cleanPhone;
+  
+  const contactData = {
+    name: document.getElementById('contactName').value,
+    phone: cleanPhone,
+    address: document.getElementById('contactAddress').value,
+    type: document.querySelector('input[name="contactType"]:checked').value,
+    notes: document.getElementById('contactNotes').value
+  };
+  
+  try {
+    const url = contactId ? `/api/contacts/${contactId}` : '/api/contacts';
+    const method = contactId ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contactData),
+    });
+    
+    if (response.ok) {
+      hideModals();
+      loadTextSendContacts(); // Reload the contacts
+    } else {
+      const data = await response.json();
+      alert(data.message || 'Failed to save contact');
+    }
+  } catch (error) {
+    logError('Error saving contact:', error);
+    alert('Error saving contact');
+  }
+}
+
+async function loadTextSendContacts() {
+  try {
+    const response = await fetch('/api/contacts');
+    const contacts = await response.json();
+
+    // Update the contact tables
+    updateContactTable('subs', contacts.filter(c => c.type === 'SUB'));
+    updateContactTable('workers', contacts.filter(c => c.type === 'WORKER'));
+    updateContactTable('others', contacts.filter(c => c.type === 'OTHER'));
+  } catch (error) {
+    logError('Error loading contacts:', error);
+  }
+}
+
+function updateContactTable(type, contacts) {
+  const table = document.querySelector(`#textsendTab .contact-table:nth-child(${type === 'subs' ? 1 : type === 'workers' ? 2 : 3}) tbody`);
+  
+  if (!contacts || contacts.length === 0) {
+    table.innerHTML = `<tr class="placeholder-row"><td colspan="3">No ${type} to display</td></tr>`;
+    return;
+  }
+
+  table.innerHTML = contacts.map(contact => `
+    <tr>
+      <td>${escapeHtml(contact.name)}</td>
+      <td>${formatPhoneNumber(contact.phone)}</td>
+      <td>${escapeHtml(contact.address || '')}</td>
+      <td class="contact-actions">
+        <button onclick="editContact('${contact.id}')" class="edit-contact-btn" title="Edit contact">
+          Edit
+        </button>
+        <button onclick="deleteContact('${contact.id}')" class="delete-contact-btn" title="Delete contact">
+          Delete
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function editContact(contactId) {
+  // Fetch contact details and open modal
+  fetch(`/api/contacts/${contactId}`)
+    .then(r => r.json())
+    .then(contact => {
+      showContactModal(contact);
+    })
+    .catch(err => {
+      logError('Failed to load contact', err);
+      alert('Failed to load contact');
+    });
+}
+  // Implementation coming soon
+  alert('Contact editing coming soon!');
+}
+
+async function deleteContact(contactId) {
+  if (!confirm('Are you sure you want to delete this contact?')) return;
+
+  try {
+    const response = await fetch(`/api/contacts/${contactId}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      loadTextSendContacts(); // Reload the contacts
+    } else {
+      alert('Failed to delete contact');
+    }
+  } catch (error) {
+    logError('Error deleting contact:', error);
+    alert('Error deleting contact');
+  }
+}
   // Remove existing listeners first
   document.querySelectorAll('.settings-tab').forEach(tab => {
     tab.removeEventListener('click', handleSettingsTabClick);
