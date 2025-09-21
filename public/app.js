@@ -400,7 +400,7 @@ function renderCustomers() {
             <div style="display: flex; gap: 12px; align-items: center;">
               <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
               <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 4px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0; display: flex; align-items: center;">
-                ${customer.customer_type === 'CURRENT' ? 'C' : 'L'}
+                ${customer.customer_type === 'CURRENT' ? 'Client' : 'Lead'}
               </div>
             </div>
             <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" 
