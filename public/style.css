@@ -521,11 +521,34 @@ body.has-offline-banner .app-header {
   font-size: 12px;
   border-radius: 6px;
   white-space: nowrap;
+  margin-left: 4px;
+  min-height: 28px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 .text-to-sub-btn:hover {
   background: #F59E0B;
   color: white;
   border-color: #F59E0B;
+}
+
+@media (max-width: 480px) {
+  .customer-name-cell > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .customer-name-cell > div > div:last-child {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .text-to-sub-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
 }
 
 /* Old customer-card styles removed - using customer-card-grid instead */

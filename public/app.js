@@ -398,10 +398,10 @@ function renderCustomers() {
   container.innerHTML = filteredCustomers.map(customer => `
     <div class="customer-card-grid">
       <div class="customer-name-cell">
-        <div style="display: flex; align-items: center; gap: 12px; margin: 0; padding: 0;">
-          <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
-          <div style="display: inline-flex; align-items: center; gap: 8px;">
-              <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 2px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0;">
+          <div style="display: flex; gap: 12px; margin: 0; padding: 0; flex-wrap: wrap;">
+            <div class="customer-name" style="font-size: 20.7px; line-height: 1.2; margin: 0; padding: 0;">${escapeHtml(customer.name)}</div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;">
+              <div class="customer-type ${customer.customer_type?.toLowerCase()}" style="font-size: 13.8px; padding: 4px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; margin: 0; display: flex; align-items: center;">
                 ${customer.customer_type === 'CURRENT' ? 'Current' : 'Lead'}
               </div>
               <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" title="Send text to a sub">Text to Sub</button>
