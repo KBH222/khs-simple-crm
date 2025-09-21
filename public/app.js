@@ -103,6 +103,8 @@ function updateEnvBadge() {
       badge.style.color = '#92400E';
     }
     console.log('Environment badge updated:', badge.textContent);
+    console.log('Badge element:', badge);
+    console.log('Badge visibility:', window.getComputedStyle(badge).display);
   } catch (error) {
     console.error('Error updating environment badge:', error);
   }
@@ -124,6 +126,15 @@ document.addEventListener('DOMContentLoaded', function() {
 setTimeout(() => {
   updateEnvBadge();
 }, 100);
+
+// Additional fallback - try multiple times
+setTimeout(() => {
+  updateEnvBadge();
+}, 500);
+
+setTimeout(() => {
+  updateEnvBadge();
+}, 1000);
 
 function setupEventListeners() {
   // Contact form
@@ -4228,9 +4239,6 @@ function editContact(contactId) {
       alert('Failed to load contact');
     });
 }
-  // Implementation coming soon
-  alert('Contact editing coming soon!');
-}
 
 async function deleteContact(contactId) {
   if (!confirm('Are you sure you want to delete this contact?')) return;
@@ -4250,6 +4258,8 @@ async function deleteContact(contactId) {
     alert('Error deleting contact');
   }
 }
+
+function setupSettingsTabListeners() {
   // Remove existing listeners first
   document.querySelectorAll('.settings-tab').forEach(tab => {
     tab.removeEventListener('click', handleSettingsTabClick);
