@@ -403,9 +403,9 @@ function renderCustomers() {
               </div>
           </div>
           <button class="text-to-sub-btn" onclick="textToSub('${customer.id}', '${escapeHtml(customer.name)}', '${customer.phone || ''}', '${escapeHtml(customer.address || '')}')" 
-              style="background: #DCFCE7; border: 1px solid #10B981; color: #065F46; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 8px;"
-              onmouseover="this.style.backgroundColor='#10B981'; this.style.color='white'; this.style.borderColor='#10B981';"
-              onmouseout="this.style.backgroundColor='#DCFCE7'; this.style.color='#065F46'; this.style.borderColor='#10B981';"
+              style="background: #FEF3C7; border: 1px solid #F59E0B; color: #92400E; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 10px;"
+              onmouseover="this.style.backgroundColor='#F59E0B'; this.style.color='white'; this.style.borderColor='#F59E0B';"
+              onmouseout="this.style.backgroundColor='#FEF3C7'; this.style.color='#92400E'; this.style.borderColor='#F59E0B';"
               title="Send text to a sub">Text to Sub</button>
       </div>
       
