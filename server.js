@@ -2129,11 +2129,11 @@ app.post('/api/text-send', (req, res) => {
         return res.status(500).json({ error: 'Database error' });
       }
       
-      // Format message
-      const message = `Customer Info:
-Name: ${customer.name}
-Phone: ${customer.phone || 'Not provided'}
-Address: ${customer.address || 'Not provided'}`;
+      // Format message with custom note
+      const customNote = req.body.custom_note || '';
+      const message = `${customer.name}
+${customer.phone || 'Not provided'}
+${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
       
       // For now, just log the messages (in production, integrate with SMS service)
       console.log('=== TEXT SEND REQUEST ===');

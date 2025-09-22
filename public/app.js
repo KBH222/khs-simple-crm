@@ -6592,7 +6592,7 @@ async function shareCustomerInfo(customerId) {
       </div>
       <div style="padding: 20px;">
         <p>Select contacts to send customer information to:</p>
-        <div id="contactCheckboxes" style="max-height: 300px; overflow-y: auto; margin: 15px 0;">
+        <div id="contactCheckboxes" style="max-height: 200px; overflow-y: auto; margin: 15px 0;">
           ${textSendContacts.map(contact => `
             <label style="display: flex; align-items: center; padding: 8px; border: 1px solid #E5E7EB; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
               <input type="checkbox" value="${contact.id}" style="margin-right: 10px;">
@@ -6603,9 +6603,17 @@ async function shareCustomerInfo(customerId) {
             </label>
           `).join('')}
         </div>
+        
+        <div style="margin: 20px 0;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 500;">Custom Note (Optional):</label>
+          <input type="text" id="customNote" placeholder="e.g., 'This is for kitchen countertop measure' or 'LVP flooring installation'" 
+                 style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 14px;">
+        </div>
+        
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
           <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
-          <button onclick="sendCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">Send Info</button>
+          <button onclick="copyCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy Message</button>
+          <button onclick="openMessagesApp('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">📱 Open Messages</button>
         </div>
       </div>
     </div>
@@ -6618,9 +6626,82 @@ async function shareCustomerInfo(customerId) {
   console.log('Modal visible:', modal.offsetParent !== null);
 }
 
+// Copy customer info to clipboard
+async function copyCustomerInfo(customerId) {
+  console.log('=== COPY CUSTOMER INFO ===');
+  
+  // Get customer info
+  const customer = customers.find(c => c.id === customerId);
+  if (!customer) {
+    alert('Customer not found');
+    return;
+  }
+  
+  // Get custom note
+  const customNote = document.getElementById('customNote')?.value || '';
+  
+  // Format message exactly as you want
+  const message = `${customer.name}
+${customer.phone || 'Not provided'}
+${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
+  
+  try {
+    // Copy to clipboard
+    await navigator.clipboard.writeText(message);
+    alert('✅ Message copied to clipboard! You can now paste it into your iPhone Messages app.');
+    console.log('Message copied:', message);
+  } catch (err) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = message;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('✅ Message copied to clipboard! You can now paste it into your iPhone Messages app.');
+  }
+}
+
+// Open Messages app with pre-filled message
+function openMessagesApp(customerId) {
+  console.log('=== OPEN MESSAGES APP ===');
+  
+  // Get customer info
+  const customer = customers.find(c => c.id === customerId);
+  if (!customer) {
+    alert('Customer not found');
+    return;
+  }
+  
+  // Get custom note
+  const customNote = document.getElementById('customNote')?.value || '';
+  
+  // Format message exactly as you want
+  const message = `${customer.name}
+${customer.phone || 'Not provided'}
+${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
+  
+  // Create SMS link - this will open the Messages app on iPhone
+  const smsLink = `sms:&body=${encodeURIComponent(message)}`;
+  
+  console.log('Opening Messages app with:', message);
+  
+  // Try to open Messages app
+  window.location.href = smsLink;
+  
+  // Also copy to clipboard as backup
+  navigator.clipboard.writeText(message).then(() => {
+    console.log('Message also copied to clipboard as backup');
+  }).catch(() => {
+    console.log('Clipboard copy failed, but Messages app should open');
+  });
+}
+
 // Make it globally accessible immediately
 window.shareCustomerInfo = shareCustomerInfo;
 window.sendCustomerInfo = sendCustomerInfo;
+window.copyCustomerInfo = copyCustomerInfo;
+window.openMessagesApp = openMessagesApp;
 
 // Test function accessibility
 console.log('shareCustomerInfo function available:', typeof window.shareCustomerInfo);
@@ -6886,9 +6967,13 @@ async function sendCustomerInfo(customerId) {
     const result = await response.json();
     
     if (response.ok) {
+      console.log('✅ Text send successful!', result);
+      alert(`✅ Customer info sent to ${result.recipients} contact(s) successfully!`);
       showMessage(`Customer info sent to ${result.recipients} contact(s) successfully!`, 'success');
       document.querySelector('.modal').remove();
     } else {
+      console.error('❌ Text send failed:', result);
+      alert(`❌ Error: ${result.error || 'Failed to send customer info'}`);
       showMessage(result.error || 'Failed to send customer info', 'error');
     }
   } catch (error) {
