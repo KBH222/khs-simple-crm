@@ -450,7 +450,7 @@ function renderCustomers() {
                 ${customer.customer_type === 'CURRENT' ? 'C' : 'L'}
               </div>
             </div>
-            <button class="text-to-sub-btn" onclick="shareCustomerInfo('${customer.id}')" 
+            <button class="text-to-sub-btn" onclick="console.log('Button clicked!'); shareCustomerInfo('${customer.id}')" 
               title="Share customer info">📤 Share Info</button>
           </div>
       </div>
@@ -6569,8 +6569,10 @@ let currentContactFilter = 'all';
 
 // Define shareCustomerInfo function early so it's available
 async function shareCustomerInfo(customerId) {
+  console.log('=== SHARE INFO CLICKED ===');
   console.log('shareCustomerInfo called with customerId:', customerId);
   console.log('textSendContacts length:', textSendContacts.length);
+  console.log('textSendContacts:', textSendContacts);
   
   if (textSendContacts.length === 0) {
     showMessage('No contacts available. Please add contacts in Settings > Text Send first.', 'error');
@@ -6613,6 +6615,10 @@ async function shareCustomerInfo(customerId) {
 
 // Make it globally accessible immediately
 window.shareCustomerInfo = shareCustomerInfo;
+
+// Test function accessibility
+console.log('shareCustomerInfo function available:', typeof window.shareCustomerInfo);
+console.log('Testing shareCustomerInfo with test ID...');
 
 
 async function loadTextSendContacts() {
