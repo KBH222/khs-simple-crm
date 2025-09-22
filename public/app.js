@@ -6595,6 +6595,25 @@ async function shareCustomerInfo(customerId) {
 // Make it globally accessible immediately
 window.shareCustomerInfo = shareCustomerInfo;
 
+// Modal management functions
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function hideModals() {
+  // Close all modals
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.style.display = 'none';
+  });
+}
+
+// Make modal functions globally accessible
+window.closeModal = closeModal;
+window.hideModals = hideModals;
+
 async function loadTextSendContacts() {
   try {
     const response = await fetch('/api/contacts');
