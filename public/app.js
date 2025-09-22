@@ -6580,6 +6580,7 @@ async function shareCustomerInfo(customerId) {
   }
 
   // Show contact selection modal
+  console.log('Creating modal...');
   const modal = document.createElement('div');
   modal.className = 'modal';
   modal.style.display = 'block';
@@ -6610,11 +6611,16 @@ async function shareCustomerInfo(customerId) {
     </div>
   `;
   
+  console.log('Appending modal to body...');
   document.body.appendChild(modal);
+  console.log('Modal appended. Modal element:', modal);
+  console.log('Modal display style:', modal.style.display);
+  console.log('Modal visible:', modal.offsetParent !== null);
 }
 
 // Make it globally accessible immediately
 window.shareCustomerInfo = shareCustomerInfo;
+window.sendCustomerInfo = sendCustomerInfo;
 
 // Test function accessibility
 console.log('shareCustomerInfo function available:', typeof window.shareCustomerInfo);
@@ -6852,8 +6858,13 @@ function addShareInfoButton(customer) {
 }
 
 async function sendCustomerInfo(customerId) {
+  console.log('=== SEND CUSTOMER INFO CLICKED ===');
+  console.log('Customer ID:', customerId);
+  
   const checkboxes = document.querySelectorAll('#contactCheckboxes input[type="checkbox"]:checked');
   const contactIds = Array.from(checkboxes).map(cb => cb.value);
+  
+  console.log('Selected contact IDs:', contactIds);
   
   if (contactIds.length === 0) {
     showMessage('Please select at least one contact', 'error');
