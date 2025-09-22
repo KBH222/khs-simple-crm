@@ -4143,6 +4143,7 @@ function validatePhoneNumber(phone) {
 
 async function handleContactSubmit(e) {
   e.preventDefault();
+  console.log('Contact form submitted');
   
   const form = e.target;
   const formData = new FormData(form);
@@ -4159,6 +4160,7 @@ async function handleContactSubmit(e) {
   // Update the form data with cleaned phone
   formData.set('contactPhone', cleanPhone);
   
+  console.log('Form data:', Object.fromEntries(formData));
   await saveContact(formData);
 }
 
@@ -6546,6 +6548,53 @@ async function clearAllMasterMaterials() {
 let textSendContacts = [];
 let currentContactFilter = 'all';
 
+// Define shareCustomerInfo function early so it's available
+async function shareCustomerInfo(customerId) {
+  console.log('shareCustomerInfo called with customerId:', customerId);
+  console.log('textSendContacts length:', textSendContacts.length);
+  
+  if (textSendContacts.length === 0) {
+    showMessage('No contacts available. Please add contacts in Settings > Text Send first.', 'error');
+    return;
+  }
+
+  // Show contact selection modal
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Share Customer Info</h3>
+        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+      </div>
+      <div style="padding: 20px;">
+        <p>Select contacts to send customer information to:</p>
+        <div id="contactCheckboxes" style="max-height: 300px; overflow-y: auto; margin: 15px 0;">
+          ${textSendContacts.map(contact => `
+            <label style="display: flex; align-items: center; padding: 8px; border: 1px solid #E5E7EB; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" value="${contact.id}" style="margin-right: 10px;">
+              <div>
+                <div style="font-weight: 500;">${contact.name}</div>
+                <div style="font-size: 12px; color: #6B7280;">${contact.phone} • ${contact.contact_type}</div>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+          <button onclick="sendCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">Send Info</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Make it globally accessible immediately
+window.shareCustomerInfo = shareCustomerInfo;
+
 async function loadTextSendContacts() {
   try {
     const response = await fetch('/api/contacts');
@@ -6625,6 +6674,8 @@ async function showContactModal(contact = null) {
 }
 
 async function saveContact(formData) {
+  console.log('saveContact called with formData:', Object.fromEntries(formData));
+  
   const contactData = {
     name: formData.get('contactName'),
     phone: formData.get('contactPhone'),
@@ -6633,9 +6684,13 @@ async function saveContact(formData) {
     notes: formData.get('contactNotes')
   };
 
+  console.log('Contact data to save:', contactData);
+
   const contactId = formData.get('contactId');
   const url = contactId ? `/api/contacts/${contactId}` : '/api/contacts';
   const method = contactId ? 'PUT' : 'POST';
+
+  console.log('Making request to:', url, 'with method:', method);
 
   try {
     const response = await fetch(url, {
@@ -6646,12 +6701,17 @@ async function saveContact(formData) {
       body: JSON.stringify(contactData)
     });
 
+    console.log('Response status:', response.status);
+    
     if (response.ok) {
+      const result = await response.json();
+      console.log('Save successful:', result);
       await loadTextSendContacts();
       closeModal('contactModal');
       showMessage('Contact saved successfully', 'success');
     } else {
       const error = await response.json();
+      console.error('Save failed:', error);
       showMessage(error.error || 'Failed to save contact', 'error');
     }
   } catch (error) {
@@ -6765,46 +6825,6 @@ function addShareInfoButton(customer) {
   `;
 }
 
-async function shareCustomerInfo(customerId) {
-  if (textSendContacts.length === 0) {
-    showMessage('No contacts available. Please add contacts in Settings > Text Send first.', 'error');
-    return;
-  }
-
-  // Show contact selection modal
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.style.display = 'block';
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width: 500px;">
-      <div class="modal-header">
-        <h3>Share Customer Info</h3>
-        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-      </div>
-      <div style="padding: 20px;">
-        <p>Select contacts to send customer information to:</p>
-        <div id="contactCheckboxes" style="max-height: 300px; overflow-y: auto; margin: 15px 0;">
-          ${textSendContacts.map(contact => `
-            <label style="display: flex; align-items: center; padding: 8px; border: 1px solid #E5E7EB; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
-              <input type="checkbox" value="${contact.id}" style="margin-right: 10px;">
-              <div>
-                <div style="font-weight: 500;">${contact.name}</div>
-                <div style="font-size: 12px; color: #6B7280;">${contact.phone} • ${contact.contact_type}</div>
-              </div>
-            </label>
-          `).join('')}
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-          <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
-          <button onclick="sendCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">Send Info</button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-}
-
 async function sendCustomerInfo(customerId) {
   const checkboxes = document.querySelectorAll('#contactCheckboxes input[type="checkbox"]:checked');
   const contactIds = Array.from(checkboxes).map(cb => cb.value);
@@ -6849,6 +6869,9 @@ window.deleteContact = deleteContact;
 window.testTextSend = testTextSend;
 window.shareCustomerInfo = shareCustomerInfo;
 window.sendCustomerInfo = sendCustomerInfo;
+
+// Test function accessibility
+console.log('shareCustomerInfo function available:', typeof window.shareCustomerInfo);
 
 // Make Master Lists functions globally accessible
 window.loadMasterLists = loadMasterLists;

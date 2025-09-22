@@ -1392,20 +1392,20 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="contactModalTitle">Add Contact</h3>
-        <button class="close-btn">&times;</button>
+        <button class="close-btn" onclick="closeModal('contactModal')">&times;</button>
       </div>
       <form id="contactForm">
         <div class="form-group">
           <label for="contactName">Name *</label>
-          <input type="text" id="contactName" required>
+          <input type="text" id="contactName" name="contactName" required>
         </div>
         <div class="form-group">
           <label for="contactPhone">Phone *</label>
-          <input type="tel" id="contactPhone" placeholder="(808) 387-6129" maxlength="14" required>
+          <input type="tel" id="contactPhone" name="contactPhone" placeholder="(808) 387-6129" maxlength="14" required>
         </div>
         <div class="form-group">
           <label for="contactAddress">Address</label>
-          <input type="text" id="contactAddress">
+          <input type="text" id="contactAddress" name="contactAddress">
         </div>
         <div class="form-group">
           <label>Contact Type *</label>
@@ -1426,10 +1426,10 @@
         </div>
         <div class="form-group">
           <label for="contactNotes">Notes</label>
-          <textarea id="contactNotes"></textarea>
+          <textarea id="contactNotes" name="contactNotes"></textarea>
         </div>
         <div class="modal-actions">
-          <button type="button" class="cancel-btn">Cancel</button>
+          <button type="button" class="cancel-btn" onclick="closeModal('contactModal')">Cancel</button>
           <button type="submit" class="save-btn">Save Contact</button>
         </div>
       </form>
