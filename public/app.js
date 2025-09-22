@@ -451,7 +451,7 @@ function renderCustomers() {
               </div>
             </div>
             <button class="text-to-sub-btn" onclick="console.log('Button clicked!'); shareCustomerInfo('${customer.id}')" 
-              title="Share customer info">📤 Share Info</button>
+              title="Share customer info">Share Info</button>
           </div>
       </div>
       
