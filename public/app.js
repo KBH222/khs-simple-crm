@@ -109,7 +109,7 @@ function updateEnvBadge() {
     const badge = document.getElementById('envBadge');
     if (!badge) {
       console.warn('envBadge element not found');
-      return;
+      return false; // Return false to indicate it needs to be retried
     }
     const base = window.__API_BASE || '';
     if (base) {
@@ -124,8 +124,10 @@ function updateEnvBadge() {
     console.log('Environment badge updated:', badge.textContent);
     console.log('Badge element:', badge);
     console.log('Badge visibility:', window.getComputedStyle(badge).display);
+    return true; // Return true to indicate success
   } catch (error) {
     console.error('Error updating environment badge:', error);
+    return false;
   }
 }
 
@@ -144,17 +146,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Fallback for environment badge if DOMContentLoaded doesn't fire
 setTimeout(() => {
-  updateEnvBadge();
+  if (!updateEnvBadge()) {
+    // Retry every 100ms until successful
+    const retryInterval = setInterval(() => {
+      if (updateEnvBadge()) {
+        clearInterval(retryInterval);
+      }
+    }, 100);
+    
+    // Stop retrying after 5 seconds
+    setTimeout(() => clearInterval(retryInterval), 5000);
+  }
 }, 100);
-
-// Additional fallback - try multiple times
-setTimeout(() => {
-  updateEnvBadge();
-}, 500);
-
-setTimeout(() => {
-  updateEnvBadge();
-}, 1000);
 
 function setupEventListeners() {
   // Contact form
