@@ -6757,11 +6757,24 @@ ${customer.phone || 'Not provided'}
 ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   
   try {
-    // Action 1: Copy customer info to clipboard first
-    // DEBUG: Testing if phone number works in recipient field
-    console.log('Action 1: Copying phone number to clipboard...');
-    await navigator.clipboard.writeText('808-387-5311');
-    console.log('✅ Phone number copied to clipboard');
+    // Action 1: Copy selected contact's phone number to clipboard
+    // Get the selected contact from checkboxes
+    const selectedCheckbox = document.querySelector('#contactCheckboxes input[type="checkbox"]:checked');
+    if (!selectedCheckbox) {
+      alert('Please select a contact first by checking the checkbox next to their name.');
+      return;
+    }
+    
+    const selectedContactId = selectedCheckbox.value;
+    const selectedContact = textSendContacts.find(c => c.id === selectedContactId);
+    if (!selectedContact) {
+      alert('Selected contact not found. Please try again.');
+      return;
+    }
+    
+    console.log('Action 1: Copying selected contact phone number to clipboard...');
+    await navigator.clipboard.writeText(selectedContact.phone);
+    console.log('✅ Selected contact phone number copied to clipboard:', selectedContact.phone);
     
     // Action 1: Open Messages app (with pre-filled message)
     console.log('Action 1: Opening Messages app...');
