@@ -6758,17 +6758,18 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   
   try {
     // Action 1: Copy customer info to clipboard first
-    console.log('Action 1: Copying customer info to clipboard...');
-    await navigator.clipboard.writeText(message);
-    console.log('✅ Customer info copied to clipboard:', message);
+    // DEBUG: Hard coded test string to track which copy operation this is
+    console.log('Action 1: Copying CUST INFO 1 to clipboard...');
+    await navigator.clipboard.writeText('Cust info 1');
+    console.log('✅ CUST INFO 1 copied to clipboard');
     
-    // Action 2: Open Messages app
-    console.log('Action 2: Opening Messages app...');
+    // Action 1: Open Messages app (with pre-filled message)
+    console.log('Action 1: Opening Messages app...');
     const smsLink = `sms:&body=${encodeURIComponent(message)}`;
     window.location.href = smsLink;
     
-    // Action 3: Wait 1000ms, then copy phone number for recipient field
-    console.log('Action 3: Waiting 1000ms, then copying phone number...');
+    // Action 2: Wait 1000ms, then copy phone number for recipient field
+    console.log('Action 2: Waiting 1000ms, then copying phone number...');
     setTimeout(async () => {
       try {
         // Get the selected contact from checkboxes
@@ -6783,9 +6784,9 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
           console.log('🔍 Found selected contact:', selectedContact);
           
           if (selectedContact) {
-            console.log('📱 About to copy phone number:', selectedContact.phone);
-            await navigator.clipboard.writeText(selectedContact.phone);
-            console.log('✅ Selected contact phone number copied to clipboard:', selectedContact.phone);
+            console.log('📱 About to copy CUST INFO 2:', selectedContact.phone);
+            await navigator.clipboard.writeText('Cust info 2');
+            console.log('✅ CUST INFO 2 copied to clipboard');
             
             // Verify what's actually in the clipboard
             try {
@@ -6796,12 +6797,12 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
               console.log('⚠️ Could not verify clipboard content:', err);
             }
           
-            // Action 4: Wait another 2000ms, then copy customer info for message field
+            // Action 3: Wait another 2000ms, then copy customer info for message field
             setTimeout(async () => {
               try {
-                await navigator.clipboard.writeText(message);
-                console.log('✅ Customer info copied to clipboard for message field');
-                console.log('📋 Clipboard now contains:', message);
+                await navigator.clipboard.writeText('Cust info 3');
+                console.log('✅ CUST INFO 3 copied to clipboard for message field');
+                console.log('📋 Clipboard now contains: Cust info 3');
                 alert(`🚀 Smart Send Complete!\n\n✅ Messages app opened\n✅ Phone number copied: ${selectedContact.phone}\n✅ Customer info ready to paste in message field\n\n1. Paste phone number in recipient box\n2. Paste customer info in message field`);
               } catch (err) {
                 console.error('Failed to copy customer info:', err);
