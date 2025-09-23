@@ -6758,10 +6758,10 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   
   try {
     // Action 1: Copy customer info to clipboard first
-    // DEBUG: Hard coded test string to track which copy operation this is
-    console.log('Action 1: Copying CUST INFO 1 to clipboard...');
-    await navigator.clipboard.writeText('Cust info 1');
-    console.log('✅ CUST INFO 1 copied to clipboard');
+    // DEBUG: Testing if phone number works in recipient field
+    console.log('Action 1: Copying phone number to clipboard...');
+    await navigator.clipboard.writeText('808 387 6129');
+    console.log('✅ Phone number copied to clipboard');
     
     // Action 1: Open Messages app (with pre-filled message)
     console.log('Action 1: Opening Messages app...');
