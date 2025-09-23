@@ -6726,18 +6726,13 @@ ${customer.phone || 'Not provided'}
 ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   
   try {
-    // Action 1: Copy customer info to clipboard
-    console.log('Action 1: Copying customer info...');
-    await navigator.clipboard.writeText(message);
-    console.log('✅ Customer info copied to clipboard');
-    
-    // Action 2: Open Messages app
-    console.log('Action 2: Opening Messages app...');
+    // Action 1: Open Messages app first (without copying customer info yet)
+    console.log('Action 1: Opening Messages app...');
     const smsLink = `sms:&body=${encodeURIComponent(message)}`;
     window.location.href = smsLink;
     
-    // Action 3: Wait 1000ms, then copy phone number for recipient field
-    console.log('Action 3: Waiting 1000ms, then copying phone number...');
+    // Action 2: Wait 1000ms, then copy phone number for recipient field
+    console.log('Action 2: Waiting 1000ms, then copying phone number...');
     setTimeout(async () => {
       try {
         // Get a sample phone number from text send contacts
@@ -6746,14 +6741,27 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
           const sampleContact = contacts[0];
           await navigator.clipboard.writeText(sampleContact.phone);
           console.log('✅ Phone number copied to clipboard:', sampleContact.phone);
-          alert(`🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Phone number copied: ${sampleContact.phone}\n\nCursor is in recipient box - paste the phone number!`);
+          console.log('📋 Clipboard now contains:', sampleContact.phone);
+          
+          // Action 3: Wait another 2000ms, then copy customer info for message field
+          setTimeout(async () => {
+            try {
+              await navigator.clipboard.writeText(message);
+              console.log('✅ Customer info copied to clipboard for message field');
+              console.log('📋 Clipboard now contains:', message);
+              alert(`🚀 Smart Send Complete!\n\n✅ Messages app opened\n✅ Phone number copied: ${sampleContact.phone}\n✅ Customer info ready to paste in message field\n\n1. Paste phone number in recipient box\n2. Paste customer info in message field`);
+            } catch (err) {
+              console.error('Failed to copy customer info:', err);
+            }
+          }, 2000);
+          
         } else {
           console.log('⚠️ No contacts found for phone number');
-          alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n\nNote: No contacts found for phone number');
+          alert('🚀 Smart Send Complete!\n\n✅ Messages app opened\n\nNote: No contacts found for phone number');
         }
       } catch (err) {
         console.error('Failed to get phone number:', err);
-        alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n\nNote: Could not get phone number');
+        alert('🚀 Smart Send Complete!\n\n✅ Messages app opened\n\nNote: Could not get phone number');
       }
     }, 1000);
     
