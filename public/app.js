@@ -6737,13 +6737,28 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
       try {
         // Get the selected contact from checkboxes
         const selectedCheckbox = document.querySelector('#contactCheckboxes input[type="checkbox"]:checked');
+        console.log('🔍 Selected checkbox:', selectedCheckbox);
+        
         if (selectedCheckbox) {
           const selectedContactId = selectedCheckbox.value;
+          console.log('🔍 Selected contact ID:', selectedContactId);
+          
           const selectedContact = textSendContacts.find(c => c.id === selectedContactId);
+          console.log('🔍 Found selected contact:', selectedContact);
+          
           if (selectedContact) {
+            console.log('📱 About to copy phone number:', selectedContact.phone);
             await navigator.clipboard.writeText(selectedContact.phone);
             console.log('✅ Selected contact phone number copied to clipboard:', selectedContact.phone);
-            console.log('📋 Clipboard now contains:', selectedContact.phone);
+            
+            // Verify what's actually in the clipboard
+            try {
+              const clipboardContent = await navigator.clipboard.readText();
+              console.log('📋 VERIFICATION - Clipboard now contains:', clipboardContent);
+              console.log('📋 Does clipboard match phone number?', clipboardContent === selectedContact.phone);
+            } catch (err) {
+              console.log('⚠️ Could not verify clipboard content:', err);
+            }
           
             // Action 3: Wait another 2000ms, then copy customer info for message field
             setTimeout(async () => {
