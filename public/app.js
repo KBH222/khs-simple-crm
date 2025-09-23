@@ -6620,6 +6620,7 @@ async function shareCustomerInfo(customerId) {
         </div>
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
           <button onclick="smartSend('${customerId}')" style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">🚀 Smart Send</button>
+          <button onclick="copySelectedPhone()" style="padding: 12px 24px; background: #F59E0B; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">📱 Copy Phone</button>
         </div>
       </div>
     </div>
@@ -6703,6 +6704,52 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   });
 }
 
+// Copy selected contact's phone number to clipboard
+async function copySelectedPhone() {
+  console.log('=== COPY SELECTED PHONE ===');
+  
+  // Get the selected contact from checkboxes
+  const selectedCheckbox = document.querySelector('#contactCheckboxes input[type="checkbox"]:checked');
+  console.log('🔍 Selected checkbox:', selectedCheckbox);
+  
+  if (!selectedCheckbox) {
+    alert('Please select a contact first by checking the checkbox next to their name.');
+    return;
+  }
+  
+  const selectedContactId = selectedCheckbox.value;
+  console.log('🔍 Selected contact ID:', selectedContactId);
+  
+  const selectedContact = textSendContacts.find(c => c.id === selectedContactId);
+  console.log('🔍 Found selected contact:', selectedContact);
+  
+  if (!selectedContact) {
+    alert('Selected contact not found. Please try again.');
+    return;
+  }
+  
+  try {
+    console.log('📱 About to copy phone number:', selectedContact.phone);
+    await navigator.clipboard.writeText(selectedContact.phone);
+    console.log('✅ Phone number copied to clipboard:', selectedContact.phone);
+    
+    // Verify what's actually in the clipboard
+    try {
+      const clipboardContent = await navigator.clipboard.readText();
+      console.log('📋 VERIFICATION - Clipboard now contains:', clipboardContent);
+      console.log('📋 Does clipboard match phone number?', clipboardContent === selectedContact.phone);
+      alert(`✅ Phone number copied!\n\n${selectedContact.phone}\n\nYou can now paste it anywhere.`);
+    } catch (err) {
+      console.log('⚠️ Could not verify clipboard content:', err);
+      alert(`✅ Phone number copied!\n\n${selectedContact.phone}\n\n(Verification failed, but copy should have worked)`);
+    }
+  } catch (err) {
+    console.error('Failed to copy phone number:', err);
+    alert('❌ Failed to copy phone number. Please try again.');
+  }
+}
+window.copySelectedPhone = copySelectedPhone; // Make globally accessible
+
 // Smart Send - Mobile-only feature that does all 4 actions in sequence
 async function smartSend(customerId) {
   console.log('=== SMART SEND ===');
@@ -6726,13 +6773,18 @@ ${customer.phone || 'Not provided'}
 ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   
   try {
-    // Action 1: Open Messages app first (without copying customer info yet)
-    console.log('Action 1: Opening Messages app...');
+    // Action 1: Copy customer info to clipboard first
+    console.log('Action 1: Copying customer info to clipboard...');
+    await navigator.clipboard.writeText(message);
+    console.log('✅ Customer info copied to clipboard:', message);
+    
+    // Action 2: Open Messages app
+    console.log('Action 2: Opening Messages app...');
     const smsLink = `sms:&body=${encodeURIComponent(message)}`;
     window.location.href = smsLink;
     
-    // Action 2: Wait 1000ms, then copy phone number for recipient field
-    console.log('Action 2: Waiting 1000ms, then copying phone number...');
+    // Action 3: Wait 1000ms, then copy phone number for recipient field
+    console.log('Action 3: Waiting 1000ms, then copying phone number...');
     setTimeout(async () => {
       try {
         // Get the selected contact from checkboxes
@@ -6760,7 +6812,7 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
               console.log('⚠️ Could not verify clipboard content:', err);
             }
           
-            // Action 3: Wait another 2000ms, then copy customer info for message field
+            // Action 4: Wait another 2000ms, then copy customer info for message field
             setTimeout(async () => {
               try {
                 await navigator.clipboard.writeText(message);
