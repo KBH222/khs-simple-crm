@@ -6617,7 +6617,9 @@ async function shareCustomerInfo(customerId) {
           <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
           <button onclick="copyCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy Message</button>
           <button onclick="openMessagesApp('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">📱 Open Messages</button>
-          <button onclick="smartSend('${customerId}')" style="padding: 8px 16px; background: #8B5CF6; color: white; border: none; border-radius: 4px; cursor: pointer;">🚀 Smart Send</button>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+          <button onclick="smartSend('${customerId}')" style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">🚀 Smart Send</button>
         </div>
       </div>
     </div>
