@@ -6706,46 +6706,30 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
 
 // Copy selected contact's phone number to clipboard
 async function copySelectedPhone() {
-  console.log('=== COPY SELECTED PHONE ===');
+  console.log('=== COPY SELECTED PHONE (HARD CODED TEST) ===');
   
-  // Get the selected contact from checkboxes
-  const selectedCheckbox = document.querySelector('#contactCheckboxes input[type="checkbox"]:checked');
-  console.log('🔍 Selected checkbox:', selectedCheckbox);
-  
-  if (!selectedCheckbox) {
-    alert('Please select a contact first by checking the checkbox next to their name.');
-    return;
-  }
-  
-  const selectedContactId = selectedCheckbox.value;
-  console.log('🔍 Selected contact ID:', selectedContactId);
-  
-  const selectedContact = textSendContacts.find(c => c.id === selectedContactId);
-  console.log('🔍 Found selected contact:', selectedContact);
-  
-  if (!selectedContact) {
-    alert('Selected contact not found. Please try again.');
-    return;
-  }
+  // Hard coded phone number for testing
+  const testPhone = '(808) 387-6129';
+  console.log('📱 Testing with hard coded phone:', testPhone);
   
   try {
-    console.log('📱 About to copy phone number:', selectedContact.phone);
-    await navigator.clipboard.writeText(selectedContact.phone);
-    console.log('✅ Phone number copied to clipboard:', selectedContact.phone);
+    console.log('📱 About to copy hard coded phone number:', testPhone);
+    await navigator.clipboard.writeText(testPhone);
+    console.log('✅ Hard coded phone number copied to clipboard:', testPhone);
     
     // Verify what's actually in the clipboard
     try {
       const clipboardContent = await navigator.clipboard.readText();
       console.log('📋 VERIFICATION - Clipboard now contains:', clipboardContent);
-      console.log('📋 Does clipboard match phone number?', clipboardContent === selectedContact.phone);
-      alert(`✅ Phone number copied!\n\n${selectedContact.phone}\n\nYou can now paste it anywhere.`);
+      console.log('📋 Does clipboard match hard coded phone?', clipboardContent === testPhone);
+      alert(`✅ TEST PHONE COPIED!\n\n${testPhone}\n\nYou can now paste it anywhere to test.`);
     } catch (err) {
       console.log('⚠️ Could not verify clipboard content:', err);
-      alert(`✅ Phone number copied!\n\n${selectedContact.phone}\n\n(Verification failed, but copy should have worked)`);
+      alert(`✅ TEST PHONE COPIED!\n\n${testPhone}\n\n(Verification failed, but copy should have worked)`);
     }
   } catch (err) {
-    console.error('Failed to copy phone number:', err);
-    alert('❌ Failed to copy phone number. Please try again.');
+    console.error('Failed to copy hard coded phone number:', err);
+    alert('❌ Failed to copy test phone number. Clipboard may not be supported on this device.');
   }
 }
 window.copySelectedPhone = copySelectedPhone; // Make globally accessible
