@@ -6736,20 +6736,8 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
     const smsLink = `sms:&body=${encodeURIComponent(message)}`;
     window.location.href = smsLink;
     
-    // Action 3: Wait a bit, then paste the message
-    console.log('Action 3: Waiting to paste message...');
-    setTimeout(async () => {
-      try {
-        // Try to paste the message (this might not work due to security restrictions)
-        await navigator.clipboard.writeText(message);
-        console.log('✅ Message pasted to Messages app');
-      } catch (err) {
-        console.log('⚠️ Could not auto-paste (security restriction)');
-      }
-    }, 2000);
-    
-    // Action 4: Copy a sample phone number for easy pasting
-    console.log('Action 4: Preparing phone number for pasting...');
+    // Action 3: Wait 1000ms, then copy phone number for recipient field
+    console.log('Action 3: Waiting 1000ms, then copying phone number...');
     setTimeout(async () => {
       try {
         // Get a sample phone number from text send contacts
@@ -6757,17 +6745,17 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
         if (contacts && contacts.length > 0) {
           const sampleContact = contacts[0];
           await navigator.clipboard.writeText(sampleContact.phone);
-          console.log('✅ Sample phone number copied:', sampleContact.phone);
-          alert(`🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Message ready to paste\n✅ Phone number copied: ${sampleContact.phone}\n\nYou can now paste the phone number in the "To" field!`);
+          console.log('✅ Phone number copied to clipboard:', sampleContact.phone);
+          alert(`🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Phone number copied: ${sampleContact.phone}\n\nCursor is in recipient box - paste the phone number!`);
         } else {
           console.log('⚠️ No contacts found for phone number');
-          alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Message ready to paste\n\nNote: No contacts found for phone number');
+          alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n\nNote: No contacts found for phone number');
         }
       } catch (err) {
         console.error('Failed to get phone number:', err);
-        alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Message ready to paste\n\nNote: Could not get phone number');
+        alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n\nNote: Could not get phone number');
       }
-    }, 3000);
+    }, 1000);
     
   } catch (err) {
     console.error('Smart Send failed:', err);
