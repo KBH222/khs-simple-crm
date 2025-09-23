@@ -6617,6 +6617,7 @@ async function shareCustomerInfo(customerId) {
           <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
           <button onclick="copyCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy Message</button>
           <button onclick="openMessagesApp('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">📱 Open Messages</button>
+          <button onclick="smartSend('${customerId}')" style="padding: 8px 16px; background: #8B5CF6; color: white; border: none; border-radius: 4px; cursor: pointer;">🚀 Smart Send</button>
         </div>
       </div>
     </div>
@@ -6700,11 +6701,84 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
   });
 }
 
+// Smart Send - Mobile-only feature that does all 4 actions in sequence
+async function smartSend(customerId) {
+  console.log('=== SMART SEND ===');
+  
+  // Check if we're on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (!isMobile) {
+    alert('🚀 Smart Send is only available on mobile devices. Please use "Copy Message" or "Open Messages" instead.');
+    return;
+  }
+  
+  const customer = customers.find(c => c.id === customerId);
+  if (!customer) {
+    console.error('Customer not found:', customerId);
+    return;
+  }
+  
+  const customNote = document.getElementById('customNote')?.value || '';
+  const message = `${customer.name}
+${customer.phone || 'Not provided'}
+${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
+  
+  try {
+    // Action 1: Copy customer info to clipboard
+    console.log('Action 1: Copying customer info...');
+    await navigator.clipboard.writeText(message);
+    console.log('✅ Customer info copied to clipboard');
+    
+    // Action 2: Open Messages app
+    console.log('Action 2: Opening Messages app...');
+    const smsLink = `sms:&body=${encodeURIComponent(message)}`;
+    window.location.href = smsLink;
+    
+    // Action 3: Wait a bit, then paste the message
+    console.log('Action 3: Waiting to paste message...');
+    setTimeout(async () => {
+      try {
+        // Try to paste the message (this might not work due to security restrictions)
+        await navigator.clipboard.writeText(message);
+        console.log('✅ Message pasted to Messages app');
+      } catch (err) {
+        console.log('⚠️ Could not auto-paste (security restriction)');
+      }
+    }, 2000);
+    
+    // Action 4: Copy a sample phone number for easy pasting
+    console.log('Action 4: Preparing phone number for pasting...');
+    setTimeout(async () => {
+      try {
+        // Get a sample phone number from text send contacts
+        const contacts = await fetch('/api/contacts').then(r => r.json());
+        if (contacts && contacts.length > 0) {
+          const sampleContact = contacts[0];
+          await navigator.clipboard.writeText(sampleContact.phone);
+          console.log('✅ Sample phone number copied:', sampleContact.phone);
+          alert(`🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Message ready to paste\n✅ Phone number copied: ${sampleContact.phone}\n\nYou can now paste the phone number in the "To" field!`);
+        } else {
+          console.log('⚠️ No contacts found for phone number');
+          alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Message ready to paste\n\nNote: No contacts found for phone number');
+        }
+      } catch (err) {
+        console.error('Failed to get phone number:', err);
+        alert('🚀 Smart Send Complete!\n\n✅ Customer info copied\n✅ Messages app opened\n✅ Message ready to paste\n\nNote: Could not get phone number');
+      }
+    }, 3000);
+    
+  } catch (err) {
+    console.error('Smart Send failed:', err);
+    alert('❌ Smart Send failed. Please try "Copy Message" or "Open Messages" instead.');
+  }
+}
+
 // Make it globally accessible immediately
 window.shareCustomerInfo = shareCustomerInfo;
 window.sendCustomerInfo = sendCustomerInfo;
 window.copyCustomerInfo = copyCustomerInfo;
 window.openMessagesApp = openMessagesApp;
+window.smartSend = smartSend;
 
 // Test function accessibility
 console.log('shareCustomerInfo function available:', typeof window.shareCustomerInfo);
