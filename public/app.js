@@ -6760,7 +6760,7 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
     // Action 1: Copy customer info to clipboard first
     // DEBUG: Testing if phone number works in recipient field
     console.log('Action 1: Copying phone number to clipboard...');
-    await navigator.clipboard.writeText('808 387 6129');
+    await navigator.clipboard.writeText('808-387-5311');
     console.log('✅ Phone number copied to clipboard');
     
     // Action 1: Open Messages app (with pre-filled message)
