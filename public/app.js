@@ -140,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadCustomers();
   loadBackupInfo();
   loadTextSendContacts(); // Load Text Send contacts
+  updateCustomNotesList(); // Initialize custom notes list
   setupEventListeners();
   setTimeout(() => testNavigation(), 1000);
 });
@@ -6609,15 +6610,15 @@ async function shareCustomerInfo(customerId) {
         
         <div style="margin: 20px 0;">
           <label style="display: block; margin-bottom: 8px; font-weight: 500;">Custom Note (Optional):</label>
-          <input type="text" id="customNote" placeholder="e.g., 'This is for kitchen countertop measure' or 'LVP flooring installation'" 
-                 style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 14px;">
+          <select id="customNote" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 14px;">
+            <option value="">Select a note...</option>
+            ${customNotes.map(note => `<option value="${note}">${note}</option>`).join('')}
+          </select>
         </div>
         
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+        <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 20px;">
           <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-          <button onclick="smartSend('${customerId}')" style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">🚀 Smart Send</button>
+          <button onclick="smartSend('${customerId}')" style="padding: 8px 16px; background: #8B5CF6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Send Info</button>
         </div>
       </div>
     </div>
@@ -6637,7 +6638,7 @@ async function smartSend(customerId) {
   // Check if we're on mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (!isMobile) {
-    alert('🚀 Smart Send is only available on mobile devices. Please use "Copy Message" or "Open Messages" instead.');
+    alert('Send Info is only available on mobile devices.');
     return;
   }
   
@@ -6679,14 +6680,66 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
     
     
   } catch (err) {
-    console.error('Smart Send failed:', err);
-    alert('❌ Smart Send failed. Please try "Copy Message" or "Open Messages" instead.');
+    console.error('Send Info failed:', err);
+    alert('Send Info failed. Please try again.');
+  }
+}
+
+// Custom Notes Management
+let customNotes = [
+  'Kitchen countertop measure',
+  'LVP flooring installation', 
+  'Bathroom renovation',
+  'Electrical work',
+  'Plumbing repair',
+  'Painting job',
+  'General maintenance'
+];
+
+function addCustomNote() {
+  const input = document.getElementById('newCustomNote');
+  const note = input.value.trim();
+  
+  if (note && !customNotes.includes(note)) {
+    customNotes.push(note);
+    input.value = '';
+    updateCustomNotesList();
+    updateCustomNotesDropdown();
+  }
+}
+
+function removeCustomNote(note) {
+  customNotes = customNotes.filter(n => n !== note);
+  updateCustomNotesList();
+  updateCustomNotesDropdown();
+}
+
+function updateCustomNotesList() {
+  const container = document.getElementById('customNotesList');
+  container.innerHTML = customNotes.map(note => `
+    <div style="display: flex; align-items: center; gap: 5px; padding: 4px 8px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 12px;">
+      <span>${note}</span>
+      <button onclick="removeCustomNote('${note}')" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 14px;">×</button>
+    </div>
+  `).join('');
+}
+
+function updateCustomNotesDropdown() {
+  // Update the dropdown in the Share Info modal
+  const dropdown = document.getElementById('customNote');
+  if (dropdown) {
+    const currentValue = dropdown.value;
+    dropdown.innerHTML = '<option value="">Select a note...</option>' + 
+      customNotes.map(note => `<option value="${note}">${note}</option>`).join('');
+    dropdown.value = currentValue;
   }
 }
 
 // Make it globally accessible immediately
 window.shareCustomerInfo = shareCustomerInfo;
 window.sendCustomerInfo = sendCustomerInfo;
+window.addCustomNote = addCustomNote;
+window.removeCustomNote = removeCustomNote;
 window.copyCustomerInfo = copyCustomerInfo;
 window.openMessagesApp = openMessagesApp;
 window.smartSend = smartSend;
