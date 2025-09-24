@@ -6615,16 +6615,9 @@ async function shareCustomerInfo(customerId) {
         
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
           <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
-          <!-- COMMENTED OUT: Unneeded buttons for testing
-          <button onclick="copyCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy Message</button>
-          <button onclick="openMessagesApp('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">📱 Open Messages</button>
-          -->
         </div>
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
           <button onclick="smartSend('${customerId}')" style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">🚀 Smart Send</button>
-          <!-- COMMENTED OUT: Copy Phone button for testing
-          <button onclick="copySelectedPhone()" style="padding: 12px 24px; background: #F59E0B; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">📱 Copy Phone</button>
-          -->
         </div>
       </div>
     </div>
@@ -6636,107 +6629,6 @@ async function shareCustomerInfo(customerId) {
   console.log('Modal display style:', modal.style.display);
   console.log('Modal visible:', modal.offsetParent !== null);
 }
-
-// Copy customer info to clipboard
-async function copyCustomerInfo(customerId) {
-  console.log('=== COPY CUSTOMER INFO ===');
-  
-  // Get customer info
-  const customer = customers.find(c => c.id === customerId);
-  if (!customer) {
-    alert('Customer not found');
-    return;
-  }
-  
-  // Get custom note
-  const customNote = document.getElementById('customNote')?.value || '';
-  
-  // Format message exactly as you want
-  const message = `${customer.name}
-${customer.phone || 'Not provided'}
-${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
-  
-  try {
-    // Copy to clipboard
-    await navigator.clipboard.writeText(message);
-    alert('✅ Message copied to clipboard! You can now paste it into your iPhone Messages app.');
-    console.log('Message copied:', message);
-  } catch (err) {
-    // Fallback for older browsers
-    const textArea = document.createElement('textarea');
-    textArea.value = message;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-    alert('✅ Message copied to clipboard! You can now paste it into your iPhone Messages app.');
-  }
-}
-
-// Open Messages app with pre-filled message
-function openMessagesApp(customerId) {
-  console.log('=== OPEN MESSAGES APP ===');
-  
-  // Get customer info
-  const customer = customers.find(c => c.id === customerId);
-  if (!customer) {
-    alert('Customer not found');
-    return;
-  }
-  
-  // Get custom note
-  const customNote = document.getElementById('customNote')?.value || '';
-  
-  // Format message exactly as you want
-  const message = `${customer.name}
-${customer.phone || 'Not provided'}
-${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
-  
-  // Create SMS link - this will open the Messages app on iPhone
-  const smsLink = `sms:&body=${encodeURIComponent(message)}`;
-  
-  console.log('Opening Messages app with:', message);
-  
-  // Try to open Messages app
-  window.location.href = smsLink;
-  
-  // Also copy to clipboard as backup
-  navigator.clipboard.writeText(message).then(() => {
-    console.log('Message also copied to clipboard as backup');
-  }).catch(() => {
-    console.log('Clipboard copy failed, but Messages app should open');
-  });
-}
-
-// Copy selected contact's phone number to clipboard
-async function copySelectedPhone() {
-  console.log('=== COPY SELECTED PHONE (HARD CODED TEST) ===');
-  
-  // Hard coded phone number for testing
-  const testPhone = '(808) 387-6129';
-  console.log('📱 Testing with hard coded phone:', testPhone);
-  
-  try {
-    console.log('📱 About to copy hard coded phone number:', testPhone);
-    await navigator.clipboard.writeText(testPhone);
-    console.log('✅ Hard coded phone number copied to clipboard:', testPhone);
-    
-    // Verify what's actually in the clipboard
-    try {
-      const clipboardContent = await navigator.clipboard.readText();
-      console.log('📋 VERIFICATION - Clipboard now contains:', clipboardContent);
-      console.log('📋 Does clipboard match hard coded phone?', clipboardContent === testPhone);
-      alert(`✅ TEST PHONE COPIED!\n\n${testPhone}\n\nYou can now paste it anywhere to test.`);
-    } catch (err) {
-      console.log('⚠️ Could not verify clipboard content:', err);
-      alert(`✅ TEST PHONE COPIED!\n\n${testPhone}\n\n(Verification failed, but copy should have worked)`);
-    }
-  } catch (err) {
-    console.error('Failed to copy hard coded phone number:', err);
-    alert('❌ Failed to copy test phone number. Clipboard may not be supported on this device.');
-  }
-}
-window.copySelectedPhone = copySelectedPhone; // Make globally accessible
 
 // Smart Send - Mobile-only feature that does all 4 actions in sequence
 async function smartSend(customerId) {
