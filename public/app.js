@@ -6772,9 +6772,9 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
       return;
     }
     
-    console.log('Action 1: Copying selected contact phone number to clipboard...');
-    await navigator.clipboard.writeText(selectedContact.phone);
-    console.log('✅ Selected contact phone number copied to clipboard:', selectedContact.phone);
+    console.log('Action 1: Copying selected contact name to clipboard...');
+    await navigator.clipboard.writeText(selectedContact.name);
+    console.log('✅ Selected contact name copied to clipboard:', selectedContact.name);
     
     // Action 1: Open Messages app (with pre-filled message)
     console.log('Action 1: Opening Messages app...');
