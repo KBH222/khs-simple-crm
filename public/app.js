@@ -454,8 +454,9 @@ function renderCustomers() {
                 ${customer.customer_type === 'CURRENT' ? 'C' : 'L'}
               </div>
             </div>
-            <button class="text-to-sub-btn" onclick="console.log('Button clicked!'); shareCustomerInfo('${customer.id}')" 
-              title="Share customer info">Share Info</button>
+            ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 
+              `<button class="text-to-sub-btn" onclick="console.log('Button clicked!'); shareCustomerInfo('${customer.id}')" 
+                title="Share customer info">Share Info</button>` : ''}
           </div>
       </div>
       
