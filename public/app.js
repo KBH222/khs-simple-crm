@@ -6615,12 +6615,16 @@ async function shareCustomerInfo(customerId) {
         
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
           <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; border: 1px solid #D1D5DB; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+          <!-- COMMENTED OUT: Unneeded buttons for testing
           <button onclick="copyCustomerInfo('${customerId}')" style="padding: 8px 16px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy Message</button>
           <button onclick="openMessagesApp('${customerId}')" style="padding: 8px 16px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer;">📱 Open Messages</button>
+          -->
         </div>
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
           <button onclick="smartSend('${customerId}')" style="padding: 12px 24px; background: #8B5CF6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">🚀 Smart Send</button>
+          <!-- COMMENTED OUT: Copy Phone button for testing
           <button onclick="copySelectedPhone()" style="padding: 12px 24px; background: #F59E0B; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">📱 Copy Phone</button>
+          -->
         </div>
       </div>
     </div>
@@ -6781,63 +6785,6 @@ ${customer.address || 'Not provided'}${customNote ? '\n\n' + customNote : ''}`;
     const smsLink = `sms:&body=${encodeURIComponent(message)}`;
     window.location.href = smsLink;
     
-    // COMMENTED OUT: Test code for debugging clipboard operations
-    // Action 2: Wait 1000ms, then copy phone number for recipient field
-    // console.log('Action 2: Waiting 1000ms, then copying phone number...');
-    // setTimeout(async () => {
-    //   try {
-    //     // Get the selected contact from checkboxes
-    //     const selectedCheckbox = document.querySelector('#contactCheckboxes input[type="checkbox"]:checked');
-    //     console.log('🔍 Selected checkbox:', selectedCheckbox);
-    //     
-    //     if (selectedCheckbox) {
-    //       const selectedContactId = selectedCheckbox.value;
-    //       console.log('🔍 Selected contact ID:', selectedContactId);
-    //       
-    //       const selectedContact = textSendContacts.find(c => c.id === selectedContactId);
-    //       console.log('🔍 Found selected contact:', selectedContact);
-    //       
-    //       if (selectedContact) {
-    //         console.log('📱 About to copy CUST INFO 2:', selectedContact.phone);
-    //         await navigator.clipboard.writeText('Cust info 2');
-    //         console.log('✅ CUST INFO 2 copied to clipboard');
-    //         
-    //         // Verify what's actually in the clipboard
-    //         try {
-    //           const clipboardContent = await navigator.clipboard.readText();
-    //           console.log('📋 VERIFICATION - Clipboard now contains:', clipboardContent);
-    //           console.log('📋 Does clipboard match phone number?', clipboardContent === selectedContact.phone);
-    //         } catch (err) {
-    //           console.log('⚠️ Could not verify clipboard content:', err);
-    //         }
-    //       
-    //         // Action 3: Wait another 2000ms, then copy customer info for message field
-    //         setTimeout(async () => {
-    //           try {
-    //             await navigator.clipboard.writeText('Cust info 3');
-    //             console.log('✅ CUST INFO 3 copied to clipboard for message field');
-    //             console.log('📋 Clipboard now contains: Cust info 3');
-    //             alert(`🚀 Smart Send Complete!\n\n✅ Messages app opened\n✅ Phone number copied: ${selectedContact.phone}\n✅ Customer info ready to paste in message field\n\n1. Paste phone number in recipient box\n2. Paste customer info in message field`);
-    //           } catch (err) {
-    //             console.error('Failed to copy customer info:', err);
-    //           }
-    //         }, 2000);
-    //       } else {
-    //         console.log('⚠️ Selected contact not found');
-    //         alert('🚀 Smart Send Complete!\n\n✅ Messages app opened\n\nNote: Selected contact not found');
-    //       }
-    //     } else {
-    //       console.log('⚠️ No contact selected - please select a contact first');
-    //       alert('🚀 Smart Send Complete!\n\n✅ Messages app opened\n\nNote: Please select a contact first');
-    //     }
-    //   } catch (err) {
-    //     console.error('Failed to get phone number:', err);
-    //     alert('🚀 Smart Send Complete!\n\n✅ Messages app opened\n\nNote: Could not get phone number');
-    //   }
-    // }, 1000);
-    
-    // Simple success message
-    alert(`🚀 Smart Send Complete!\n\n✅ Contact name copied: ${selectedContact.name}\n✅ Messages app opened with customer info\n\n1. Paste contact name in recipient field\n2. Send message`);
     
   } catch (err) {
     console.error('Smart Send failed:', err);
