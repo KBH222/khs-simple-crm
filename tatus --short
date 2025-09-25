@@ -1,0 +1,185 @@
+[1mdiff --git a/server.js b/server.js[m
+[1mindex 3af3d81..fbae92e 100644[m
+[1m--- a/server.js[m
+[1m+++ b/server.js[m
+[36m@@ -5,6 +5,7 @@[m [mconst fs = require('fs');[m
+ const { promisify } = require('util');[m
+ const multer = require('multer');[m
+ const crypto = require('crypto');[m
+[32m+[m[32mconst bcrypt = require('bcryptjs');[m
+ const { initializeAllData } = require('./init-data');[m
+ [m
+ const app = express();[m
+[36m@@ -158,7 +159,7 @@[m [mconst initializeTables = () => {[m
+     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,[m
+     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,[m
+     FOREIGN KEY (job_id) REFERENCES jobs (id)[m
+[31m-  `);[m
+[32m+[m[32m  )`);[m
+   [m
+   // Add supplier column if it doesn't exist (for existing databases)[m
+   db.run(`ALTER TABLE materials ADD COLUMN supplier TEXT DEFAULT ''`, (err) => {[m
+[36m@@ -323,7 +324,7 @@[m [mconst initializeTables = () => {[m
+     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,[m
+     FOREIGN KEY (job_id) REFERENCES jobs (id),[m
+     FOREIGN KEY (worker_id) REFERENCES workers (id)[m
+[31m-  `);[m
+[32m+[m[32m  )`);[m
+   [m
+   // Add worker_id column if it doesn't exist (for existing databases)[m
+   db.run(`ALTER TABLE tasks ADD COLUMN worker_id TEXT`, (err) => {[m
+[36m@@ -407,18 +408,33 @@[m [mconst initializeTables = () => {[m
+     }[m
+     [m
+     if (row.count === 0) {[m
+[32m+[m[32m      const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;[m
+[32m+[m[32m      const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;[m
+[32m+[m
+[32m+[m[32m      if (!adminEmail || !adminPassword) {[m
+[32m+[m[32m        console.warn('⚠️ No owner account found and DEFAULT_ADMIN_EMAIL/DEFAULT_ADMIN_PASSWORD not set. Please create an owner user manually.');[m
+[32m+[m[32m        return;[m
+[32m+[m[32m      }[m
+[32m+[m
+       const adminId = 'admin-' + Date.now();[m
+[31m-      db.run(`INSERT INTO users (id, email, password, name, role) [m
+[31m-              VALUES (?, ?, ?, ?, ?)`,[m
+[31m-        [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER'],[m
+[31m-        (err) => {[m
+[31m-          if (err) {[m
+[31m-            console.error('Error creating admin user:', err);[m
+[31m-          } else {[m
+[31m-            console.log('✅ Created default admin user');[m
+[31m-          }[m
+[32m+[m[32m      bcrypt.hash(adminPassword, 12, (hashErr, hashedPassword) => {[m
+[32m+[m[32m        if (hashErr) {[m
+[32m+[m[32m          console.error('Error hashing default admin password:', hashErr);[m
+[32m+[m[32m          return;[m
+         }[m
+[31m-      );[m
+[32m+[m
+[32m+[m[32m        db.run(`INSERT INTO users (id, email, password, name, role)[m[41m [m
+[32m+[m[32m                VALUES (?, ?, ?, ?, ?)`,[m
+[32m+[m[32m          [adminId, adminEmail, hashedPassword, 'Administrator', 'OWNER'],[m
+[32m+[m[32m          (insertErr) => {[m
+[32m+[m[32m            if (insertErr) {[m
+[32m+[m[32m              console.error('Error creating admin user:', insertErr);[m
+[32m+[m[32m            } else {[m
+[32m+[m[32m              console.log('✅ Created owner account from environment variables');[m
+[32m+[m[32m            }[m
+[32m+[m[32m          }[m
+[32m+[m[32m        );[m
+[32m+[m[32m      });[m
+     }[m
+   });[m
+   [m
+[36m@@ -493,12 +509,22 @@[m [mapp.use(express.static('public'));[m
+ // Multer configuration for file uploads[m
+ const storage = multer.diskStorage({[m
+   destination: function (req, file, cb) {[m
+[31m-    const jobId = req.params.jobId;[m
+[32m+[m[32m    const safeJobId = req.safeJobId || sanitizePathSegment(req.params.jobId);[m
+[32m+[m[32m    if (!safeJobId) {[m
+[32m+[m[32m      return cb(new Error('Invalid job ID'));[m
+[32m+[m[32m    }[m
+[32m+[m
+     // Use persistent volume path on Railway, local folder otherwise[m
+     const uploadsBase = process.env.RAILWAY_ENVIRONMENT[m
+       ? path.join('/app/data', 'uploads', 'photos')[m
+       : path.join(__dirname, 'uploads', 'photos');[m
+[31m-    const uploadDir = path.join(uploadsBase, jobId);[m
+[32m+[m
+[32m+[m[32m    const resolvedBaseDir = path.resolve(uploadsBase);[m
+[32m+[m[32m    const uploadDir = path.resolve(resolvedBaseDir, safeJobId);[m
+[32m+[m
+[32m+[m[32m    if (!uploadDir.startsWith(resolvedBaseDir + path.sep)) {[m
+[32m+[m[32m      return cb(new Error('Invalid job ID path'));[m
+[32m+[m[32m    }[m
+ [m
+     // Create directory if it doesn't exist[m
+     fs.mkdirSync(uploadDir, { recursive: true });[m
+[36m@@ -537,11 +563,48 @@[m [mconst upload = multer({[m
+   }[m
+ });[m
+ [m
+[32m+[m[32mfunction validateJobUploadRequest(req, res, next) {[m
+[32m+[m[32m  const sanitizedJobId = sanitizePathSegment(req.params.jobId);[m
+[32m+[m
+[32m+[m[32m  if (!sanitizedJobId) {[m
+[32m+[m[32m    return res.status(400).json({ error: 'Invalid job ID' });[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  db.get('SELECT id FROM jobs WHERE id = ?', [sanitizedJobId], (err, job) => {[m
+[32m+[m[32m    if (err) {[m
+[32m+[m[32m      console.error('Error validating job for upload:', err);[m
+[32m+[m[32m      return res.status(500).json({ error: 'Database error' });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if (!job) {[m
+[32m+[m[32m      return res.status(404).json({ error: 'Job not found' });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    req.params.jobId = sanitizedJobId;[m
+[32m+[m[32m    req.safeJobId = sanitizedJobId;[m
+[32m+[m[32m    req.jobRecord = job;[m
+[32m+[m[32m    next();[m
+[32m+[m[32m  });[m
+[32m+[m[32m}[m
+[32m+[m
+ // Helper function to generate IDs[m
+ function generateId(prefix = 'id') {[m
+   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;[m
+ }[m
+ [m
+[32m+[m[32mfunction sanitizePathSegment(segment) {[m
+[32m+[m[32m  if (typeof segment !== 'string') {[m
+[32m+[m[32m    return null;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  const trimmed = segment.trim();[m
+[32m+[m[32m  if (!trimmed || !/^[A-Za-z0-9_-]+$/.test(trimmed)) {[m
+[32m+[m[32m    return null;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  return trimmed;[m
+[32m+[m[32m}[m
+[32m+[m
+ // Simplified - no auth required for now[m
+ [m
+ // API Routes[m
+[36m@@ -1405,7 +1468,7 @@[m [mapp.get('/api/jobs/:jobId/photos', (req, res) => {[m
+   });[m
+ });[m
+ [m
+[31m-app.post('/api/jobs/:jobId/photos', upload.array('photos', 20), (req, res) => {[m
+[32m+[m[32mapp.post('/api/jobs/:jobId/photos', validateJobUploadRequest, upload.array('photos', 20), (req, res) => {[m
+   const { jobId } = req.params;[m
+   const { photoType = 'pics' } = req.body;[m
+   [m
+[36m@@ -1413,58 +1476,48 @@[m [mapp.post('/api/jobs/:jobId/photos', upload.array('photos', 20), (req, res) => {[m
+     return res.status(400).json({ error: 'No files uploaded' });[m
+   }[m
+   [m
+[31m-  // Verify job exists[m
+[31m-  db.get('SELECT id FROM jobs WHERE id = ?', [jobId], (err, job) => {[m
+[31m-    if (err) {[m
+[31m-      return res.status(500).json({ error: 'Database error' });[m
+[31m-    }[m
+[31m-    if (!job) {[m
+[31m-      return res.status(404).json({ error: 'Job not found' });[m
+[31m-    }[m
+[31m-    [m
+[31m-    const now = new Date().toISOString();[m
+[31m-    const uploadedFiles = [];[m
+[31m-    let processedCount = 0;[m
+[31m-    [m
+[31m-    // Process each uploaded file[m
+[31m-    req.files.forEach(file => {[m
+[31m-      const photoId = generateId('photo');[m
+[31m-      // Store absolute path on Railway for persistence outside app dir; relative locally[m
+[31m-      const filePath = process.env.RAILWAY_ENVIRONMENT ? file.path : path.relative(__dirname, file.path);[m
+[31m-      [m
+[31m-      db.run(`INSERT INTO job_photos [m
+[31m-              (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) [m
+[31m-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,[m
+[31m-        [photoId, jobId, file.filename, file.originalname, filePath, file.size, file.mimetype, photoType, now],[m
+[31m

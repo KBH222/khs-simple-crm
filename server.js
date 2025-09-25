@@ -5,6 +5,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const multer = require('multer');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { initializeAllData } = require('./init-data');
 
 const app = express();
@@ -158,7 +159,7 @@ const initializeTables = () => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs (id)
-  `);
+  )`);
   
   // Add supplier column if it doesn't exist (for existing databases)
   db.run(`ALTER TABLE materials ADD COLUMN supplier TEXT DEFAULT ''`, (err) => {
@@ -323,7 +324,7 @@ const initializeTables = () => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES jobs (id),
     FOREIGN KEY (worker_id) REFERENCES workers (id)
-  `);
+  )`);
   
   // Add worker_id column if it doesn't exist (for existing databases)
   db.run(`ALTER TABLE tasks ADD COLUMN worker_id TEXT`, (err) => {
@@ -407,18 +408,33 @@ const initializeTables = () => {
     }
     
     if (row.count === 0) {
+      const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+      const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+
+      if (!adminEmail || !adminPassword) {
+        console.warn('⚠️ No owner account found and DEFAULT_ADMIN_EMAIL/DEFAULT_ADMIN_PASSWORD not set. Please create an owner user manually.');
+        return;
+      }
+
       const adminId = 'admin-' + Date.now();
-      db.run(`INSERT INTO users (id, email, password, name, role) 
-              VALUES (?, ?, ?, ?, ?)`,
-        [adminId, 'admin@khscrm.com', 'admin123', 'Administrator', 'OWNER'],
-        (err) => {
-          if (err) {
-            console.error('Error creating admin user:', err);
-          } else {
-            console.log('✅ Created default admin user');
-          }
+      bcrypt.hash(adminPassword, 12, (hashErr, hashedPassword) => {
+        if (hashErr) {
+          console.error('Error hashing default admin password:', hashErr);
+          return;
         }
-      );
+
+        db.run(`INSERT INTO users (id, email, password, name, role) 
+                VALUES (?, ?, ?, ?, ?)`,
+          [adminId, adminEmail, hashedPassword, 'Administrator', 'OWNER'],
+          (insertErr) => {
+            if (insertErr) {
+              console.error('Error creating admin user:', insertErr);
+            } else {
+              console.log('✅ Created owner account from environment variables');
+            }
+          }
+        );
+      });
     }
   });
   
@@ -493,12 +509,22 @@ app.use(express.static('public'));
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const jobId = req.params.jobId;
+    const safeJobId = req.safeJobId || sanitizePathSegment(req.params.jobId);
+    if (!safeJobId) {
+      return cb(new Error('Invalid job ID'));
+    }
+
     // Use persistent volume path on Railway, local folder otherwise
     const uploadsBase = process.env.RAILWAY_ENVIRONMENT
       ? path.join('/app/data', 'uploads', 'photos')
       : path.join(__dirname, 'uploads', 'photos');
-    const uploadDir = path.join(uploadsBase, jobId);
+
+    const resolvedBaseDir = path.resolve(uploadsBase);
+    const uploadDir = path.resolve(resolvedBaseDir, safeJobId);
+
+    if (!uploadDir.startsWith(resolvedBaseDir + path.sep)) {
+      return cb(new Error('Invalid job ID path'));
+    }
 
     // Create directory if it doesn't exist
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -537,9 +563,46 @@ const upload = multer({
   }
 });
 
+function validateJobUploadRequest(req, res, next) {
+  const sanitizedJobId = sanitizePathSegment(req.params.jobId);
+
+  if (!sanitizedJobId) {
+    return res.status(400).json({ error: 'Invalid job ID' });
+  }
+
+  db.get('SELECT id FROM jobs WHERE id = ?', [sanitizedJobId], (err, job) => {
+    if (err) {
+      console.error('Error validating job for upload:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    req.params.jobId = sanitizedJobId;
+    req.safeJobId = sanitizedJobId;
+    req.jobRecord = job;
+    next();
+  });
+}
+
 // Helper function to generate IDs
 function generateId(prefix = 'id') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function sanitizePathSegment(segment) {
+  if (typeof segment !== 'string') {
+    return null;
+  }
+
+  const trimmed = segment.trim();
+  if (!trimmed || !/^[A-Za-z0-9_-]+$/.test(trimmed)) {
+    return null;
+  }
+
+  return trimmed;
 }
 
 // Simplified - no auth required for now
@@ -1405,7 +1468,7 @@ app.get('/api/jobs/:jobId/photos', (req, res) => {
   });
 });
 
-app.post('/api/jobs/:jobId/photos', upload.array('photos', 20), (req, res) => {
+app.post('/api/jobs/:jobId/photos', validateJobUploadRequest, upload.array('photos', 20), (req, res) => {
   const { jobId } = req.params;
   const { photoType = 'pics' } = req.body;
   
@@ -1413,58 +1476,48 @@ app.post('/api/jobs/:jobId/photos', upload.array('photos', 20), (req, res) => {
     return res.status(400).json({ error: 'No files uploaded' });
   }
   
-  // Verify job exists
-  db.get('SELECT id FROM jobs WHERE id = ?', [jobId], (err, job) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
-    
-    const now = new Date().toISOString();
-    const uploadedFiles = [];
-    let processedCount = 0;
-    
-    // Process each uploaded file
-    req.files.forEach(file => {
-      const photoId = generateId('photo');
-      // Store absolute path on Railway for persistence outside app dir; relative locally
-      const filePath = process.env.RAILWAY_ENVIRONMENT ? file.path : path.relative(__dirname, file.path);
-      
-      db.run(`INSERT INTO job_photos 
-              (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [photoId, jobId, file.filename, file.originalname, filePath, file.size, file.mimetype, photoType, now],
-        function(err) {
-          if (err) {
-            console.error('Failed to save photo metadata:', err);
-            // Clean up uploaded file if database save fails
-            fs.unlink(file.path, () => {});
-          } else {
-            uploadedFiles.push({
-              id: photoId,
-              job_id: jobId,
-              filename: file.filename,
-              original_name: file.originalname,
-              file_path: filePath,
-              file_size: file.size,
-              mime_type: file.mimetype,
-              photo_type: photoType,
-              created_at: now
-            });
-          }
-          
-          processedCount++;
-          if (processedCount === req.files.length) {
-            res.json({
-              message: `Uploaded ${uploadedFiles.length} of ${req.files.length} files successfully`,
-              photos: uploadedFiles
-            });
-          }
+  const now = new Date().toISOString();
+  const uploadedFiles = [];
+  let processedCount = 0;
+
+  // Process each uploaded file
+  req.files.forEach(file => {
+    const photoId = generateId('photo');
+    // Store absolute path on Railway for persistence outside app dir; relative locally
+    const filePath = process.env.RAILWAY_ENVIRONMENT ? file.path : path.relative(__dirname, file.path);
+
+    db.run(`INSERT INTO job_photos 
+            (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [photoId, jobId, file.filename, file.originalname, filePath, file.size, file.mimetype, photoType, now],
+      function(err) {
+        if (err) {
+          console.error('Failed to save photo metadata:', err);
+          // Clean up uploaded file if database save fails
+          fs.unlink(file.path, () => {});
+        } else {
+          uploadedFiles.push({
+            id: photoId,
+            job_id: jobId,
+            filename: file.filename,
+            original_name: file.originalname,
+            file_path: filePath,
+            file_size: file.size,
+            mime_type: file.mimetype,
+            photo_type: photoType,
+            created_at: now
+          });
         }
-      );
-    });
+
+        processedCount++;
+        if (processedCount === req.files.length) {
+          res.json({
+            message: `Uploaded ${uploadedFiles.length} of ${req.files.length} files successfully`,
+            photos: uploadedFiles
+          });
+        }
+      }
+    );
   });
 });
 
@@ -2608,32 +2661,261 @@ function importUserData() {
           
           console.log(`📋 Importing ${records.length} ${table} records`);
           
+          const nowIso = () => new Date().toISOString();
+
           // Generate INSERT statements based on table structure
-          const insertStatements = {
-            customers: 'INSERT INTO customers (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            jobs: 'INSERT INTO jobs (id, customer_id, title, description, project_scope, status, priority, total_cost, start_date, end_date, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            workers: 'INSERT INTO workers (id, name, role, hourly_rate, phone, email, address, hire_date, status, notes, initials, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            work_hours: 'INSERT INTO work_hours (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, hours_worked, work_type, description, overtime_hours, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            tasks: 'INSERT INTO tasks (id, job_id, description, completed, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            extra_costs: 'INSERT INTO extra_costs (id, job_id, description, amount, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            calendar_events: 'INSERT INTO calendar_events (id, title, description, event_date, start_time, end_time, event_type, customer_id, job_id, all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            materials: 'INSERT INTO materials (id, job_id, item_name, quantity, unit, purchased, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            job_photos: 'INSERT INTO job_photos (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            worker_tasks: 'INSERT INTO worker_tasks (id, worker_id, job_id, title, description, status, priority, due_date, completed_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            worker_notes: 'INSERT INTO worker_notes (id, worker_id, category, title, content, is_private, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-          };
-          
-          const stmt = db.prepare(insertStatements[table]);
-          
-          records.forEach(record => {
-            const values = Object.values(record);
-            stmt.run(values, (err) => {
-              if (err) {
-                console.error(`Error importing ${table} record:`, err);
-              } else {
-                totalImported++;
+          const insertConfigs = {
+            customers: {
+              sql: 'INSERT INTO customers (id, name, phone, email, address, notes, reference, customer_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.name ?? '',
+                  record.phone ?? '',
+                  record.email ?? '',
+                  record.address ?? '',
+                  record.notes ?? '',
+                  record.reference ?? '',
+                  record.customer_type ?? 'CURRENT',
+                  createdAt,
+                  updatedAt
+                ];
               }
-            });
+            },
+            jobs: {
+              sql: 'INSERT INTO jobs (id, customer_id, title, description, project_scope, status, priority, total_cost, start_date, end_date, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.customer_id,
+                  record.title ?? '',
+                  record.description ?? '',
+                  record.project_scope ?? null,
+                  record.status ?? 'QUOTED',
+                  record.priority ?? 'medium',
+                  record.total_cost ?? 0,
+                  record.start_date ?? null,
+                  record.end_date ?? null,
+                  record.notes ?? '',
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            workers: {
+              sql: 'INSERT INTO workers (id, name, role, hourly_rate, phone, email, address, hire_date, status, notes, initials, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.name ?? '',
+                  record.role ?? '',
+                  record.hourly_rate ?? 0,
+                  record.phone ?? '',
+                  record.email ?? '',
+                  record.address ?? '',
+                  record.hire_date ?? null,
+                  record.status ?? 'ACTIVE',
+                  record.notes ?? '',
+                  record.initials ?? null,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            work_hours: {
+              sql: 'INSERT INTO work_hours (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, hours_worked, work_type, description, overtime_hours, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.worker_id,
+                  record.job_id ?? null,
+                  record.work_date,
+                  record.start_time,
+                  record.end_time,
+                  record.break_minutes ?? 0,
+                  record.hours_worked ?? 0,
+                  record.work_type ?? 'general',
+                  record.description ?? '',
+                  record.overtime_hours ?? 0,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            tasks: {
+              sql: 'INSERT INTO tasks (id, job_id, description, completed, worker_id, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                const completedRaw = record.completed;
+                const completed = typeof completedRaw === 'number' ? completedRaw : completedRaw ? 1 : 0;
+                return [
+                  record.id,
+                  record.job_id,
+                  record.description ?? '',
+                  completed ?? 0,
+                  record.worker_id ?? null,
+                  record.sort_order ?? 0,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            extra_costs: {
+              sql: 'INSERT INTO extra_costs (id, job_id, description, amount, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.job_id,
+                  record.description ?? '',
+                  record.amount ?? 0,
+                  record.sort_order ?? 0,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            calendar_events: {
+              sql: 'INSERT INTO calendar_events (id, title, description, event_date, start_time, end_time, event_type, customer_id, job_id, all_day, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.title ?? '',
+                  record.description ?? '',
+                  record.event_date,
+                  record.start_time ?? null,
+                  record.end_time ?? null,
+                  record.event_type ?? 'business',
+                  record.customer_id ?? null,
+                  record.job_id ?? null,
+                  record.all_day ?? 0,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            materials: {
+              sql: 'INSERT INTO materials (id, job_id, description, completed, supplier, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                const legacyParts = [];
+                if (record.item_name) legacyParts.push(record.item_name);
+                if (record.quantity) {
+                  const quantityPart = `${record.quantity}${record.unit ? ' ' + record.unit : ''}`.trim();
+                  if (quantityPart) legacyParts.push(quantityPart);
+                }
+                if (record.notes) legacyParts.push(record.notes);
+                const description = record.description ?? (legacyParts.length ? legacyParts.join(' - ') : 'Migrated Item');
+                const completedRaw = record.completed ?? record.purchased;
+                const completed = typeof completedRaw === 'number' ? completedRaw : completedRaw ? 1 : 0;
+                return [
+                  record.id,
+                  record.job_id,
+                  description,
+                  completed,
+                  record.supplier ?? '',
+                  record.sort_order ?? 0,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            job_photos: {
+              sql: 'INSERT INTO job_photos (id, job_id, filename, original_name, file_path, file_size, mime_type, photo_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                return [
+                  record.id,
+                  record.job_id,
+                  record.filename,
+                  record.original_name,
+                  record.file_path,
+                  record.file_size ?? 0,
+                  record.mime_type ?? 'application/octet-stream',
+                  record.photo_type ?? 'pics',
+                  createdAt
+                ];
+              }
+            },
+            worker_tasks: {
+              sql: 'INSERT INTO worker_tasks (id, worker_id, job_id, title, description, status, priority, due_date, completed_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.worker_id,
+                  record.job_id ?? null,
+                  record.title ?? '',
+                  record.description ?? '',
+                  record.status ?? 'pending',
+                  record.priority ?? 'medium',
+                  record.due_date ?? null,
+                  record.completed_at ?? null,
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            },
+            worker_notes: {
+              sql: 'INSERT INTO worker_notes (id, worker_id, category, title, content, is_private, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              map: (record) => {
+                const createdAt = record.created_at ?? nowIso();
+                const updatedAt = record.updated_at ?? createdAt;
+                return [
+                  record.id,
+                  record.worker_id,
+                  record.category ?? 'general',
+                  record.title ?? '',
+                  record.content ?? '',
+                  record.is_private ?? 0,
+                  record.created_by ?? 'admin',
+                  createdAt,
+                  updatedAt
+                ];
+              }
+            }
+          };
+
+          const config = insertConfigs[table];
+
+          if (!config) {
+            console.warn(`⚠️ No import configuration defined for table: ${table}. Skipping...`);
+            currentIndex++;
+            return importNext();
+          }
+
+          const stmt = db.prepare(config.sql);
+
+          records.forEach(record => {
+            try {
+              const values = config.map(record);
+              if (!values) {
+                return;
+              }
+              stmt.run(values, (err) => {
+                if (err) {
+                  console.error(`Error importing ${table} record:`, err);
+                } else {
+                  totalImported++;
+                }
+              });
+            } catch (mapErr) {
+              console.error(`Error preparing ${table} record for import:`, mapErr);
+            }
           });
           
           stmt.finalize((err) => {

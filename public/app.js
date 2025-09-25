@@ -6584,6 +6584,29 @@ async function shareCustomerInfo(customerId) {
     return;
   }
 
+  const contactOptions = textSendContacts.map(contact => {
+    const safeId = escapeHtml(contact.id || '');
+    const safeName = escapeHtml(contact.name || '');
+    const safePhone = escapeHtml(contact.phone || '');
+    const safeType = escapeHtml(contact.contact_type || '');
+    const phoneAndType = safePhone
+      ? `${safePhone}${safeType ? ' &bull; ' + safeType : ''}`
+      : (safeType || 'Not provided');
+    return `
+            <label style="display: flex; align-items: center; padding: 8px; border: 1px solid #E5E7EB; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" value="${safeId}" style="margin-right: 10px;">
+              <div>
+                <div style="font-weight: 500;">${safeName}</div>
+                <div style="font-size: 12px; color: #6B7280;">${phoneAndType}</div>
+              </div>
+            </label>`;
+  }).join('');
+
+  const customNoteOptions = customNotes.map(note => {
+    const safeNote = escapeHtml(note);
+    return `<option value="${safeNote}">${safeNote}</option>`;
+  }).join('');
+
   // Show contact selection modal
   console.log('Creating modal...');
   const modal = document.createElement('div');
@@ -6598,22 +6621,14 @@ async function shareCustomerInfo(customerId) {
       <div style="padding: 20px;">
         <p>Select contacts to send customer information to:</p>
         <div id="contactCheckboxes" style="max-height: 200px; overflow-y: auto; margin: 15px 0;">
-          ${textSendContacts.map(contact => `
-            <label style="display: flex; align-items: center; padding: 8px; border: 1px solid #E5E7EB; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
-              <input type="checkbox" value="${contact.id}" style="margin-right: 10px;">
-              <div>
-                <div style="font-weight: 500;">${contact.name}</div>
-                <div style="font-size: 12px; color: #6B7280;">${contact.phone} • ${contact.contact_type}</div>
-              </div>
-            </label>
-          `).join('')}
+          ${contactOptions}
         </div>
         
         <div style="margin: 20px 0;">
           <label style="display: block; margin-bottom: 8px; font-weight: 500;">Custom Note (Optional):</label>
           <select id="customNote" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 14px;">
             <option value="">Select a note...</option>
-            ${customNotes.map(note => `<option value="${note}">${note}</option>`).join('')}
+            ${customNoteOptions}
           </select>
         </div>
         
@@ -6717,12 +6732,40 @@ function removeCustomNote(note) {
 
 function updateCustomNotesList() {
   const container = document.getElementById('customNotesList');
-  container.innerHTML = customNotes.map(note => `
-    <div style="display: flex; align-items: center; gap: 5px; padding: 4px 8px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 12px;">
-      <span>${note}</span>
-      <button onclick="removeCustomNote('${note}')" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 14px;">×</button>
-    </div>
-  `).join('');
+  if (!container) {
+    return;
+  }
+
+  container.textContent = '';
+
+  customNotes.forEach(note => {
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '5px';
+    wrapper.style.padding = '4px 8px';
+    wrapper.style.background = 'white';
+    wrapper.style.border = '1px solid #D1D5DB';
+    wrapper.style.borderRadius = '4px';
+    wrapper.style.fontSize = '12px';
+
+    const label = document.createElement('span');
+    label.textContent = note;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = '×';
+    button.style.background = 'none';
+    button.style.border = 'none';
+    button.style.color = '#EF4444';
+    button.style.cursor = 'pointer';
+    button.style.fontSize = '14px';
+    button.addEventListener('click', () => removeCustomNote(note));
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(button);
+    container.appendChild(wrapper);
+  });
 }
 
 function updateCustomNotesDropdown() {
@@ -6730,8 +6773,11 @@ function updateCustomNotesDropdown() {
   const dropdown = document.getElementById('customNote');
   if (dropdown) {
     const currentValue = dropdown.value;
-    dropdown.innerHTML = '<option value="">Select a note...</option>' + 
-      customNotes.map(note => `<option value="${note}">${note}</option>`).join('');
+    const optionsHtml = customNotes.map(note => {
+      const safeNote = escapeHtml(note);
+      return `<option value="${safeNote}">${safeNote}</option>`;
+    }).join('');
+    dropdown.innerHTML = '<option value="">Select a note...</option>' + optionsHtml;
     dropdown.value = currentValue;
   }
 }
@@ -6778,20 +6824,28 @@ function renderContactsTable() {
     return;
   }
 
-  tbody.innerHTML = filteredContacts.map(contact => `
+  tbody.innerHTML = filteredContacts.map(contact => {
+    const safeId = escapeHtml(contact.id || '');
+    const safeName = escapeHtml(contact.name || '');
+    const safePhone = escapeHtml(contact.phone || '');
+    const safeAddress = escapeHtml(contact.address || 'Not provided');
+    const safeTypeText = escapeHtml(contact.contact_type || '');
+    const typeClass = ['SUB', 'WORKER', 'OTHER'].includes(contact.contact_type) ? contact.contact_type : 'OTHER';
+    return `
     <tr>
-      <td>${contact.name}</td>
-      <td>${contact.phone}</td>
-      <td>${contact.address || 'Not provided'}</td>
-      <td><span class="contact-type-badge ${contact.contact_type}">${contact.contact_type}</span></td>
+      <td>${safeName}</td>
+      <td>${safePhone}</td>
+      <td>${safeAddress}</td>
+      <td><span class="contact-type-badge ${typeClass}">${safeTypeText}</span></td>
       <td>
         <div class="contact-actions">
-          <button class="edit-contact-btn" onclick="editContact('${contact.id}')">Edit</button>
-          <button class="delete-contact-btn" onclick="deleteContact('${contact.id}')">Delete</button>
+          <button class="edit-contact-btn" onclick="editContact('${safeId}')">Edit</button>
+          <button class="delete-contact-btn" onclick="deleteContact('${safeId}')">Delete</button>
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function filterContacts(type) {
