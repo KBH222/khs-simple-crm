@@ -320,6 +320,8 @@ function showPage(pageName) {
   } else if (pageName === 'materials') {
     loadMasterLists();
     loadMasterListPreferences();
+  } else if (pageName === 'profile') {
+    showProfile();
   }
 }
 
@@ -7621,6 +7623,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 window.filterActivity = filterActivity;
 window.setup2FA = setup2FA;
+
+// Make profile functions globally accessible
+window.setupProfileTabs = setupProfileTabs;
+window.showProfileTab = showProfileTab;
 window.clearAllMasterTasks = clearAllMasterTasks;
 window.clearAllMasterTools = clearAllMasterTools;
 window.clearAllMasterMaterials = clearAllMasterMaterials;
