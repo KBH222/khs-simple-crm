@@ -1392,9 +1392,326 @@
         <div class="page-container">
           <div class="page-header">
             <button class="back-btn" data-target="dashboard">← Dashboard</button>
-            <h2>Profile</h2>
+            <h2 id="displayName">Loading...</h2>
           </div>
-          <p>Profile settings coming soon...</p>
+          
+          <!-- Profile Header Info -->
+          <div class="profile-header-info">
+            <p id="displayEmail">Loading...</p>
+            <span id="displayRole">Loading...</span>
+          </div>
+          
+          <!-- Profile Tabs -->
+          <div class="profile-tabs">
+            <button class="profile-tab active" data-tab="account">Account</button>
+            <button class="profile-tab" data-tab="preferences">Preferences</button>
+            <button class="profile-tab" data-tab="security">Security</button>
+            <button class="profile-tab" data-tab="notifications">Notifications</button>
+            <button class="profile-tab" data-tab="activity">Activity</button>
+          </div>
+          
+          <!-- Account Tab -->
+          <div id="accountTab" class="profile-tab-content active">
+            <div class="profile-section">
+              <div class="profile-header">
+                <div class="profile-avatar">
+                  <div class="avatar-placeholder" id="profileAvatar">A</div>
+                </div>
+                <div class="profile-basic-info">
+                  <h3 id="profileDisplayName">Administrator</h3>
+                  <span class="profile-role-badge" id="profileDisplayRole">Owner</span>
+                  <div class="profile-member-since">
+                    Member since <span id="profileMemberSince">January 2024</span>
+                  </div>
+                </div>
+                <div class="profile-actions">
+                  <button class="edit-profile-btn" onclick="editProfile()">Edit Profile</button>
+                </div>
+              </div>
+              
+              <div class="profile-details">
+                <div class="detail-group">
+                  <h4>Contact Information</h4>
+                  <div class="detail-item">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value" id="profileName">Administrator</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value" id="profileEmail">admin@khscrm.com</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Role:</span>
+                    <span class="detail-value" id="profileRole">Owner</span>
+                  </div>
+                </div>
+                
+                <div class="detail-group">
+                  <h4>Account Statistics</h4>
+                  <div class="stats-grid">
+                    <div class="stat-card">
+                      <div class="stat-number" id="totalCustomers">0</div>
+                      <div class="stat-label">Customers</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-number" id="totalJobs">0</div>
+                      <div class="stat-label">Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-number" id="totalWorkers">0</div>
+                      <div class="stat-label">Workers</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Preferences Tab -->
+          <div id="preferencesTab" class="profile-tab-content">
+            <div class="profile-section">
+              <h3>Application Preferences</h3>
+              
+              <div class="preference-group">
+                <h4>Dashboard Settings</h4>
+                <div class="preference-item">
+                  <label class="preference-label">
+                    <input type="checkbox" id="showRecentJobs" checked>
+                    <span class="checkbox-custom"></span>
+                    Show recent jobs on dashboard
+                  </label>
+                </div>
+                <div class="preference-item">
+                  <label class="preference-label">
+                    <input type="checkbox" id="showUpcomingEvents" checked>
+                    <span class="checkbox-custom"></span>
+                    Show upcoming events
+                  </label>
+                </div>
+                <div class="preference-item">
+                  <label for="defaultCustomerView">Default customer view:</label>
+                  <select id="defaultCustomerView" class="preference-select">
+                    <option value="all">All Customers</option>
+                    <option value="CURRENT">Current Customers Only</option>
+                    <option value="LEADS">Leads Only</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="preference-group">
+                <h4>Display Settings</h4>
+                <div class="preference-item">
+                  <label for="themeSelect">Theme:</label>
+                  <select id="themeSelect" class="preference-select">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="auto">Auto (System)</option>
+                  </select>
+                </div>
+                <div class="preference-item">
+                  <label for="dateFormat">Date format:</label>
+                  <select id="dateFormat" class="preference-select">
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="preference-actions">
+                <button class="save-preferences-btn" onclick="savePreferences()">Save Preferences</button>
+                <button class="reset-preferences-btn" onclick="resetPreferences()">Reset to Defaults</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Security Tab -->
+          <div id="securityTab" class="profile-tab-content">
+            <div class="profile-section">
+              <h3>Security Settings</h3>
+              
+              <div class="security-group">
+                <h4>Password</h4>
+                <div class="security-item">
+                  <div class="security-info">
+                    <span class="security-label">Password last changed:</span>
+                    <span class="security-value" id="passwordLastChanged">January 1, 2024</span>
+                  </div>
+                  <button class="change-password-btn" onclick="showChangePasswordModal()">Change Password</button>
+                </div>
+              </div>
+              
+              <div class="security-group">
+                <h4>Login Security</h4>
+                <div class="security-item">
+                  <div class="security-info">
+                    <span class="security-label">Last login:</span>
+                    <span class="security-value" id="lastLogin">Today</span>
+                  </div>
+                </div>
+                <div class="security-item">
+                  <div class="security-info">
+                    <span class="security-label">Two-factor authentication:</span>
+                    <span class="security-value" id="twoFactorStatus">Disabled</span>
+                  </div>
+                  <button class="enable-2fa-btn" onclick="setup2FA()">Enable 2FA</button>
+                </div>
+              </div>
+              
+              <div class="security-group">
+                <h4>Account Security</h4>
+                <div class="security-item">
+                  <div class="security-info">
+                    <span class="security-label">Account status:</span>
+                    <span class="security-value active">Active</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Notifications Tab -->
+          <div id="notificationsTab" class="profile-tab-content">
+            <div class="profile-section">
+              <h3>Notification Preferences</h3>
+              
+              <div class="notification-group">
+                <h4>Email Notifications</h4>
+                <div class="notification-item">
+                  <label class="notification-label">
+                    <input type="checkbox" id="emailUpdates" checked>
+                    <span class="checkbox-custom"></span>
+                    <div class="notification-info">
+                      <span class="notification-title">System Updates</span>
+                      <span class="notification-desc">Receive emails about system updates and maintenance</span>
+                    </div>
+                  </label>
+                </div>
+                <div class="notification-item">
+                  <label class="notification-label">
+                    <input type="checkbox" id="jobReminders" checked>
+                    <span class="checkbox-custom"></span>
+                    <div class="notification-info">
+                      <span class="notification-title">Job Reminders</span>
+                      <span class="notification-desc">Get notified about upcoming job deadlines</span>
+                    </div>
+                  </label>
+                </div>
+                <div class="notification-item">
+                  <label class="notification-label">
+                    <input type="checkbox" id="backupNotifications" checked>
+                    <span class="checkbox-custom"></span>
+                    <div class="notification-info">
+                      <span class="notification-title">Backup Notifications</span>
+                      <span class="notification-desc">Receive confirmation when backups are completed</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="notification-group">
+                <h4>System Alerts</h4>
+                <div class="notification-item">
+                  <label class="notification-label">
+                    <input type="checkbox" id="systemAlerts" checked>
+                    <span class="checkbox-custom"></span>
+                    <div class="notification-info">
+                      <span class="notification-title">Critical System Alerts</span>
+                      <span class="notification-desc">Important system notifications and error alerts</span>
+                    </div>
+                  </label>
+                </div>
+                <div class="notification-item">
+                  <label class="notification-label">
+                    <input type="checkbox" id="securityAlerts" checked>
+                    <span class="checkbox-custom"></span>
+                    <div class="notification-info">
+                      <span class="notification-title">Security Alerts</span>
+                      <span class="notification-desc">Notifications about login attempts and security events</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="notification-actions">
+                <button class="save-notifications-btn" onclick="saveNotificationPreferences()">Save Notification Settings</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Activity Tab -->
+          <div id="activityTab" class="profile-tab-content">
+            <div class="profile-section">
+              <h3>Recent Activity</h3>
+              
+              <div class="activity-filter">
+                <select id="activityFilter" class="activity-filter-select" onchange="filterActivity()">
+                  <option value="all">All Activity</option>
+                  <option value="login">Login Events</option>
+                  <option value="customer">Customer Changes</option>
+                  <option value="job">Job Changes</option>
+                  <option value="system">System Events</option>
+                </select>
+              </div>
+              
+              <div class="activity-list" id="activityList">
+                <div class="activity-loading">Loading activity...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Edit Profile Modal -->
+      <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Edit Profile</h3>
+            <button class="close-btn" onclick="closeEditProfileModal()">&times;</button>
+          </div>
+          <form id="editProfileForm">
+            <div class="form-group">
+              <label for="editProfileName">Name *</label>
+              <input type="text" id="editProfileName" required>
+            </div>
+            <div class="form-group">
+              <label for="editProfileEmail">Email *</label>
+              <input type="email" id="editProfileEmail" required>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="cancel-btn" onclick="closeEditProfileModal()">Cancel</button>
+              <button type="submit" class="save-btn">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Change Password Modal -->
+      <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Change Password</h3>
+            <button class="close-btn" onclick="closeChangePasswordModal()">&times;</button>
+          </div>
+          <form id="changePasswordForm">
+            <div class="form-group">
+              <label for="currentPassword">Current Password *</label>
+              <input type="password" id="currentPassword" required>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">New Password *</label>
+              <input type="password" id="newPassword" required minlength="6">
+              <small class="form-help">Password must be at least 6 characters long</small>
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirm New Password *</label>
+              <input type="password" id="confirmPassword" required>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="cancel-btn" onclick="closeChangePasswordModal()">Cancel</button>
+              <button type="submit" class="save-btn">Change Password</button>
+            </div>
+          </form>
         </div>
       </div>
     </main>

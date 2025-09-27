@@ -3138,6 +3138,203 @@ app.get('/api/data/export/download', (req, res) => {
   });
 });
 
+// Profile API Routes
+app.get('/api/profile', (req, res) => {
+  // Log the request with timestamp and IP address
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 
+                   (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                   req.headers['x-forwarded-for'] || '127.0.0.1';
+  console.log(`[${timestamp}] /api/profile requested from ${clientIP}`);
+  
+  // For now, return hardcoded admin user data
+  // In a real implementation, this would get user data from session/token
+  const user = {
+    id: 'admin-user-1',
+    name: 'Administrator',
+    email: 'admin@khscrm.com',
+    role: 'OWNER',
+    created_at: '2024-01-01T00:00:00.000Z',
+    preferences: {
+      theme: 'light',
+      notifications: {
+        email_updates: true,
+        job_reminders: true,
+        backup_notifications: true,
+        system_alerts: true
+      },
+      dashboard: {
+        show_recent_jobs: true,
+        show_upcoming_events: true,
+        default_customer_view: 'all'
+      }
+    },
+    security: {
+      last_login: new Date().toISOString(),
+      password_last_changed: '2024-01-01T00:00:00.000Z',
+      two_factor_enabled: false
+    }
+  };
+  
+  res.json({
+    success: true,
+    user: user
+  });
+});
+
+app.put('/api/profile', (req, res) => {
+  const { name, email, preferences } = req.body;
+  
+  // Validate input
+  if (!name || !email) {
+    return res.status(400).json({
+      success: false,
+      error: 'Name and email are required'
+    });
+  }
+  
+  // In a real implementation, this would update the user in the database
+  // For now, we'll just return success
+  
+  const updatedUser = {
+    id: 'admin-user-1',
+    name: name,
+    email: email,
+    role: 'OWNER',
+    created_at: '2024-01-01T00:00:00.000Z',
+    preferences: preferences || {
+      theme: 'light',
+      notifications: {
+        email_updates: true,
+        job_reminders: true,
+        backup_notifications: true,
+        system_alerts: true
+      },
+      dashboard: {
+        show_recent_jobs: true,
+        show_upcoming_events: true,
+        default_customer_view: 'all'
+      }
+    },
+    updated_at: new Date().toISOString()
+  };
+  
+  res.json({
+    success: true,
+    user: updatedUser,
+    message: 'Profile updated successfully'
+  });
+});
+
+app.post('/api/profile/change-password', (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  
+  // Validate input
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      error: 'All password fields are required'
+    });
+  }
+  
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      error: 'New passwords do not match'
+    });
+  }
+  
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      error: 'New password must be at least 6 characters long'
+    });
+  }
+  
+  // In a real implementation, this would:
+  // 1. Verify current password against database
+  // 2. Hash new password
+  // 3. Update user record in database
+  // 4. Invalidate existing sessions if needed
+  
+  // For now, we'll simulate password validation
+  if (currentPassword !== 'admin123') {
+    return res.status(400).json({
+      success: false,
+      error: 'Current password is incorrect'
+    });
+  }
+  
+  res.json({
+    success: true,
+    message: 'Password changed successfully'
+  });
+});
+
+app.post('/api/profile/preferences', (req, res) => {
+  const { preferences } = req.body;
+  
+  if (!preferences) {
+    return res.status(400).json({
+      success: false,
+      error: 'Preferences data is required'
+    });
+  }
+  
+  // In a real implementation, this would update user preferences in the database
+  // For now, we'll just return success
+  
+  res.json({
+    success: true,
+    preferences: preferences,
+    message: 'Preferences updated successfully'
+  });
+});
+
+app.get('/api/profile/activity', (req, res) => {
+  // Return recent activity log for the user
+  const activities = [
+    {
+      id: 1,
+      type: 'login',
+      description: 'Logged in to the system',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      ip_address: '127.0.0.1'
+    },
+    {
+      id: 2,
+      type: 'customer_created',
+      description: 'Created new customer: John Smith',
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+      details: { customer_id: 'cust-123' }
+    },
+    {
+      id: 3,
+      type: 'backup_created',
+      description: 'Manual backup created',
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    },
+    {
+      id: 4,
+      type: 'profile_updated',
+      description: 'Updated profile preferences',
+      timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    },
+    {
+      id: 5,
+      type: 'job_created',
+      description: 'Created new job: Kitchen Remodel',
+      timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(), // 3 days ago
+      details: { job_id: 'job-456' }
+    }
+  ];
+  
+  res.json({
+    success: true,
+    activities: activities
+  });
+});
+
 app.post('/api/backup/restore', async (req, res) => {
   const { filename } = req.body;
   

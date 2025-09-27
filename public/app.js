@@ -865,9 +865,100 @@ function showKHSInfo() {
   log('🚧 Company Info section coming soon!');
 }
 
+// Profile Module Functions
+let currentProfileData = null;
+
 function showProfile() {
-  log('🚧 Profile section coming soon!');
+  log('📋 Loading profile page...');
+  setupProfileTabs();
+  loadProfileData();
 }
+
+// Load profile data on page load
+document.addEventListener('DOMContentLoaded', async function() {
+  // Get display elements
+  const displayName = document.getElementById('displayName');
+  const displayEmail = document.getElementById('displayEmail');
+  const displayRole = document.getElementById('displayRole');
+  
+  try {
+    log('📡 Fetching profile data on page load...');
+    
+    // Set loading state with classes
+    if (displayName) {
+      displayName.textContent = 'Loading...';
+      displayName.classList.add('status-loading');
+      displayName.classList.remove('status-error');
+    }
+    if (displayEmail) {
+      displayEmail.textContent = 'Loading...';
+      displayEmail.classList.add('status-loading');
+      displayEmail.classList.remove('status-error');
+    }
+    if (displayRole) {
+      displayRole.textContent = 'Loading...';
+      displayRole.classList.add('status-loading');
+      displayRole.classList.remove('status-error');
+    }
+    
+    const response = await fetch('/api/profile');
+    
+    // Check if response is ok (status 200-299)
+    if (!response.ok) {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+      console.log(`[${timestamp}] Error loading profile: ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.user) {
+      // Update header display elements with real data and remove status classes
+      if (displayName) {
+        displayName.textContent = data.user.name;
+        displayName.classList.remove('status-loading', 'status-error');
+      }
+      if (displayEmail) {
+        displayEmail.textContent = data.user.email;
+        displayEmail.classList.remove('status-loading', 'status-error');
+      }
+      if (displayRole) {
+        displayRole.textContent = data.user.role;
+        displayRole.classList.remove('status-loading', 'status-error');
+      }
+      
+      log('✅ Profile data loaded and UI updated');
+    } else {
+      throw new Error(data.error || 'Failed to load profile data');
+    }
+  } catch (error) {
+    // Log error with timestamp in the requested format
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    console.log(`[${timestamp}] Error loading profile: ${error.message}`);
+    
+    // Set error state for display elements with classes
+    if (displayName) {
+      displayName.textContent = 'Error loading profile';
+      displayName.classList.remove('status-loading');
+      displayName.classList.add('status-error');
+    }
+    if (displayEmail) {
+      displayEmail.textContent = 'Error loading profile';
+      displayEmail.classList.remove('status-loading');
+      displayEmail.classList.add('status-error');
+    }
+    if (displayRole) {
+      displayRole.textContent = 'Error loading profile';
+      displayRole.classList.remove('status-loading');
+      displayRole.classList.add('status-error');
+    }
+    
+    // Keep existing error logging for debugging
+    console.error('Error loading profile data on page load:', error);
+    log('❌ Failed to load profile data:', error.message);
+  }
+});
 
 // 🚀 BEAST MODE: Debug function to test navigation
 function testNavigation() {
@@ -7098,6 +7189,438 @@ window.toggleMasterTool = toggleMasterTool;
 window.toggleMasterMaterial = toggleMasterMaterial;
 window.toggleMasterList = toggleMasterList;
 window.loadMasterListPreferences = loadMasterListPreferences;
+
+// Profile module functions
+function setupProfileTabs() {
+  const tabs = document.querySelectorAll('.profile-tab');
+  const contents = document.querySelectorAll('.profile-tab-content');
+  
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+      showProfileTab(targetTab);
+    });
+  });
+}
+
+function showProfileTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.profile-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  
+  // Update tab content
+  document.querySelectorAll('.profile-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`${tabName}Tab`).classList.add('active');
+  
+  // Load specific tab data
+  if (tabName === 'activity') {
+    loadActivityData();
+  }
+}
+
+async function loadProfileData() {
+  try {
+    log('📡 Fetching profile data...');
+    const response = await fetch('/api/profile');
+    const data = await response.json();
+    
+    if (data.success) {
+      currentProfileData = data.user;
+      updateProfileUI(data.user);
+      log('✅ Profile data loaded');
+    } else {
+      throw new Error(data.error || 'Failed to load profile');
+    }
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    showMessage('Failed to load profile data', 'error');
+  }
+}
+
+function updateProfileUI(user) {
+  // Update account tab
+  document.getElementById('profileDisplayName').textContent = user.name;
+  document.getElementById('profileDisplayRole').textContent = user.role;
+  document.getElementById('profileName').textContent = user.name;
+  document.getElementById('profileEmail').textContent = user.email;
+  document.getElementById('profileRole').textContent = user.role;
+  
+  // Update avatar
+  const avatar = document.getElementById('profileAvatar');
+  avatar.textContent = user.name.charAt(0).toUpperCase();
+  
+  // Update member since
+  const memberSince = new Date(user.created_at).toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long' 
+  });
+  document.getElementById('profileMemberSince').textContent = memberSince;
+  
+  // Update preferences
+  if (user.preferences) {
+    const prefs = user.preferences;
+    
+    // Dashboard preferences
+    document.getElementById('showRecentJobs').checked = prefs.dashboard?.show_recent_jobs || false;
+    document.getElementById('showUpcomingEvents').checked = prefs.dashboard?.show_upcoming_events || false;
+    document.getElementById('defaultCustomerView').value = prefs.dashboard?.default_customer_view || 'all';
+    
+    // Display preferences
+    document.getElementById('themeSelect').value = prefs.theme || 'light';
+    document.getElementById('dateFormat').value = prefs.date_format || 'MM/DD/YYYY';
+    
+    // Notification preferences
+    document.getElementById('emailUpdates').checked = prefs.notifications?.email_updates || false;
+    document.getElementById('jobReminders').checked = prefs.notifications?.job_reminders || false;
+    document.getElementById('backupNotifications').checked = prefs.notifications?.backup_notifications || false;
+    document.getElementById('systemAlerts').checked = prefs.notifications?.system_alerts || false;
+    document.getElementById('securityAlerts').checked = prefs.notifications?.security_alerts || false;
+  }
+  
+  // Update security info
+  if (user.security) {
+    const lastLogin = new Date(user.security.last_login).toLocaleDateString();
+    document.getElementById('lastLogin').textContent = lastLogin;
+    
+    const passwordChanged = new Date(user.security.password_last_changed).toLocaleDateString();
+    document.getElementById('passwordLastChanged').textContent = passwordChanged;
+    
+    document.getElementById('twoFactorStatus').textContent = user.security.two_factor_enabled ? 'Enabled' : 'Disabled';
+  }
+  
+  // Load account statistics
+  loadAccountStats();
+}
+
+async function loadAccountStats() {
+  try {
+    // Load customers count
+    const customersResponse = await fetch('/api/customers');
+    if (customersResponse.ok) {
+      const customersData = await customersResponse.json();
+      document.getElementById('totalCustomers').textContent = customersData.customers?.length || 0;
+    }
+    
+    // Load jobs count
+    const jobsResponse = await fetch('/api/jobs');
+    if (jobsResponse.ok) {
+      const jobsData = await jobsResponse.json();
+      document.getElementById('totalJobs').textContent = jobsData.jobs?.length || 0;
+    }
+    
+    // Load workers count
+    const workersResponse = await fetch('/api/workers');
+    if (workersResponse.ok) {
+      const workersData = await workersResponse.json();
+      document.getElementById('totalWorkers').textContent = workersData.workers?.length || 0;
+    }
+  } catch (error) {
+    console.error('Error loading account stats:', error);
+  }
+}
+
+function editProfile() {
+  if (!currentProfileData) {
+    showMessage('Profile data not loaded', 'error');
+    return;
+  }
+  
+  // Populate edit form
+  document.getElementById('editProfileName').value = currentProfileData.name;
+  document.getElementById('editProfileEmail').value = currentProfileData.email;
+  
+  // Show modal
+  document.getElementById('editProfileModal').classList.add('active');
+}
+
+function closeEditProfileModal() {
+  document.getElementById('editProfileModal').classList.remove('active');
+  // Reset form
+  document.getElementById('editProfileForm').reset();
+}
+
+window.editProfile = editProfile;
+window.closeEditProfileModal = closeEditProfileModal;
+
+// Profile form handlers and additional functions
+async function saveProfile(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('editProfileName').value.trim();
+  const email = document.getElementById('editProfileEmail').value.trim();
+  
+  if (!name || !email) {
+    showMessage('Name and email are required', 'error');
+    return;
+  }
+  
+  try {
+    log('📡 Updating profile...');
+    const response = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        preferences: currentProfileData?.preferences
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      currentProfileData = data.user;
+      updateProfileUI(data.user);
+      closeEditProfileModal();
+      showMessage('Profile updated successfully', 'success');
+      log('✅ Profile updated');
+    } else {
+      throw new Error(data.error || 'Failed to update profile');
+    }
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    showMessage('Failed to update profile', 'error');
+  }
+}
+
+function showChangePasswordModal() {
+  document.getElementById('changePasswordModal').classList.add('active');
+}
+
+function closeChangePasswordModal() {
+  document.getElementById('changePasswordModal').classList.remove('active');
+  document.getElementById('changePasswordForm').reset();
+}
+
+async function changePassword(event) {
+  event.preventDefault();
+  
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showMessage('All password fields are required', 'error');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    showMessage('New passwords do not match', 'error');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showMessage('New password must be at least 6 characters long', 'error');
+    return;
+  }
+  
+  try {
+    log('📡 Changing password...');
+    const response = await fetch('/api/profile/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      closeChangePasswordModal();
+      showMessage('Password changed successfully', 'success');
+      log('✅ Password changed');
+    } else {
+      throw new Error(data.error || 'Failed to change password');
+    }
+  } catch (error) {
+    console.error('Error changing password:', error);
+    showMessage(error.message || 'Failed to change password', 'error');
+  }
+}
+
+async function savePreferences() {
+  const preferences = {
+    theme: document.getElementById('themeSelect').value,
+    date_format: document.getElementById('dateFormat').value,
+    dashboard: {
+      show_recent_jobs: document.getElementById('showRecentJobs').checked,
+      show_upcoming_events: document.getElementById('showUpcomingEvents').checked,
+      default_customer_view: document.getElementById('defaultCustomerView').value
+    },
+    notifications: {
+      email_updates: document.getElementById('emailUpdates').checked,
+      job_reminders: document.getElementById('jobReminders').checked,
+      backup_notifications: document.getElementById('backupNotifications').checked,
+      system_alerts: document.getElementById('systemAlerts').checked,
+      security_alerts: document.getElementById('securityAlerts').checked
+    }
+  };
+  
+  try {
+    log('📡 Saving preferences...');
+    const response = await fetch('/api/profile/preferences', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ preferences }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      if (currentProfileData) {
+        currentProfileData.preferences = preferences;
+      }
+      showMessage('Preferences saved successfully', 'success');
+      log('✅ Preferences saved');
+    } else {
+      throw new Error(data.error || 'Failed to save preferences');
+    }
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+    showMessage('Failed to save preferences', 'error');
+  }
+}
+
+function resetPreferences() {
+  if (confirm('Are you sure you want to reset all preferences to defaults?')) {
+    // Reset to default values
+    document.getElementById('themeSelect').value = 'light';
+    document.getElementById('dateFormat').value = 'MM/DD/YYYY';
+    document.getElementById('showRecentJobs').checked = true;
+    document.getElementById('showUpcomingEvents').checked = true;
+    document.getElementById('defaultCustomerView').value = 'all';
+    document.getElementById('emailUpdates').checked = true;
+    document.getElementById('jobReminders').checked = true;
+    document.getElementById('backupNotifications').checked = true;
+    document.getElementById('systemAlerts').checked = true;
+    document.getElementById('securityAlerts').checked = true;
+    
+    showMessage('Preferences reset to defaults', 'info');
+  }
+}
+
+async function saveNotificationPreferences() {
+  await savePreferences(); // Use the same save function
+}
+
+window.showChangePasswordModal = showChangePasswordModal;
+window.closeChangePasswordModal = closeChangePasswordModal;
+window.savePreferences = savePreferences;
+window.resetPreferences = resetPreferences;
+window.saveNotificationPreferences = saveNotificationPreferences;
+// Activity and remaining profile functions
+async function loadActivityData() {
+  try {
+    log('📡 Loading activity data...');
+    const response = await fetch('/api/profile/activity');
+    const data = await response.json();
+    
+    if (data.success) {
+      displayActivityData(data.activities);
+      log('✅ Activity data loaded');
+    } else {
+      throw new Error(data.error || 'Failed to load activity');
+    }
+  } catch (error) {
+    console.error('Error loading activity:', error);
+    document.getElementById('activityList').innerHTML = 
+      '<div class="activity-error">Failed to load activity data</div>';
+  }
+}
+
+function displayActivityData(activities) {
+  const activityList = document.getElementById('activityList');
+  
+  if (!activities || activities.length === 0) {
+    activityList.innerHTML = '<div class="activity-empty">No recent activity</div>';
+    return;
+  }
+  
+  const activityHTML = activities.map(activity => {
+    const date = new Date(activity.timestamp).toLocaleDateString();
+    const time = new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const activityTypeClass = `activity-${activity.type}`;
+    const activityIcon = getActivityIcon(activity.type);
+    
+    return `
+      <div class="activity-item ${activityTypeClass}">
+        <div class="activity-icon">${activityIcon}</div>
+        <div class="activity-content">
+          <div class="activity-description">${activity.description}</div>
+          <div class="activity-timestamp">${date} at ${time}</div>
+          ${activity.ip_address ? `<div class="activity-details">IP: ${activity.ip_address}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  activityList.innerHTML = activityHTML;
+}
+
+function getActivityIcon(type) {
+  const icons = {
+    login: '🔐',
+    customer_created: '👥',
+    customer_updated: '✏️',
+    job_created: '🏗️',
+    job_updated: '📝',
+    backup_created: '💾',
+    profile_updated: '⚙️',
+    system: '🔧',
+    security: '🛡️'
+  };
+  return icons[type] || '📋';
+}
+
+function filterActivity() {
+  const filter = document.getElementById('activityFilter').value;
+  const activityItems = document.querySelectorAll('.activity-item');
+  
+  activityItems.forEach(item => {
+    if (filter === 'all') {
+      item.style.display = 'flex';
+    } else {
+      const hasClass = item.classList.contains(`activity-${filter}`);
+      item.style.display = hasClass ? 'flex' : 'none';
+    }
+  });
+}
+
+function setup2FA() {
+  showMessage('Two-factor authentication setup coming soon!', 'info');
+}
+
+// Initialize profile form event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Edit profile form
+  const editProfileForm = document.getElementById('editProfileForm');
+  if (editProfileForm) {
+    editProfileForm.addEventListener('submit', saveProfile);
+  }
+  
+  // Change password form
+  const changePasswordForm = document.getElementById('changePasswordForm');
+  if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', changePassword);
+  }
+});
+
+window.filterActivity = filterActivity;
+window.setup2FA = setup2FA;
 window.clearAllMasterTasks = clearAllMasterTasks;
 window.clearAllMasterTools = clearAllMasterTools;
 window.clearAllMasterMaterials = clearAllMasterMaterials;
