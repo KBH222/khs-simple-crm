@@ -3171,8 +3171,7 @@ app.get('/api/profile', (req, res) => {
     },
     security: {
       last_login: new Date().toISOString(),
-      password_last_changed: '2024-01-01T00:00:00.000Z',
-      two_factor_enabled: false
+      password_last_changed: '2024-01-01T00:00:00.000Z'
     }
   };
   

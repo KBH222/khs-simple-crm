@@ -5089,8 +5089,7 @@ body.has-offline-banner .app-header {
   color: #10B981;
 }
 
-.change-password-btn,
-.enable-2fa-btn {
+.change-password-btn {
   background: #F59E0B;
   color: white;
   border: none;
@@ -5102,8 +5101,7 @@ body.has-offline-banner .app-header {
   transition: background-color 0.2s;
 }
 
-.change-password-btn:hover,
-.enable-2fa-btn:hover {
+.change-password-btn:hover {
   background: #D97706;
 }
 
@@ -5372,8 +5370,7 @@ body.has-offline-banner .app-header {
     gap: 12px;
   }
   
-  .change-password-btn,
-  .enable-2fa-btn {
+  .change-password-btn {
     width: 100%;
     justify-self: stretch;
   }

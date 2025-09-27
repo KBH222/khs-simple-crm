@@ -7291,7 +7291,6 @@ function updateProfileUI(user) {
     const passwordChanged = new Date(user.security.password_last_changed).toLocaleDateString();
     document.getElementById('passwordLastChanged').textContent = passwordChanged;
     
-    document.getElementById('twoFactorStatus').textContent = user.security.two_factor_enabled ? 'Enabled' : 'Disabled';
   }
   
   // Load account statistics
@@ -7602,9 +7601,6 @@ function filterActivity() {
   });
 }
 
-function setup2FA() {
-  showMessage('Two-factor authentication setup coming soon!', 'info');
-}
 
 // Initialize profile form event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -7622,7 +7618,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 window.filterActivity = filterActivity;
-window.setup2FA = setup2FA;
 
 // Make profile functions globally accessible
 window.setupProfileTabs = setupProfileTabs;
