@@ -7630,3 +7630,96 @@ window.selectAllJobs = selectAllJobs;
 window.clearSelectedTasks = clearSelectedTasks;
 window.clearSelectedTools = clearSelectedTools;
 window.clearSelectedMaterials = clearSelectedMaterials;
+
+// Worker Login Credential Management
+let currentWorkerForLogin = null;
+
+function showSetLoginModal() {
+  if (!currentWorkerDetail) {
+    showMessage('Please select a worker first', 'error');
+    return;
+  }
+  
+  currentWorkerForLogin = currentWorkerDetail;
+  
+  // Clear form
+  document.getElementById('loginUsername').value = currentWorkerDetail.username || '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginEnabled').checked = currentWorkerDetail.login_enabled || false;
+  
+  // Show modal
+  document.getElementById('setLoginModal').classList.add('active');
+}
+
+function closeSetLoginModal() {
+  document.getElementById('setLoginModal').classList.remove('active');
+  currentWorkerForLogin = null;
+}
+
+// Handle set login form submission
+document.addEventListener('DOMContentLoaded', function() {
+  const setLoginForm = document.getElementById('setLoginForm');
+  if (setLoginForm) {
+    setLoginForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (!currentWorkerForLogin) {
+        showMessage('No worker selected', 'error');
+        return;
+      }
+      
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const loginEnabled = document.getElementById('loginEnabled').checked;
+      
+      if (!username || !password) {
+        showMessage('Username and password are required', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showMessage('Password should be at least 6 characters long', 'error');
+        return;
+      }
+      
+      try {
+        log(`Setting login credentials for worker: ${currentWorkerForLogin.name}`);
+        
+        const response = await fetch(`/api/workers/${currentWorkerForLogin.id}/credentials`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: username,
+            password: password,
+            login_enabled: loginEnabled
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showMessage('Worker login credentials set successfully!', 'success');
+          
+          // Update current worker detail
+          currentWorkerForLogin.username = username;
+          currentWorkerForLogin.login_enabled = loginEnabled;
+          
+          // Close modal
+          closeSetLoginModal();
+          
+          log('✅ Worker login credentials updated');
+        } else {
+          showMessage(data.error || 'Failed to set credentials', 'error');
+        }
+      } catch (error) {
+        console.error('Error setting worker credentials:', error);
+        showMessage('Failed to set credentials. Please try again.', 'error');
+      }
+    });
+  }
+});
+
+window.showSetLoginModal = showSetLoginModal;
+window.closeSetLoginModal = closeSetLoginModal;

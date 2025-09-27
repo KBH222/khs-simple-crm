@@ -839,6 +839,7 @@
                   </div>
                   <div class="worker-actions">
                     <button class="edit-worker-detail-btn" onclick="editWorkerFromDetail()">Edit Info</button>
+                    <button class="set-login-btn" onclick="showSetLoginModal()">Set Login</button>
                   </div>
                 </div>
                 
@@ -1765,6 +1766,39 @@
   <script src="photo-compress.js?v=20250919102000"></script>
   <script src="exif-helper.js?v=20250919102000"></script>
   <script src="photo-upload-ui.js?v=20250919102000"></script>
+  <!-- Set Worker Login Modal -->
+  <div id="setLoginModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Set Worker Login Credentials</h3>
+        <button class="close-btn" onclick="closeSetLoginModal()">&times;</button>
+      </div>
+      <form id="setLoginForm">
+        <div class="form-group">
+          <label for="loginUsername">Username *</label>
+          <input type="text" id="loginUsername" name="username" required autocomplete="off">
+          <small class="form-help">Choose a unique username for this worker</small>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password *</label>
+          <input type="password" id="loginPassword" name="password" required autocomplete="new-password">
+          <small class="form-help">Minimum 6 characters recommended</small>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="loginEnabled" name="loginEnabled" checked>
+            <span class="checkbox-custom"></span>
+            Enable login for this worker
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" onclick="closeSetLoginModal()">Cancel</button>
+          <button type="submit" class="save-btn">Set Credentials</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="gantt-chart.js?v=20250919103000"></script>
   <script src="app.js?v=20250922000005"></script>
 </body>

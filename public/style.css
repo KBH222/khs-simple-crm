@@ -3997,6 +3997,23 @@ body.has-offline-banner .app-header {
   background: #2563EB;
 }
 
+.set-login-btn {
+  background: #10B981;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-left: 8px;
+}
+
+.set-login-btn:hover {
+  background: #059669;
+}
+
 .worker-info-details {
   display: grid;
   gap: 24px;

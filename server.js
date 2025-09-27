@@ -281,6 +281,57 @@ const initializeTables = () => {
     // Ignore error if column already exists
   });
   
+  // Add authentication columns for workers
+  db.run(`ALTER TABLE workers ADD COLUMN username TEXT`, (err) => {
+    // Ignore error if column already exists
+  });
+  
+  db.run(`ALTER TABLE workers ADD COLUMN password_hash TEXT`, (err) => {
+    // Ignore error if column already exists
+  });
+  
+  db.run(`ALTER TABLE workers ADD COLUMN last_login DATETIME`, (err) => {
+    // Ignore error if column already exists
+  });
+  
+  db.run(`ALTER TABLE workers ADD COLUMN login_enabled BOOLEAN DEFAULT 0`, (err) => {
+    // Ignore error if column already exists
+  });
+  
+  // Create a sample worker with login credentials for testing
+  setTimeout(async () => {
+    try {
+      // Check if sample worker already exists
+      db.get('SELECT id FROM workers WHERE name = ?', ['Sample Worker'], async (err, row) => {
+        if (err || row) return; // Skip if error or already exists
+        
+        // Create sample worker
+        const workerId = `worker-${Date.now()}`;
+        const password_hash = await bcrypt.hash('worker123', 10);
+        
+        db.run(`INSERT INTO workers (
+          id, name, role, username, password_hash, login_enabled, 
+          hourly_rate, phone, email, status, initials
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+          workerId, 'Sample Worker', 'Carpenter', 'sampleworker', 
+          password_hash, 1, 25.00, '(808) 555-0123', 
+          'sample@worker.com', 'ACTIVE', 'SW'
+        ], (err) => {
+          if (err) {
+            console.error('Error creating sample worker:', err);
+          } else {
+            console.log('✅ Sample worker created with login credentials:');
+            console.log('   Username: sampleworker');
+            console.log('   Password: worker123');
+            console.log('   Access: http://localhost:3001/worker-login.html');
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error in sample worker creation:', error);
+    }
+  }, 2000); // Wait 2 seconds for database to be ready
+  
   // Text Send Contacts table
   db.run(`CREATE TABLE IF NOT EXISTS text_send_contacts (
     id TEXT PRIMARY KEY,
@@ -1848,6 +1899,74 @@ app.get('/api/workers', (req, res) => {
   });
 });
 
+// Admin endpoint to set up worker login credentials
+app.post('/api/workers/:id/credentials', async (req, res) => {
+  const { id } = req.params;
+  const { username, password, login_enabled } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Username and password are required' 
+    });
+  }
+  
+  try {
+    // Check if username already exists for another worker
+    const existingWorker = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT id FROM workers WHERE username = ? AND id != ?',
+        [username, id],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+    
+    if (existingWorker) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Username already exists' 
+      });
+    }
+    
+    // Hash the password
+    const password_hash = await bcrypt.hash(password, 10);
+    
+    // Update worker with credentials
+    db.run(
+      `UPDATE workers SET 
+       username = ?, 
+       password_hash = ?, 
+       login_enabled = ?,
+       updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [username, password_hash, login_enabled ? 1 : 0, id],
+      function(err) {
+        if (err) {
+          console.error('Error setting worker credentials:', err);
+          return res.status(500).json({ success: false, error: 'Database error' });
+        }
+        
+        if (this.changes === 0) {
+          return res.status(404).json({ success: false, error: 'Worker not found' });
+        }
+        
+        console.log(`Worker credentials set for worker ID: ${id}, username: ${username}`);
+        res.json({ 
+          success: true, 
+          message: 'Worker login credentials updated successfully' 
+        });
+      }
+    );
+    
+  } catch (error) {
+    console.error('Error setting worker credentials:', error);
+    res.status(500).json({ success: false, error: 'Failed to set credentials' });
+  }
+});
+
 app.post('/api/workers', (req, res) => {
   const { name, role, hourly_rate, phone, email, address, hire_date, notes, initials } = req.body;
   
@@ -3136,6 +3255,125 @@ app.get('/api/data/export/download', (req, res) => {
       });
     }
   });
+});
+
+// Worker Authentication API Routes
+app.post('/api/worker/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Username and password are required' 
+    });
+  }
+
+  try {
+    // Find worker by username
+    const worker = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM workers WHERE username = ? AND login_enabled = 1 AND status = "ACTIVE"',
+        [username],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+
+    if (!worker) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid username or password' 
+      });
+    }
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, worker.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid username or password' 
+      });
+    }
+
+    // Update last login
+    db.run(
+      'UPDATE workers SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+      [worker.id]
+    );
+
+    // Store worker session
+    req.session.workerId = worker.id;
+    req.session.workerName = worker.name;
+    req.session.workerRole = worker.role;
+    req.session.userType = 'worker';
+
+    // Log the login
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const clientIP = req.ip || req.connection.remoteAddress || '127.0.0.1';
+    console.log(`[${timestamp}] Worker login: ${worker.name} (${username}) from ${clientIP}`);
+
+    res.json({
+      success: true,
+      worker: {
+        id: worker.id,
+        name: worker.name,
+        role: worker.role,
+        username: worker.username,
+        last_login: worker.last_login
+      }
+    });
+
+  } catch (error) {
+    console.error('Worker login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Login failed. Please try again.' 
+    });
+  }
+});
+
+app.post('/api/worker/logout', (req, res) => {
+  if (req.session.userType === 'worker') {
+    const workerName = req.session.workerName;
+    req.session.destroy();
+    
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    console.log(`[${timestamp}] Worker logout: ${workerName}`);
+    
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ success: false, error: 'Not logged in as worker' });
+  }
+});
+
+app.get('/api/worker/profile', (req, res) => {
+  if (req.session.userType !== 'worker') {
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Worker authentication required' 
+    });
+  }
+
+  db.get(
+    'SELECT id, name, role, username, email, phone, last_login FROM workers WHERE id = ?',
+    [req.session.workerId],
+    (err, worker) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: 'Database error' });
+      }
+      
+      if (!worker) {
+        return res.status(404).json({ success: false, error: 'Worker not found' });
+      }
+
+      res.json({
+        success: true,
+        worker: worker
+      });
+    }
+  );
 });
 
 // Profile API Routes
