@@ -323,7 +323,7 @@ const initializeTables = () => {
             console.log('✅ Sample worker created with login credentials:');
             console.log('   Username: sampleworker');
             console.log('   Password: worker123');
-            console.log('   Access: http://localhost:3001/worker-login.html');
+            console.log(`   Access: http://localhost:${PORT}/worker-login.html`);
           }
         });
       });
