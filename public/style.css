@@ -4043,6 +4043,154 @@ body.has-offline-banner .app-header {
   background: #DC2626;
 }
 
+/* Custom Date Picker Styles */
+.custom-date-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-date-picker input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.date-picker-btn {
+  background: #F3F4F6;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.date-picker-btn:hover {
+  background: #E5E7EB;
+}
+
+.date-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 4px;
+  padding: 16px;
+}
+
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.date-nav-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.date-nav-btn:hover {
+  background: #F3F4F6;
+}
+
+.date-picker-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #111827;
+}
+
+.date-picker-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.date-picker-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  border: none;
+  background: none;
+  min-height: 32px;
+}
+
+.date-picker-day:hover {
+  background: #F3F4F6;
+}
+
+.date-picker-day.today {
+  background: #DBEAFE;
+  color: #1E40AF;
+  font-weight: 600;
+}
+
+.date-picker-day.selected {
+  background: #3B82F6;
+  color: white;
+  font-weight: 600;
+}
+
+.date-picker-day.unavailable {
+  background: #F3F4F6;
+  color: #9CA3AF;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.date-picker-day.unavailable:hover {
+  background: #F3F4F6;
+}
+
+.date-picker-day.unavailable::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: #9CA3AF;
+  transform: translateY(-50%);
+}
+
+.date-picker-day.future {
+  color: #D1D5DB;
+  cursor: not-allowed;
+}
+
+.date-picker-day.future:hover {
+  background: none;
+}
+
+.date-picker-day.other-month {
+  color: #D1D5DB;
+  cursor: default;
+}
+
+.date-picker-day.other-month:hover {
+  background: none;
+}
+
 .worker-info-details {
   display: grid;
   gap: 24px;

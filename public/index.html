@@ -1656,9 +1656,21 @@
         <h4>Step 1 of 4: Select Date</h4>
         <div class="form-group">
           <label for="workDate">Work Date</label>
-          <input type="date" id="workDate" required>
+          <div class="custom-date-picker">
+            <input type="text" id="workDate" readonly required placeholder="Select date...">
+            <button type="button" class="date-picker-btn" onclick="toggleDatePicker()">📅</button>
+            <div class="date-picker-dropdown" id="datePicker" style="display: none;">
+              <div class="date-picker-header">
+                <button type="button" class="date-nav-btn" onclick="previousMonth()">&lt;</button>
+                <span class="date-picker-title" id="datePickerTitle">January 2024</span>
+                <button type="button" class="date-nav-btn" onclick="nextMonth()">&gt;</button>
+              </div>
+              <div class="date-picker-calendar" id="datePickerCalendar">
+                <!-- Calendar will be generated here -->
+              </div>
+            </div>
+          </div>
           <small class="form-help">Most likely today (change if needed)</small>
-          <small class="form-help" id="existingDatesInfo" style="display: none; color: #F59E0B; font-weight: 500;"></small>
         </div>
         <div class="wizard-actions">
           <button type="button" class="next-btn" onclick="nextWizardStep()">Next →</button>
@@ -1770,6 +1782,6 @@
   </div>
 
   <script src="gantt-chart.js?v=20250919103000"></script>
-  <script src="app.js?v=20250928000013"></script>
+  <script src="app.js?v=20250928000014"></script>
 </body>
 </html>
