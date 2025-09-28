@@ -4082,7 +4082,8 @@ body.has-offline-banner .app-header {
 .date-picker-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   background: white;
   border: 1px solid #D1D5DB;
   border-radius: 8px;

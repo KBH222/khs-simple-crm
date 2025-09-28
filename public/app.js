@@ -8079,10 +8079,63 @@ function toggleDatePicker() {
   if (picker.style.display === 'none') {
     picker.style.display = 'block';
     renderDatePicker();
+    positionDatePicker(); // Smart positioning after showing
   } else {
     picker.style.display = 'none';
   }
 }
+
+// Smart positioning to keep calendar within viewport
+function positionDatePicker() {
+  const picker = document.getElementById('datePicker');
+  const input = document.getElementById('workDate');
+  
+  if (!picker || !input) return;
+  
+  // Reset any previous positioning
+  picker.style.top = '';
+  picker.style.left = '';
+  picker.style.transform = '';
+  
+  // Get viewport dimensions
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Get input position and dimensions
+  const inputRect = input.getBoundingClientRect();
+  const pickerRect = picker.getBoundingClientRect();
+  
+  // Calculate ideal position (centered below input)
+  let top = inputRect.bottom + 4;
+  let left = inputRect.left + (inputRect.width / 2) - (280 / 2); // 280px is picker width
+  
+  // Adjust horizontal position if it goes off-screen
+  if (left < 10) {
+    left = 10; // 10px margin from left edge
+  } else if (left + 280 > viewportWidth - 10) {
+    left = viewportWidth - 280 - 10; // 10px margin from right edge
+  }
+  
+  // Adjust vertical position if it goes off-screen
+  if (top + pickerRect.height > viewportHeight - 10) {
+    // Show above input instead of below
+    top = inputRect.top - pickerRect.height - 4;
+  }
+  
+  // Apply the calculated position
+  picker.style.position = 'fixed';
+  picker.style.top = `${top}px`;
+  picker.style.left = `${left}px`;
+  picker.style.transform = 'none';
+}
+
+// Reposition calendar on window resize
+window.addEventListener('resize', () => {
+  const picker = document.getElementById('datePicker');
+  if (picker && picker.style.display !== 'none') {
+    positionDatePicker();
+  }
+});
 
 function previousMonth() {
   pickerCurrentDate.setMonth(pickerCurrentDate.getMonth() - 1);
@@ -8685,3 +8738,4 @@ window.selectDate = selectDate;
 window.refreshExistingDates = refreshExistingDates;
 window.formatDateWithDay = formatDateWithDay;
 window.extractISODate = extractISODate;
+window.positionDatePicker = positionDatePicker;
