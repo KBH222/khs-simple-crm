@@ -5176,7 +5176,7 @@ function renderHoursDetails() {
   const entriesHtml = workHours.map(entry => {
     const workDate = parseLocalDate(entry.work_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const jobInfo = entry.job_title ? `${entry.customer_name} - ${entry.job_title}` : 'No job assigned';
-    const timeRange = `${entry.start_time} - ${entry.end_time}`;
+    const timeRange = `${formatTime12Hour(entry.start_time)} - ${formatTime12Hour(entry.end_time)}`;
     const description = entry.description || 'No description';
     
     return `
@@ -7998,6 +7998,25 @@ function parseLocalDate(dateStr) {
   return new Date(year, month - 1, day); // Local date construction
 }
 
+// Convert 24-hour time to 12-hour AM/PM format
+function formatTime12Hour(time24) {
+  if (!time24) return '';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  const minute = minutes || '00';
+  
+  if (hour24 === 0) {
+    return `12:${minute} AM`;
+  } else if (hour24 < 12) {
+    return `${hour24}:${minute} AM`;
+  } else if (hour24 === 12) {
+    return `12:${minute} PM`;
+  } else {
+    return `${hour24 - 12}:${minute} PM`;
+  }
+}
+
 // Format date as MM-DD-YYYY DayName (e.g., "09-22-2025 Sunday") - Hawaii timezone friendly
 function formatDateWithDay(dateStr) {
   // Parse the date string as local date to avoid timezone issues
@@ -8500,7 +8519,7 @@ function updateSummary() {
   document.getElementById('summaryDate').textContent = dateStr;
   document.getElementById('summaryLocation').textContent = jobLocation;
   document.getElementById('summaryWorkType').textContent = workType;
-  document.getElementById('summaryTime').textContent = `${startTime} - ${endTime}`;
+  document.getElementById('summaryTime').textContent = `${formatTime12Hour(startTime)} - ${formatTime12Hour(endTime)}`;
   document.getElementById('summaryLunch').textContent = lunchMinutes > 0 ? `${lunchMinutes} minutes` : 'None';
   document.getElementById('summaryTotalHours').textContent = `${totalHours} hours`;
 }
@@ -8646,8 +8665,8 @@ function addHoursRowToTable(entry) {
   const row = document.createElement('tr');
   row.innerHTML = `
     <td>${parseLocalDate(entry.work_date).toLocaleDateString()}</td>
-    <td>${entry.start_time}</td>
-    <td>${entry.end_time}</td>
+    <td>${formatTime12Hour(entry.start_time)}</td>
+    <td>${formatTime12Hour(entry.end_time)}</td>
     <td>${totalHours}</td>
     <td>${entry.break_minutes || 0}</td>
     <td>${location}</td>
@@ -8747,3 +8766,4 @@ window.formatDateWithDay = formatDateWithDay;
 window.extractISODate = extractISODate;
 window.positionDatePicker = positionDatePicker;
 window.parseLocalDate = parseLocalDate;
+window.formatTime12Hour = formatTime12Hour;
