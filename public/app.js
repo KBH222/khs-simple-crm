@@ -7940,7 +7940,7 @@ function toggleDatePicker() {
   const picker = document.getElementById('datePicker');
   if (picker.style.display === 'none') {
     picker.style.display = 'block';
-    renderCalendar();
+    renderDatePicker();
   } else {
     picker.style.display = 'none';
   }
@@ -7948,12 +7948,12 @@ function toggleDatePicker() {
 
 function previousMonth() {
   currentDate.setMonth(currentDate.getMonth() - 1);
-  renderCalendar();
+  renderDatePicker();
 }
 
 function nextMonth() {
   currentDate.setMonth(currentDate.getMonth() + 1);
-  renderCalendar();
+  renderDatePicker();
 }
 
 function selectDate(dateStr) {
@@ -7976,10 +7976,10 @@ function selectDate(dateStr) {
   selectedDate = dateStr;
   document.getElementById('workDate').value = dateStr;
   document.getElementById('datePicker').style.display = 'none';
-  renderCalendar(); // Re-render to show selection
+  renderDatePicker(); // Re-render to show selection
 }
 
-function renderCalendar() {
+function renderDatePicker() {
   const calendar = document.getElementById('datePickerCalendar');
   const title = document.getElementById('datePickerTitle');
   
