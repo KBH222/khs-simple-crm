@@ -4121,10 +4121,9 @@ body.has-offline-banner .app-header {
 
 .worker-hours-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap;
   gap: 16px;
 }
 

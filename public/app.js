@@ -5277,18 +5277,30 @@ function editHours(hoursId) {
 }
 
 async function deleteHours(hoursId) {
+  console.log('🗑️ Attempting to delete hours with ID:', hoursId);
+  
   if (!confirm('Are you sure you want to delete this time entry?')) {
     return;
   }
   
   try {
+    console.log('🗑️ Sending DELETE request to:', `/api/work-hours/${hoursId}`);
     const response = await fetch(`/api/work-hours/${hoursId}`, {
       method: 'DELETE'
     });
     
+    console.log('🗑️ Delete response status:', response.status);
+    
     if (response.ok) {
+      console.log('✅ Hours deleted successfully');
       loadWorkHours(); // Reload the hours
+      // Also reload worker hours if we're in worker detail view
+      if (window.currentWorker) {
+        loadWorkerHours(window.currentWorker.id);
+      }
     } else {
+      const errorData = await response.text();
+      console.error('❌ Delete failed. Status:', response.status, 'Response:', errorData);
       logError('Failed to delete hours');
     }
   } catch (error) {
@@ -8139,10 +8151,18 @@ async function saveHoursEntry() {
       const result = await response.json();
       
       // Add new row to the hours table
-      addHoursRowToTable(result.entry || {
-        ...entryData,
-        id: Date.now() // temporary ID for display
-      });
+      console.log('💾 Server response:', result);
+      console.log('💾 result.entry:', result.entry);
+      
+      if (result.entry && result.entry.id) {
+        addHoursRowToTable(result.entry);
+      } else {
+        console.error('❌ No valid entry in server response, using fallback');
+        addHoursRowToTable({
+          ...entryData,
+          id: result.id || Date.now() // Use server ID or fallback
+        });
+      }
       
       // Hide the wizard modal
       document.getElementById('hoursWizardModal').style.display = 'none';
