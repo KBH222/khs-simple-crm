@@ -4117,6 +4117,23 @@ body.has-offline-banner .app-header {
   background: #F3F4F6;
 }
 
+.date-picker-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6B7280;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.date-picker-close-btn:hover {
+  background: #F3F4F6;
+  color: #DC2626;
+}
+
 .date-picker-title {
   font-weight: 600;
   font-size: 16px;

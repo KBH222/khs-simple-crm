@@ -8106,8 +8106,53 @@ function toggleDatePicker() {
     picker.style.display = 'block';
     renderDatePicker();
     positionDatePicker(); // Smart positioning after showing
+    setupDatePickerCloseHandlers(); // Setup click-outside-to-close
   } else {
+    closeDatePicker();
+  }
+}
+
+// Close the date picker
+function closeDatePicker() {
+  const picker = document.getElementById('datePicker');
+  if (picker) {
     picker.style.display = 'none';
+    removeDatePickerCloseHandlers(); // Clean up event listeners
+  }
+}
+
+// Setup click-outside-to-close functionality
+function setupDatePickerCloseHandlers() {
+  // Add click outside listener after a small delay to avoid immediate closing
+  setTimeout(() => {
+    document.addEventListener('click', handleDatePickerOutsideClick);
+    document.addEventListener('keydown', handleDatePickerEscapeKey);
+  }, 100);
+}
+
+// Remove click-outside event listeners
+function removeDatePickerCloseHandlers() {
+  document.removeEventListener('click', handleDatePickerOutsideClick);
+  document.removeEventListener('keydown', handleDatePickerEscapeKey);
+}
+
+// Handle clicking outside the date picker
+function handleDatePickerOutsideClick(event) {
+  const picker = document.getElementById('datePicker');
+  const pickerContainer = document.querySelector('.custom-date-picker');
+  
+  // Check if click is outside both the picker and the input/button
+  if (picker && pickerContainer && 
+      !picker.contains(event.target) && 
+      !pickerContainer.contains(event.target)) {
+    closeDatePicker();
+  }
+}
+
+// Handle ESC key to close date picker
+function handleDatePickerEscapeKey(event) {
+  if (event.key === 'Escape') {
+    closeDatePicker();
   }
 }
 
@@ -8192,7 +8237,7 @@ function selectDate(dateStr) {
   
   pickerSelectedDate = dateStr;
   document.getElementById('workDate').value = formatDateWithDay(dateStr);
-  document.getElementById('datePicker').style.display = 'none';
+  closeDatePicker(); // Use the proper close function
   renderDatePicker(); // Re-render to show selection
 }
 
@@ -8767,3 +8812,4 @@ window.extractISODate = extractISODate;
 window.positionDatePicker = positionDatePicker;
 window.parseLocalDate = parseLocalDate;
 window.formatTime12Hour = formatTime12Hour;
+window.closeDatePicker = closeDatePicker;
