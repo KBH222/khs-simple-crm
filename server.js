@@ -2126,7 +2126,14 @@ app.post('/api/work-hours', (req, res) => {
     }
     
     // Debug logging
-    console.log(`[${new Date().toISOString()}] Checking for existing hours: worker_id=${worker_id}, work_date=${work_date}, found:`, existing);
+    console.log(`[${new Date().toISOString()}] 🔍 Checking for existing hours: worker_id=${worker_id}, work_date=${work_date}, found:`, existing);
+    
+    // Additional debug: show all entries for this worker
+    db.all(`SELECT id, work_date FROM work_hours WHERE worker_id = ?`, [worker_id], (err, allEntries) => {
+      if (!err) {
+        console.log(`[${new Date().toISOString()}] 📋 All existing entries for worker ${worker_id}:`, allEntries);
+      }
+    });
     
     if (existing) {
       console.log(`[${new Date().toISOString()}] Duplicate found - existing entry ID: ${existing.id}`);

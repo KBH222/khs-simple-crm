@@ -6223,7 +6223,8 @@ function calculateDayHours(day) {
 
 // Edit worker from detail modal
 function editWorkerFromDetail() {
-  console.log('editWorkerFromDetail called, currentWorker:', window.currentWorker);
+  console.log('🔧 editWorkerFromDetail called, currentWorker:', window.currentWorker);
+  alert('Edit button clicked! Current worker: ' + (window.currentWorker ? window.currentWorker.name : 'None'));
   
   if (window.currentWorker) {
     // Close the detail modal first
@@ -6239,6 +6240,9 @@ function editWorkerFromDetail() {
 
 // Delete worker from detail modal
 function deleteWorkerFromDetail() {
+  console.log('🗑️ deleteWorkerFromDetail called, currentWorker:', window.currentWorker);
+  alert('Delete button clicked! Current worker: ' + (window.currentWorker ? window.currentWorker.name : 'None'));
+  
   if (!window.currentWorker) {
     alert('No worker selected for deletion');
     return;
@@ -8091,6 +8095,8 @@ function updateSummary() {
 }
 
 async function saveHoursEntry() {
+  console.log('💾 saveHoursEntry called, currentWorker:', window.currentWorker);
+  
   if (!window.currentWorker) {
     alert('No worker selected');
     return;
@@ -8118,6 +8124,8 @@ async function saveHoursEntry() {
       work_type: workType,
       description: `Location: ${jobLocation}`
     };
+    
+    console.log('📤 Sending hours entry data:', entryData);
     
     const response = await fetch('/api/work-hours', {
       method: 'POST',
