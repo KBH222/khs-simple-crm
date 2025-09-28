@@ -7939,6 +7939,30 @@ var pickerCurrentDate = new Date();
 var pickerSelectedDate = null;
 var pickerExistingDates = [];
 
+// Format date as DD-MM-YYYY DayName (e.g., "22-09-2025 Sunday")
+function formatDateWithDay(dateStr) {
+  const date = new Date(dateStr);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = dayNames[date.getDay()];
+  
+  return `${day}-${month}-${year} ${dayName}`;
+}
+
+// Extract ISO date (YYYY-MM-DD) from formatted display text (DD-MM-YYYY DayName)
+function extractISODate(formattedDate) {
+  if (!formattedDate) return '';
+  
+  // Extract the date part before the day name (e.g., "22-09-2025" from "22-09-2025 Sunday")
+  const datePart = formattedDate.split(' ')[0];
+  if (!datePart || !datePart.includes('-')) return formattedDate; // Return as-is if not formatted
+  
+  const [day, month, year] = datePart.split('-');
+  return `${year}-${month}-${day}`; // Convert to YYYY-MM-DD
+}
+
 // Custom Date Picker Functions
 function toggleDatePicker() {
   const picker = document.getElementById('datePicker');
@@ -7978,7 +8002,7 @@ function selectDate(dateStr) {
   }
   
   pickerSelectedDate = dateStr;
-  document.getElementById('workDate').value = dateStr;
+  document.getElementById('workDate').value = formatDateWithDay(dateStr);
   document.getElementById('datePicker').style.display = 'none';
   renderDatePicker(); // Re-render to show selection
 }
@@ -8075,7 +8099,7 @@ async function loadExistingWorkDates(workerId, dateInput) {
       const today = new Date().toISOString().split('T')[0];
       if (!pickerExistingDates.includes(today)) {
         pickerSelectedDate = today;
-        dateInput.value = today;
+        dateInput.value = formatDateWithDay(today);
       }
       
       // Always render the date picker after loading dates
@@ -8191,9 +8215,10 @@ function nextWizardStep() {
   if (currentWizardStep === 1) {
     // Validate step 1 - Date
     const workDateInput = document.getElementById('workDate');
-    const workDate = workDateInput.value;
+    const workDateDisplay = workDateInput.value;
+    const workDate = extractISODate(workDateDisplay); // Convert to YYYY-MM-DD for validation
     
-    if (!workDate) {
+    if (!workDateDisplay || !workDate) {
       alert('Please select a work date');
       return;
     }
@@ -8284,8 +8309,9 @@ function updateWizardStep() {
 }
 
 function updateSummary() {
-  const workDate = document.getElementById('workDate').value;
-  const dateStr = workDate ? new Date(workDate + 'T00:00:00').toLocaleDateString() : 'Not selected';
+  const workDateDisplay = document.getElementById('workDate').value;
+  const workDate = extractISODate(workDateDisplay);
+  const dateStr = workDateDisplay || 'Not selected'; // Use the formatted display directly
   
   const jobLocation = document.getElementById('jobLocation').value;
   const workType = document.getElementById('workType').value;
@@ -8322,7 +8348,8 @@ async function saveHoursEntry() {
   
   try {
     // Get all wizard data
-    const workDate = document.getElementById('workDate').value;
+    const workDateDisplay = document.getElementById('workDate').value;
+    const workDate = extractISODate(workDateDisplay); // Convert to YYYY-MM-DD for API
     const jobLocation = document.getElementById('jobLocation').value;
     const workType = document.getElementById('workType').value;
     const startTime = document.getElementById('startTime').value;
@@ -8545,3 +8572,5 @@ window.previousMonth = previousMonth;
 window.nextMonth = nextMonth;
 window.selectDate = selectDate;
 window.refreshExistingDates = refreshExistingDates;
+window.formatDateWithDay = formatDateWithDay;
+window.extractISODate = extractISODate;
