@@ -7806,3 +7806,306 @@ document.addEventListener('DOMContentLoaded', function() {
 window.showSetLoginModal = showSetLoginModal;
 window.closeSetLoginModal = closeSetLoginModal;
 window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
+
+// Hours Wizard Functions
+let currentWizardStep = 1;
+
+function openHoursWizard() {
+  if (!window.currentWorker) {
+    alert('Please select a worker first');
+    return;
+  }
+  
+  // Reset wizard to step 1
+  currentWizardStep = 1;
+  updateWizardStep();
+  
+  // Load defaults from localStorage
+  const lastLocation = localStorage.getItem('lastJobLocation') || '';
+  const lastWorkType = localStorage.getItem('lastWorkType') || '';
+  
+  document.getElementById('jobLocation').value = lastLocation;
+  document.getElementById('workType').value = lastWorkType;
+  
+  // Show modal
+  document.getElementById('hoursWizardModal').style.display = 'block';
+}
+
+function closeHoursWizard() {
+  document.getElementById('hoursWizardModal').style.display = 'none';
+  currentWizardStep = 1;
+  updateWizardStep();
+}
+
+function nextWizardStep() {
+  if (currentWizardStep === 1) {
+    // Validate step 1
+    const jobLocation = document.getElementById('jobLocation').value;
+    const workType = document.getElementById('workType').value;
+    
+    if (!jobLocation || !workType) {
+      alert('Please select both Job Location and Work Type');
+      return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('lastJobLocation', jobLocation);
+    localStorage.setItem('lastWorkType', workType);
+    
+    currentWizardStep = 2;
+  } else if (currentWizardStep === 2) {
+    // Validate step 2
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    
+    if (!startTime || !endTime) {
+      alert('Please enter both start and end times');
+      return;
+    }
+    
+    // Validate end time > start time
+    if (endTime <= startTime) {
+      document.getElementById('timeValidationError').style.display = 'block';
+      return;
+    }
+    
+    document.getElementById('timeValidationError').style.display = 'none';
+    
+    // Update summary
+    updateSummary();
+    currentWizardStep = 3;
+  }
+  
+  updateWizardStep();
+}
+
+function prevWizardStep() {
+  if (currentWizardStep > 1) {
+    currentWizardStep--;
+    updateWizardStep();
+  }
+}
+
+function updateWizardStep() {
+  // Update progress indicators
+  document.querySelectorAll('.wizard-step').forEach((step, index) => {
+    if (index + 1 <= currentWizardStep) {
+      step.classList.add('active');
+    } else {
+      step.classList.remove('active');
+    }
+  });
+  
+  // Show/hide step content
+  document.querySelectorAll('.wizard-step-content').forEach((content, index) => {
+    if (index + 1 === currentWizardStep) {
+      content.classList.add('active');
+    } else {
+      content.classList.remove('active');
+    }
+  });
+}
+
+function updateSummary() {
+  const today = new Date();
+  const dateStr = today.toLocaleDateString();
+  
+  const jobLocation = document.getElementById('jobLocation').value;
+  const workType = document.getElementById('workType').value;
+  const startTime = document.getElementById('startTime').value;
+  const endTime = document.getElementById('endTime').value;
+  const lunchMinutes = parseInt(document.getElementById('lunchMinutes').value) || 0;
+  
+  // Calculate total hours
+  const start = new Date(`2000-01-01T${startTime}`);
+  const end = new Date(`2000-01-01T${endTime}`);
+  const totalMinutes = (end - start) / (1000 * 60) - lunchMinutes;
+  const totalHours = (totalMinutes / 60).toFixed(2);
+  
+  // Update summary display
+  document.getElementById('summaryDate').textContent = dateStr;
+  document.getElementById('summaryLocation').textContent = jobLocation;
+  document.getElementById('summaryWorkType').textContent = workType;
+  document.getElementById('summaryTime').textContent = `${startTime} - ${endTime}`;
+  document.getElementById('summaryLunch').textContent = lunchMinutes > 0 ? `${lunchMinutes} minutes` : 'None';
+  document.getElementById('summaryTotalHours').textContent = `${totalHours} hours`;
+}
+
+async function saveHoursEntry() {
+  if (!window.currentWorker) {
+    alert('No worker selected');
+    return;
+  }
+  
+  const saveBtn = document.getElementById('saveHoursBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const jobLocation = document.getElementById('jobLocation').value;
+    const workType = document.getElementById('workType').value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const lunchMinutes = parseInt(document.getElementById('lunchMinutes').value) || 0;
+    
+    const entryData = {
+      worker_id: window.currentWorker.id,
+      work_date: today,
+      start_time: startTime,
+      end_time: endTime,
+      break_minutes: lunchMinutes,
+      work_type: workType,
+      description: `Location: ${jobLocation}`
+    };
+    
+    const response = await fetch('/api/work-hours', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(entryData)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      
+      // Add new row to the hours table
+      addHoursRowToTable(result.entry || {
+        ...entryData,
+        id: Date.now() // temporary ID for display
+      });
+      
+      // Close wizard
+      closeHoursWizard();
+      
+      // Show success message
+      showMessage('Hours entry saved successfully!', 'success');
+      
+      // Refresh hours display if needed
+      if (window.currentWorker) {
+        loadWorkerHours(window.currentWorker.id);
+      }
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to save hours');
+    }
+  } catch (error) {
+    console.error('Error saving hours:', error);
+    alert('Failed to save hours entry: ' + error.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Entry';
+  }
+}
+
+function addHoursRowToTable(entry) {
+  const tableBody = document.getElementById('hoursTableBody');
+  if (!tableBody) return;
+  
+  // Hide empty message
+  const emptyMessage = document.getElementById('noHoursMessage');
+  if (emptyMessage) {
+    emptyMessage.style.display = 'none';
+  }
+  
+  // Calculate hours
+  const start = new Date(`2000-01-01T${entry.start_time}`);
+  const end = new Date(`2000-01-01T${entry.end_time}`);
+  const totalMinutes = (end - start) / (1000 * 60) - (entry.break_minutes || 0);
+  const totalHours = (totalMinutes / 60).toFixed(2);
+  
+  // Extract location from description
+  const location = entry.description ? entry.description.replace('Location: ', '') : '-';
+  
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${new Date(entry.work_date).toLocaleDateString()}</td>
+    <td>${entry.start_time}</td>
+    <td>${entry.end_time}</td>
+    <td>${totalHours}</td>
+    <td>${entry.break_minutes || 0}</td>
+    <td>${location}</td>
+    <td>${entry.work_type}</td>
+    <td>
+      <button class="edit-btn" onclick="editHours(${entry.id})" title="Edit">✏️</button>
+      <button class="delete-btn" onclick="deleteHours(${entry.id})" title="Delete">🗑️</button>
+    </td>
+  `;
+  
+  // Insert at the beginning of the table
+  tableBody.insertBefore(row, tableBody.firstChild);
+}
+
+async function loadWorkerHours(workerId) {
+  const tableBody = document.getElementById('hoursTableBody');
+  const emptyMessage = document.getElementById('noHoursMessage');
+  const loadingDiv = document.getElementById('workerHoursLoading');
+  
+  if (!tableBody) return;
+  
+  try {
+    if (loadingDiv) loadingDiv.style.display = 'block';
+    
+    const response = await fetch(`/api/workers/${workerId}/hours`);
+    if (response.ok) {
+      const hours = await response.json();
+      
+      tableBody.innerHTML = '';
+      
+      if (hours.length === 0) {
+        if (emptyMessage) emptyMessage.style.display = 'block';
+      } else {
+        if (emptyMessage) emptyMessage.style.display = 'none';
+        
+        hours.forEach(entry => {
+          addHoursRowToTable(entry);
+        });
+      }
+    } else {
+      throw new Error('Failed to load hours');
+    }
+  } catch (error) {
+    console.error('Error loading worker hours:', error);
+    if (emptyMessage) {
+      emptyMessage.innerHTML = '<p>Error loading hours data</p>';
+      emptyMessage.style.display = 'block';
+    }
+  } finally {
+    if (loadingDiv) loadingDiv.style.display = 'none';
+  }
+}
+
+// Update the hours tab loading to use new system
+function updateShowWorkerTab() {
+  if (typeof showWorkerTab === 'function') {
+    const originalShowWorkerTab = showWorkerTab;
+    
+    window.showWorkerTab = function(tabName) {
+      originalShowWorkerTab(tabName);
+      
+      // Load hours when hours tab is selected
+      if (tabName === 'hours' && window.currentWorker) {
+        loadWorkerHours(window.currentWorker.id);
+      }
+    };
+  }
+}
+
+// Set up event listener for Add Hours button
+document.addEventListener('DOMContentLoaded', function() {
+  const addHoursBtn = document.getElementById('addHoursBtn');
+  if (addHoursBtn) {
+    addHoursBtn.addEventListener('click', openHoursWizard);
+  }
+  
+  // Update the worker tab function
+  updateShowWorkerTab();
+});
+
+// Make wizard functions globally accessible
+window.openHoursWizard = openHoursWizard;
+window.closeHoursWizard = closeHoursWizard;
+window.nextWizardStep = nextWizardStep;
+window.prevWizardStep = prevWizardStep;
+window.saveHoursEntry = saveHoursEntry;

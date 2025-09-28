@@ -2050,6 +2050,28 @@ app.delete('/api/workers/:id', (req, res) => {
 });
 
 // Work Hours API
+// Get work hours for a specific worker
+app.get('/api/workers/:id/hours', (req, res) => {
+  const workerId = req.params.id;
+  
+  const query = `
+    SELECT wh.*, j.title as job_title, c.name as customer_name
+    FROM work_hours wh
+    LEFT JOIN jobs j ON wh.job_id = j.id
+    LEFT JOIN customers c ON j.customer_id = c.id
+    WHERE wh.worker_id = ?
+    ORDER BY wh.work_date DESC, wh.start_time DESC
+  `;
+  
+  db.all(query, [workerId], (err, rows) => {
+    if (err) {
+      console.error('Error fetching worker hours:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(rows || []);
+  });
+});
+
 app.get('/api/work-hours', (req, res) => {
   const { worker_id, week_start } = req.query;
   let query = `SELECT wh.*, w.name as worker_name, j.title as job_title, c.name as customer_name

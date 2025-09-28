@@ -886,220 +886,43 @@
             <div id="workerHoursTab" class="worker-detail-tab-content">
               <div class="worker-hours-section">
                 <div class="worker-hours-header">
-                  <h4>Weekly Timesheet</h4>
-                  <div class="week-navigation">
-                    <button id="workerPrevWeek" class="week-nav-btn">‹</button>
-                    <span id="workerCurrentWeek">Week of Sept 14, 2025</span>
-                    <button id="workerNextWeek" class="week-nav-btn">›</button>
-                    <button id="workerThisWeek" class="week-today-btn">This Week</button>
-                  </div>
+                  <h4>Work Hours</h4>
                   <div class="worker-hours-actions">
-                    <button class="load-btn" id="loadWorkerHoursBtn">Load Hours</button>
-                    <button class="save-btn" id="saveWorkerHoursBtn">Save Hours</button>
+                    <button class="add-btn" id="addHoursBtn">+ Add Hours Entry</button>
                   </div>
                 </div>
                 
-                <!-- Weekly Timesheet Grid -->
-                <div class="worker-timesheet-container">
-                  <table class="timesheet-table" id="workerTimesheetTable">
+                <!-- Hours History Table -->
+                <div class="hours-history-container">
+                  <table class="hours-table" id="workerHoursTable">
                     <thead>
                       <tr>
-                        <th class="day-column">Day</th>
-                        <th class="time-column">Start Time</th>
-                        <th class="time-column">End Time</th>
-                        <th class="hours-column">Total Hours</th>
-                        <th class="lunch-column">Lunch (mins)</th>
-                        <th class="location-column">Job Location</th>
-                        <th class="type-column">Work Type</th>
-                        <th class="notes-column">Notes</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Hours</th>
+                        <th>Lunch (mins)</th>
+                        <th>Job Location</th>
+                        <th>Work Type</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <tr data-day="monday">
-                        <td class="day-header">Monday</td>
-                        <td><input type="time" class="time-input start-time" data-day="monday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="monday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
-                      <tr data-day="tuesday">
-                        <td class="day-header">Tuesday</td>
-                        <td><input type="time" class="time-input start-time" data-day="tuesday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="tuesday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
-                      <tr data-day="wednesday">
-                        <td class="day-header">Wednesday</td>
-                        <td><input type="time" class="time-input start-time" data-day="wednesday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="wednesday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
-                      <tr data-day="thursday">
-                        <td class="day-header">Thursday</td>
-                        <td><input type="time" class="time-input start-time" data-day="thursday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="thursday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
-                      <tr data-day="friday">
-                        <td class="day-header">Friday</td>
-                        <td><input type="time" class="time-input start-time" data-day="friday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="friday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
-                      <tr data-day="saturday">
-                        <td class="day-header">Saturday</td>
-                        <td><input type="time" class="time-input start-time" data-day="saturday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="saturday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
-                      <tr data-day="sunday">
-                        <td class="day-header">Sunday</td>
-                        <td><input type="time" class="time-input start-time" data-day="sunday"></td>
-                        <td><input type="time" class="time-input end-time" data-day="sunday"></td>
-                        <td class="hours-cell"><input type="number" step="0.25" min="0" max="24" class="hours-input" readonly></td>
-                        <td><input type="number" min="0" max="120" step="5" class="lunch-input" placeholder="0"></td>
-                        <td><input type="text" class="location-input" placeholder="Job site/location"></td>
-                        <td>
-                          <select class="work-type-select">
-                            <option value="">Select Type</option>
-                            <option value="Framing">Framing</option>
-                            <option value="Roofing">Roofing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Drywall">Drywall</option>
-                            <option value="Flooring">Flooring</option>
-                            <option value="Finish Carpentry">Finish Carpentry</option>
-                            <option value="Site Prep">Site Prep</option>
-                            <option value="General Labor">General Labor</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </td>
-                        <td><input type="text" class="notes-input" placeholder="Notes"></td>
-                      </tr>
+                    <tbody id="hoursTableBody">
+                      <!-- Hours entries will be populated here -->
                     </tbody>
-                    <tfoot>
-                      <tr class="total-row">
-                        <td><strong>TOTALS</strong></td>
-                        <td colspan="2"></td>
-                        <td class="total-hours"><strong id="workerTotalHoursWeek">0.00</strong></td>
-                        <td class="total-lunch"><strong id="workerTotalLunchWeek">0</strong></td>
-                        <td colspan="3"></td>
-                      </tr>
-                    </tfoot>
                   </table>
                   
-                  <!-- Loading/Status Messages -->
-                  <div id="workerHoursLoading" class="timesheet-loading" style="display: none;">
-                    <div class="loading-message">Loading worker hours...</div>
+                  <div id="noHoursMessage" class="empty-state" style="display: none;">
+                    <p>No hours logged yet</p>
+                    <p style="font-size: 14px; color: #6B7280; margin-top: 8px;">Click the "+ Add Hours Entry" button above to get started.</p>
                   </div>
-                  <div id="workerHoursMessage" class="timesheet-message" style="display: none;"></div>
+                </div>
+                
+                <div id="workerHoursLoading" class="hours-loading" style="display: none;">
+                  Loading hours data...
+                </div>
+                
+                <div id="workerHoursMessage" class="message" style="display: none;"></div>
                 </div>
               </div>
             </div>
@@ -1796,6 +1619,133 @@
           <button type="submit" class="save-btn">Set Credentials</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Hours Wizard Modal -->
+  <div id="hoursWizardModal" class="modal">
+    <div class="modal-content wizard-modal">
+      <div class="modal-header">
+        <h3 id="wizardModalTitle">Add Hours Entry</h3>
+        <button class="close-btn" onclick="closeHoursWizard()">&times;</button>
+      </div>
+      
+      <!-- Wizard Progress -->
+      <div class="wizard-progress">
+        <div class="wizard-step active" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-title">Job Info</div>
+        </div>
+        <div class="wizard-step" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-title">Time Entry</div>
+        </div>
+        <div class="wizard-step" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-title">Confirm</div>
+        </div>
+      </div>
+      
+      <!-- Step 1: Job Info -->
+      <div id="wizardStep1" class="wizard-step-content active">
+        <h4>Job Information</h4>
+        <div class="form-group">
+          <label for="jobLocation">Job Location</label>
+          <select id="jobLocation">
+            <option value="">Select location...</option>
+            <option value="Main Office">Main Office</option>
+            <option value="Site A">Site A</option>
+            <option value="Site B">Site B</option>
+            <option value="Customer Location">Customer Location</option>
+            <option value="Remote">Remote</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="workType">Work Type</label>
+          <select id="workType">
+            <option value="">Select work type...</option>
+            <option value="Framing">Framing</option>
+            <option value="Roofing">Roofing</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Plumbing">Plumbing</option>
+            <option value="Drywall">Drywall</option>
+            <option value="Flooring">Flooring</option>
+            <option value="Finish Carpentry">Finish Carpentry</option>
+            <option value="Site Prep">Site Prep</option>
+            <option value="General Labor">General Labor</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="wizard-actions">
+          <button type="button" class="next-btn" onclick="nextWizardStep()">Next →</button>
+        </div>
+      </div>
+      
+      <!-- Step 2: Time Entry -->
+      <div id="wizardStep2" class="wizard-step-content">
+        <h4>Time Information</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startTime">Start Time</label>
+            <input type="time" id="startTime" value="08:00">
+          </div>
+          <div class="form-group">
+            <label for="endTime">End Time</label>
+            <input type="time" id="endTime" value="16:30">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="lunchMinutes">Lunch Break</label>
+          <select id="lunchMinutes">
+            <option value="0">No lunch</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="90">1.5 hours</option>
+          </select>
+        </div>
+        <div id="timeValidationError" class="error-message" style="display: none;">
+          End time must be after start time
+        </div>
+        <div class="wizard-actions">
+          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Previous</button>
+          <button type="button" class="next-btn" onclick="nextWizardStep()">Next →</button>
+        </div>
+      </div>
+      
+      <!-- Step 3: Confirm -->
+      <div id="wizardStep3" class="wizard-step-content">
+        <h4>Confirm Entry</h4>
+        <div class="summary-card">
+          <div class="summary-row">
+            <span class="summary-label">Date:</span>
+            <span id="summaryDate">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Job Location:</span>
+            <span id="summaryLocation">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Work Type:</span>
+            <span id="summaryWorkType">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Time:</span>
+            <span id="summaryTime">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Lunch Break:</span>
+            <span id="summaryLunch">-</span>
+          </div>
+          <div class="summary-row total-row">
+            <span class="summary-label">Total Hours:</span>
+            <span id="summaryTotalHours">-</span>
+          </div>
+        </div>
+        <div class="wizard-actions">
+          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Previous</button>
+          <button type="button" class="save-btn" onclick="saveHoursEntry()" id="saveHoursBtn">Save Entry</button>
+        </div>
+      </div>
     </div>
   </div>
 
