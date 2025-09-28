@@ -7843,6 +7843,12 @@ function openHoursWizard() {
     return;
   }
   
+  // Close the worker detail modal to show the wizard clearly
+  const workerModal = document.getElementById('workerDetailModal');
+  if (workerModal) {
+    workerModal.classList.remove('active');
+  }
+  
   // Reset wizard to step 1
   currentWizardStep = 1;
   updateWizardStep();
@@ -7857,7 +7863,7 @@ function openHoursWizard() {
   if (jobLocationEl) jobLocationEl.value = lastLocation;
   if (workTypeEl) workTypeEl.value = lastWorkType;
   
-  // Show modal
+  // Show wizard modal
   const modal = document.getElementById('hoursWizardModal');
   if (modal) {
     modal.style.display = 'block';
@@ -7865,9 +7871,18 @@ function openHoursWizard() {
 }
 
 function closeHoursWizard() {
+  // Hide the wizard modal
   document.getElementById('hoursWizardModal').style.display = 'none';
   currentWizardStep = 1;
   updateWizardStep();
+  
+  // Reopen the worker detail modal if a worker is selected
+  if (window.currentWorker) {
+    const workerModal = document.getElementById('workerDetailModal');
+    if (workerModal) {
+      workerModal.classList.add('active');
+    }
+  }
 }
 
 function nextWizardStep() {
@@ -8009,15 +8024,25 @@ async function saveHoursEntry() {
         id: Date.now() // temporary ID for display
       });
       
-      // Close wizard
-      closeHoursWizard();
+      // Hide the wizard modal
+      document.getElementById('hoursWizardModal').style.display = 'none';
+      currentWizardStep = 1;
+      updateWizardStep();
       
       // Show success message
       showMessage('Hours entry saved successfully!', 'success');
       
-      // Refresh hours display if needed
+      // Refresh hours display if needed and reopen worker modal on hours tab
       if (window.currentWorker) {
         loadWorkerHours(window.currentWorker.id);
+        
+        // Reopen worker detail modal and switch to hours tab
+        const workerModal = document.getElementById('workerDetailModal');
+        if (workerModal) {
+          workerModal.classList.add('active');
+          // Switch to hours tab to show the new entry
+          showWorkerTab('hours');
+        }
       }
     } else {
       const errorData = await response.json();
