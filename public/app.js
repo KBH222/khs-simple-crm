@@ -5205,6 +5205,12 @@ function showHoursModal(hours = null) {
   const form = document.getElementById('hoursForm');
   const title = modal.querySelector('.modal-header h3');
   
+  // Close the Worker Details modal if it's open (so edit modal is visible)
+  const workerModal = document.getElementById('workerDetailModal');
+  if (workerModal && workerModal.classList.contains('active')) {
+    workerModal.classList.remove('active');
+  }
+  
   // Load workers and jobs in dropdowns
   loadWorkersForDropdowns();
   loadJobsForDropdowns();
@@ -5231,6 +5237,25 @@ function showHoursModal(hours = null) {
     // Set default date to today
     document.getElementById('hoursDate').value = new Date().toISOString().split('T')[0];
     delete form.dataset.hoursId;
+  }
+  
+  // Setup custom close handler to reopen worker modal if needed
+  const closeBtn = modal.querySelector('.close-btn');
+  if (closeBtn) {
+    // Remove any existing event listeners
+    closeBtn.onclick = null;
+    closeBtn.onclick = () => {
+      modal.classList.remove('active');
+      // If we have a current worker, reopen their detail modal
+      if (window.currentWorker) {
+        const workerModal = document.getElementById('workerDetailModal');
+        if (workerModal) {
+          workerModal.classList.add('active');
+          // Switch back to hours tab to show the updated data
+          showWorkerTab('hours');
+        }
+      }
+    };
   }
   
   modal.classList.add('active');
@@ -5417,8 +5442,22 @@ async function handleHoursSubmit(e) {
     const data = await response.json();
     
     if (response.ok) {
-      hideModals();
-      loadWorkHours(); // Reload the hours
+      // Close the hours modal
+      document.getElementById('hoursModal').classList.remove('active');
+      
+      // Reload the general hours view
+      loadWorkHours(); 
+      
+      // If we have a current worker, reopen their detail modal and refresh their hours
+      if (window.currentWorker) {
+        const workerModal = document.getElementById('workerDetailModal');
+        if (workerModal) {
+          workerModal.classList.add('active');
+          // Switch back to hours tab and reload the worker's hours
+          showWorkerTab('hours');
+          loadWorkerHours(window.currentWorker.id);
+        }
+      }
     } else {
       logError(data.error || 'Failed to save hours');
     }
