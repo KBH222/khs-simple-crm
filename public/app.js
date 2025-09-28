@@ -5305,6 +5305,8 @@ async function deleteHours(hoursId) {
       // Also reload worker hours if we're in worker detail view
       if (window.currentWorker) {
         loadWorkerHours(window.currentWorker.id);
+        // Refresh the existing dates for the date picker
+        await refreshExistingDates(window.currentWorker.id);
       }
     } else {
       const errorData = await response.text();
@@ -8081,6 +8083,24 @@ async function loadExistingWorkDates(workerId, dateInput) {
   }
 }
 
+// Refresh existing dates after hours are added/deleted
+async function refreshExistingDates(workerId) {
+  try {
+    console.log('🔄 Refreshing existing work dates for worker:', workerId);
+    const response = await fetch(`/api/workers/${workerId}/hours`);
+    
+    if (response.ok) {
+      const hours = await response.json();
+      pickerExistingDates = hours.map(entry => entry.work_date);
+      console.log('🔄 Updated existing work dates:', pickerExistingDates);
+    } else {
+      console.warn('Could not refresh existing work dates');
+    }
+  } catch (error) {
+    console.error('Error refreshing existing work dates:', error);
+  }
+}
+
 
 function openHoursWizard() {
   // Ensure currentWizardStep is initialized
@@ -8343,6 +8363,8 @@ async function saveHoursEntry() {
       // Refresh hours display if needed and reopen worker modal on hours tab
       if (window.currentWorker) {
         loadWorkerHours(window.currentWorker.id);
+        // Refresh the existing dates for the date picker
+        await refreshExistingDates(window.currentWorker.id);
         
         // Reopen worker detail modal and switch to hours tab
         const workerModal = document.getElementById('workerDetailModal');
@@ -8508,3 +8530,4 @@ window.toggleDatePicker = toggleDatePicker;
 window.previousMonth = previousMonth;
 window.nextMonth = nextMonth;
 window.selectDate = selectDate;
+window.refreshExistingDates = refreshExistingDates;
