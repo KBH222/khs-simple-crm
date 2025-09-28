@@ -6223,12 +6223,36 @@ function calculateDayHours(day) {
 
 // Edit worker from detail modal
 function editWorkerFromDetail() {
+  console.log('editWorkerFromDetail called, currentWorker:', window.currentWorker);
+  
   if (window.currentWorker) {
     // Close the detail modal first
     document.getElementById('workerDetailModal').classList.remove('active');
     
     // Open the edit modal
     showWorkerModal(window.currentWorker);
+  } else {
+    console.error('No current worker selected for editing');
+    alert('No worker selected for editing');
+  }
+}
+
+// Delete worker from detail modal
+function deleteWorkerFromDetail() {
+  if (!window.currentWorker) {
+    alert('No worker selected for deletion');
+    return;
+  }
+  
+  const workerName = window.currentWorker.name;
+  const confirmDelete = confirm(`⚠️ Delete Worker\n\nAre you sure you want to delete "${workerName}"?\n\nThis action cannot be undone and will remove all associated work hours and data.`);
+  
+  if (confirmDelete) {
+    // Close the detail modal first
+    document.getElementById('workerDetailModal').classList.remove('active');
+    
+    // Use the existing delete function
+    deleteWorkerFromTile(window.currentWorker.id);
   }
 }
 
@@ -6243,6 +6267,7 @@ window.openWorkerDetailModal = openWorkerDetailModal;
 window.showWorkerTab = showWorkerTab;
 window.deleteWorkerFromTile = deleteWorkerFromTile;
 window.editWorkerFromDetail = editWorkerFromDetail;
+window.deleteWorkerFromDetail = deleteWorkerFromDetail;
 
 // Master Lists Management
 let masterTasks = {};
