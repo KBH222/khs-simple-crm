@@ -5174,7 +5174,7 @@ function renderHoursDetails() {
   `;
   
   const entriesHtml = workHours.map(entry => {
-    const workDate = new Date(entry.work_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const workDate = parseLocalDate(entry.work_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const jobInfo = entry.job_title ? `${entry.customer_name} - ${entry.job_title}` : 'No job assigned';
     const timeRange = `${entry.start_time} - ${entry.end_time}`;
     const description = entry.description || 'No description';
@@ -6016,7 +6016,7 @@ function populateTimesheetGrid(hoursData) {
   
   // Populate with data
   hoursData.forEach(entry => {
-    const workDate = new Date(entry.work_date);
+    const workDate = parseLocalDate(entry.work_date);
     const dayIndex = workDate.getDay();
     const dayName = days[dayIndex];
     
@@ -7991,11 +7991,18 @@ var pickerCurrentDate = new Date();
 var pickerSelectedDate = null;
 var pickerExistingDates = [];
 
+// Parse date string as local date to avoid Hawaii timezone issues
+function parseLocalDate(dateStr) {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-');
+  return new Date(year, month - 1, day); // Local date construction
+}
+
 // Format date as MM-DD-YYYY DayName (e.g., "09-22-2025 Sunday") - Hawaii timezone friendly
 function formatDateWithDay(dateStr) {
   // Parse the date string as local date to avoid timezone issues
-  const [year, month, day] = dateStr.split('-');
-  const date = new Date(year, month - 1, day); // Local date construction
+  const date = parseLocalDate(dateStr);
+  if (!date) return '';
   
   const dayFormatted = date.getDate().toString().padStart(2, '0');
   const monthFormatted = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -8638,7 +8645,7 @@ function addHoursRowToTable(entry) {
   
   const row = document.createElement('tr');
   row.innerHTML = `
-    <td>${new Date(entry.work_date).toLocaleDateString()}</td>
+    <td>${parseLocalDate(entry.work_date).toLocaleDateString()}</td>
     <td>${entry.start_time}</td>
     <td>${entry.end_time}</td>
     <td>${totalHours}</td>
@@ -8739,3 +8746,4 @@ window.refreshExistingDates = refreshExistingDates;
 window.formatDateWithDay = formatDateWithDay;
 window.extractISODate = extractISODate;
 window.positionDatePicker = positionDatePicker;
+window.parseLocalDate = parseLocalDate;
