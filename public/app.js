@@ -8187,7 +8187,7 @@ function positionDatePicker() {
       top = inputRect.top - pickerRect.height - 8;
     }
     
-    // Apply mobile positioning (CSS handles centering via transform)
+    // Apply mobile positioning (CSS handles width and centering via transform)
     picker.style.position = 'fixed';
     picker.style.top = `${top}px`;
     picker.style.left = '50%';

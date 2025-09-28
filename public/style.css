@@ -4220,8 +4220,8 @@ body.has-offline-banner .app-header {
 /* Mobile Responsive for Custom Date Picker */
 @media (max-width: 768px) {
   .date-picker-dropdown {
-    width: 90vw;
-    max-width: 320px;
+    width: 90%;
+    max-width: 600px;
     left: 50%;
     transform: translateX(-50%);
     margin-top: 8px;
@@ -4261,8 +4261,8 @@ body.has-offline-banner .app-header {
 
 @media (max-width: 480px) {
   .date-picker-dropdown {
-    width: 95vw;
-    max-width: 300px;
+    width: 95%;
+    max-width: 600px;
     padding: 20px;
   }
   
