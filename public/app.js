@@ -5201,6 +5201,9 @@ function showHoursModal(hours = null) {
   loadWorkersForDropdowns();
   loadJobsForDropdowns();
   
+  // Setup 5-minute rounding for time inputs in the modal
+  setupHoursModalTimeRounding();
+  
   if (hours) {
     // Edit mode
     title.textContent = 'Edit Work Hours';
@@ -5223,6 +5226,47 @@ function showHoursModal(hours = null) {
   }
   
   modal.classList.add('active');
+}
+
+// Setup 5-minute rounding for hours modal time inputs
+function setupHoursModalTimeRounding() {
+  const startTimeInput = document.getElementById('hoursStartTime');
+  const endTimeInput = document.getElementById('hoursEndTime');
+  const breakMinutesInput = document.getElementById('hoursBreakMinutes');
+  
+  if (startTimeInput && !startTimeInput.hasAttribute('data-rounded-setup')) {
+    startTimeInput.addEventListener('change', () => {
+      startTimeInput.value = roundTimeToFiveMinutes(startTimeInput.value);
+    });
+    startTimeInput.addEventListener('blur', () => {
+      startTimeInput.value = roundTimeToFiveMinutes(startTimeInput.value);
+    });
+    startTimeInput.setAttribute('data-rounded-setup', 'true');
+  }
+  
+  if (endTimeInput && !endTimeInput.hasAttribute('data-rounded-setup')) {
+    endTimeInput.addEventListener('change', () => {
+      endTimeInput.value = roundTimeToFiveMinutes(endTimeInput.value);
+    });
+    endTimeInput.addEventListener('blur', () => {
+      endTimeInput.value = roundTimeToFiveMinutes(endTimeInput.value);
+    });
+    endTimeInput.setAttribute('data-rounded-setup', 'true');
+  }
+  
+  if (breakMinutesInput && !breakMinutesInput.hasAttribute('data-rounded-setup')) {
+    breakMinutesInput.addEventListener('change', () => {
+      const breakMinutes = parseInt(breakMinutesInput.value) || 0;
+      const roundedBreak = Math.round(breakMinutes / 5) * 5;
+      breakMinutesInput.value = roundedBreak;
+    });
+    breakMinutesInput.addEventListener('blur', () => {
+      const breakMinutes = parseInt(breakMinutesInput.value) || 0;
+      const roundedBreak = Math.round(breakMinutes / 5) * 5;
+      breakMinutesInput.value = roundedBreak;
+    });
+    breakMinutesInput.setAttribute('data-rounded-setup', 'true');
+  }
 }
 
 function editHours(hoursId) {
@@ -5994,6 +6038,20 @@ function deleteWorkerFromTile(workerId) {
   deleteWorker(workerId);
 }
 
+// Function to round time to 5-minute intervals
+function roundTimeToFiveMinutes(timeString) {
+  if (!timeString) return timeString;
+  
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  const roundedMinutes = Math.round(totalMinutes / 5) * 5;
+  
+  const newHours = Math.floor(roundedMinutes / 60) % 24;
+  const newMinutes = roundedMinutes % 60;
+  
+  return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+}
+
 function setupTimesheetCalculationListeners() {
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   
@@ -6006,15 +6064,39 @@ function setupTimesheetCalculationListeners() {
       const hoursInput = row.querySelector('.hours-input');
       
       if (startTimeInput && endTimeInput && hoursInput) {
-        // Add event listeners for automatic calculation
-        startTimeInput.addEventListener('input', () => calculateDayHours(day));
-        startTimeInput.addEventListener('change', () => calculateDayHours(day));
-        endTimeInput.addEventListener('input', () => calculateDayHours(day));
-        endTimeInput.addEventListener('change', () => calculateDayHours(day));
+        // Add event listeners for automatic calculation and 5-minute rounding
+        startTimeInput.addEventListener('change', () => {
+          startTimeInput.value = roundTimeToFiveMinutes(startTimeInput.value);
+          calculateDayHours(day);
+        });
+        startTimeInput.addEventListener('blur', () => {
+          startTimeInput.value = roundTimeToFiveMinutes(startTimeInput.value);
+          calculateDayHours(day);
+        });
+        
+        endTimeInput.addEventListener('change', () => {
+          endTimeInput.value = roundTimeToFiveMinutes(endTimeInput.value);
+          calculateDayHours(day);
+        });
+        endTimeInput.addEventListener('blur', () => {
+          endTimeInput.value = roundTimeToFiveMinutes(endTimeInput.value);
+          calculateDayHours(day);
+        });
         
         if (lunchInput) {
-          lunchInput.addEventListener('input', () => calculateDayHours(day));
-          lunchInput.addEventListener('change', () => calculateDayHours(day));
+          // Round lunch to 5-minute intervals (convert to minutes)
+          lunchInput.addEventListener('change', () => {
+            const lunchMinutes = parseInt(lunchInput.value) || 0;
+            const roundedLunch = Math.round(lunchMinutes / 5) * 5;
+            lunchInput.value = roundedLunch;
+            calculateDayHours(day);
+          });
+          lunchInput.addEventListener('blur', () => {
+            const lunchMinutes = parseInt(lunchInput.value) || 0;
+            const roundedLunch = Math.round(lunchMinutes / 5) * 5;
+            lunchInput.value = roundedLunch;
+            calculateDayHours(day);
+          });
         }
       }
     }
@@ -7723,3 +7805,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 window.showSetLoginModal = showSetLoginModal;
 window.closeSetLoginModal = closeSetLoginModal;
+window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
