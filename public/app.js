@@ -5304,9 +5304,11 @@ async function deleteHours(hoursId) {
       loadWorkHours(); // Reload the hours
       // Also reload worker hours if we're in worker detail view
       if (window.currentWorker) {
+        console.log('🔄 Refreshing data after delete for worker:', window.currentWorker.id);
         loadWorkerHours(window.currentWorker.id);
         // Refresh the existing dates for the date picker
         await refreshExistingDates(window.currentWorker.id);
+        console.log('🔄 Date refresh completed after delete');
       }
     } else {
       const errorData = await response.text();
@@ -8066,7 +8068,8 @@ async function loadExistingWorkDates(workerId, dateInput) {
       const hours = await response.json();
       pickerExistingDates = hours.map(entry => entry.work_date);
       
-      console.log('📅 Existing work dates:', pickerExistingDates);
+      console.log('📅 Existing work dates loaded:', pickerExistingDates);
+      console.log('📅 Raw hours data:', hours);
       
       // Set today's date as default if available
       const today = new Date().toISOString().split('T')[0];
@@ -8074,6 +8077,9 @@ async function loadExistingWorkDates(workerId, dateInput) {
         pickerSelectedDate = today;
         dateInput.value = today;
       }
+      
+      // Always render the date picker after loading dates
+      renderDatePicker();
       
     } else {
       console.warn('Could not load existing work dates');
@@ -8093,6 +8099,13 @@ async function refreshExistingDates(workerId) {
       const hours = await response.json();
       pickerExistingDates = hours.map(entry => entry.work_date);
       console.log('🔄 Updated existing work dates:', pickerExistingDates);
+      
+      // Re-render the date picker if it's currently visible
+      const datePicker = document.getElementById('datePicker');
+      if (datePicker && datePicker.style.display !== 'none') {
+        renderDatePicker();
+        console.log('🔄 Re-rendered date picker with updated dates');
+      }
     } else {
       console.warn('Could not refresh existing work dates');
     }
@@ -8127,6 +8140,7 @@ function openHoursWizard() {
   const workDateInput = document.getElementById('workDate');
   if (workDateInput) {
     // Load existing work dates for this worker to grey out unavailable dates
+    console.log('📅 Loading fresh dates when wizard opens');
     loadExistingWorkDates(window.currentWorker.id, workDateInput).catch(error => {
       console.error('Error loading existing dates:', error);
     });
