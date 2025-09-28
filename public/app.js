@@ -5703,6 +5703,20 @@ function openWorkerDetailModal(workerId) {
   if (closeBtn) {
     closeBtn.onclick = () => modal.classList.remove('active');
   }
+  
+  // Setup Add Hours button event listener
+  const addHoursBtn = document.getElementById('addHoursBtn');
+  if (addHoursBtn) {
+    // Remove any existing event listeners
+    addHoursBtn.onclick = null;
+    addHoursBtn.addEventListener('click', function() {
+      console.log('Add Hours button clicked from worker modal!');
+      openHoursWizard();
+    });
+    console.log('Add Hours button event listener set up for worker:', worker.name);
+  } else {
+    console.log('Add Hours button not found in worker modal');
+  }
 }
 
 function showWorkerTab(tabName) {
@@ -7811,6 +7825,8 @@ window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
 let currentWizardStep = 1;
 
 function openHoursWizard() {
+  console.log('openHoursWizard called, currentWorker:', window.currentWorker);
+  
   if (!window.currentWorker) {
     alert('Please select a worker first');
     return;
@@ -7828,7 +7844,12 @@ function openHoursWizard() {
   document.getElementById('workType').value = lastWorkType;
   
   // Show modal
-  document.getElementById('hoursWizardModal').style.display = 'block';
+  const modal = document.getElementById('hoursWizardModal');
+  console.log('Modal element found:', !!modal);
+  if (modal) {
+    modal.style.display = 'block';
+    console.log('Modal should now be visible');
+  }
 }
 
 function closeHoursWizard() {
@@ -8094,9 +8115,15 @@ function updateShowWorkerTab() {
 
 // Set up event listener for Add Hours button
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM loaded, looking for addHoursBtn');
   const addHoursBtn = document.getElementById('addHoursBtn');
+  console.log('addHoursBtn found:', !!addHoursBtn);
   if (addHoursBtn) {
-    addHoursBtn.addEventListener('click', openHoursWizard);
+    addHoursBtn.addEventListener('click', function() {
+      console.log('Add Hours button clicked!');
+      openHoursWizard();
+    });
+    console.log('Event listener added to Add Hours button');
   }
   
   // Update the worker tab function
