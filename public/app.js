@@ -7931,9 +7931,9 @@ window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
 var currentWizardStep = 1; // Using var for hoisting
 
 // Custom Date Picker Variables
-let currentDate = new Date();
-let selectedDate = null;
-let existingDates = [];
+var currentDate = new Date();
+var selectedDate = null;
+var existingDates = [];
 
 // Custom Date Picker Functions
 function toggleDatePicker() {
@@ -8082,7 +8082,7 @@ async function loadExistingWorkDates(workerId, dateInput) {
 }
 
 
-async function openHoursWizard() {
+function openHoursWizard() {
   // Ensure currentWizardStep is initialized
   if (typeof currentWizardStep === 'undefined') {
     window.currentWizardStep = 1;
@@ -8103,11 +8103,13 @@ async function openHoursWizard() {
   currentWizardStep = 1;
   updateWizardStep();
   
-  // Step 1: Setup custom date picker with existing dates
+  // Step 1: Setup custom date picker with existing dates (async)
   const workDateInput = document.getElementById('workDate');
   if (workDateInput) {
     // Load existing work dates for this worker to grey out unavailable dates
-    await loadExistingWorkDates(window.currentWorker.id, workDateInput);
+    loadExistingWorkDates(window.currentWorker.id, workDateInput).catch(error => {
+      console.error('Error loading existing dates:', error);
+    });
   }
   
   // Step 2: Load defaults from localStorage
