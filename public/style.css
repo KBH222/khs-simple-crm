@@ -5796,6 +5796,10 @@ body.has-offline-banner .app-header {
 /* Hours History Table */
 .hours-history-container {
   margin-top: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scroll-behavior: smooth;
 }
 
 .hours-table {
@@ -5875,6 +5879,23 @@ body.has-offline-banner .app-header {
   .hours-table th,
   .hours-table td {
     padding: 8px;
+  }
+  
+  /* Enhanced mobile scrolling for hours table */
+  .hours-history-container {
+    max-height: 300px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    /* Add momentum scrolling for better mobile experience */
+    overscroll-behavior: contain;
+  }
+  
+  /* General mobile scrolling improvements for any scrollable content */
+  .worker-detail-content,
+  .modal-content {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
   }
   
   .profile-header {
