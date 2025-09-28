@@ -5277,10 +5277,23 @@ function setupHoursModalTimeRounding() {
   }
 }
 
-function editHours(hoursId) {
-  const hours = workHours.find(h => h.id === hoursId);
-  if (hours) {
-    showHoursModal(hours);
+async function editHours(hoursId) {
+  try {
+    console.log('✏️ Editing hours with ID:', hoursId);
+    
+    // Fetch the specific hours entry from the server
+    const response = await fetch(`/api/work-hours/${hoursId}`);
+    if (response.ok) {
+      const hours = await response.json();
+      console.log('✏️ Hours data loaded for editing:', hours);
+      showHoursModal(hours);
+    } else {
+      console.error('❌ Failed to load hours for editing');
+      alert('Failed to load hours data for editing');
+    }
+  } catch (error) {
+    console.error('❌ Error loading hours for editing:', error);
+    alert('Error loading hours data for editing');
   }
 }
 
@@ -7954,16 +7967,71 @@ function formatDateWithDay(dateStr) {
   return `${monthFormatted}-${dayFormatted}-${yearFormatted} ${dayName}`;
 }
 
-// Extract ISO date (YYYY-MM-DD) from formatted display text (MM-DD-YYYY DayName)
-function extractISODate(formattedDate) {
-  if (!formattedDate) return '';
+// Extract ISO date (YYYY-MM-DD) from formatted display text (MM-DD-YYYY DayName) or manual input
+function extractISODate(inputDate) {
+  if (!inputDate) return '';
   
-  // Extract the date part before the day name (e.g., "09-22-2025" from "09-22-2025 Sunday")
-  const datePart = formattedDate.split(' ')[0];
-  if (!datePart || !datePart.includes('-')) return formattedDate; // Return as-is if not formatted
+  // If it contains a day name, extract the date part (e.g., "09-22-2025" from "09-22-2025 Sunday")
+  const datePart = inputDate.includes(' ') ? inputDate.split(' ')[0] : inputDate;
   
-  const [month, day, year] = datePart.split('-');
-  return `${year}-${month}-${day}`; // Convert to YYYY-MM-DD
+  if (!datePart || !datePart.includes('-')) return inputDate; // Return as-is if not formatted
+  
+  const parts = datePart.split('-');
+  if (parts.length !== 3) return inputDate; // Invalid format
+  
+  // Handle both MM-DD-YYYY and DD-MM-YYYY formats by checking which makes more sense
+  const [first, second, third] = parts;
+  
+  // If third part is 4 digits, it's the year (MM-DD-YYYY or DD-MM-YYYY)
+  if (third && third.length === 4) {
+    // Assume MM-DD-YYYY format (US format)
+    return `${third}-${first.padStart(2, '0')}-${second.padStart(2, '0')}`;
+  }
+  
+  // If first part is 4 digits, it's already YYYY-MM-DD
+  if (first && first.length === 4) {
+    return inputDate; // Already in ISO format
+  }
+  
+  return inputDate; // Return as-is if we can't parse it
+}
+
+// Validate and format manually entered date
+function validateAndFormatDate(inputValue) {
+  if (!inputValue) return null;
+  
+  // Try to parse various date formats
+  let parsedDate = null;
+  
+  // Try MM-DD-YYYY format
+  const mmddyyyy = inputValue.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (mmddyyyy) {
+    const [, month, day, year] = mmddyyyy;
+    parsedDate = new Date(year, month - 1, day);
+  }
+  
+  // Try MM/DD/YYYY format
+  const mmddyyyySlash = inputValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mmddyyyySlash) {
+    const [, month, day, year] = mmddyyyySlash;
+    parsedDate = new Date(year, month - 1, day);
+  }
+  
+  // Try YYYY-MM-DD format
+  const yyyymmdd = inputValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (yyyymmdd) {
+    const [, year, month, day] = yyyymmdd;
+    parsedDate = new Date(year, month - 1, day);
+  }
+  
+  if (parsedDate && !isNaN(parsedDate.getTime())) {
+    // Return both the ISO date and formatted display
+    const isoDate = `${parsedDate.getFullYear()}-${(parsedDate.getMonth() + 1).toString().padStart(2, '0')}-${parsedDate.getDate().toString().padStart(2, '0')}`;
+    const displayDate = formatDateWithDay(isoDate);
+    return { isoDate, displayDate, isValid: true };
+  }
+  
+  return { isValid: false, error: 'Invalid date format. Use MM-DD-YYYY (e.g., 09-22-2025)' };
 }
 
 // Custom Date Picker Functions

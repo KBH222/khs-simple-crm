@@ -2210,6 +2210,31 @@ app.post('/api/work-hours', (req, res) => {
   });
 });
 
+// Get individual work hours entry by ID
+app.get('/api/work-hours/:id', (req, res) => {
+  const { id } = req.params;
+  
+  const query = `SELECT wh.*, w.name as worker_name, j.title as job_title, c.name as customer_name
+                 FROM work_hours wh
+                 LEFT JOIN workers w ON wh.worker_id = w.id
+                 LEFT JOIN jobs j ON wh.job_id = j.id 
+                 LEFT JOIN customers c ON j.customer_id = c.id
+                 WHERE wh.id = ?`;
+  
+  db.get(query, [id], (err, row) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (!row) {
+      return res.status(404).json({ error: 'Hours entry not found' });
+    }
+    
+    res.json(row);
+  });
+});
+
 app.put('/api/work-hours/:id', (req, res) => {
   const { id } = req.params;
   const { worker_id, job_id, work_date, start_time, end_time, break_minutes, work_type, description } = req.body;
