@@ -7939,27 +7939,30 @@ var pickerCurrentDate = new Date();
 var pickerSelectedDate = null;
 var pickerExistingDates = [];
 
-// Format date as DD-MM-YYYY DayName (e.g., "22-09-2025 Sunday")
+// Format date as MM-DD-YYYY DayName (e.g., "09-22-2025 Sunday") - Hawaii timezone friendly
 function formatDateWithDay(dateStr) {
-  const date = new Date(dateStr);
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
+  // Parse the date string as local date to avoid timezone issues
+  const [year, month, day] = dateStr.split('-');
+  const date = new Date(year, month - 1, day); // Local date construction
+  
+  const dayFormatted = date.getDate().toString().padStart(2, '0');
+  const monthFormatted = (date.getMonth() + 1).toString().padStart(2, '0');
+  const yearFormatted = date.getFullYear();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayName = dayNames[date.getDay()];
   
-  return `${day}-${month}-${year} ${dayName}`;
+  return `${monthFormatted}-${dayFormatted}-${yearFormatted} ${dayName}`;
 }
 
-// Extract ISO date (YYYY-MM-DD) from formatted display text (DD-MM-YYYY DayName)
+// Extract ISO date (YYYY-MM-DD) from formatted display text (MM-DD-YYYY DayName)
 function extractISODate(formattedDate) {
   if (!formattedDate) return '';
   
-  // Extract the date part before the day name (e.g., "22-09-2025" from "22-09-2025 Sunday")
+  // Extract the date part before the day name (e.g., "09-22-2025" from "09-22-2025 Sunday")
   const datePart = formattedDate.split(' ')[0];
   if (!datePart || !datePart.includes('-')) return formattedDate; // Return as-is if not formatted
   
-  const [day, month, year] = datePart.split('-');
+  const [month, day, year] = datePart.split('-');
   return `${year}-${month}-${day}`; // Convert to YYYY-MM-DD
 }
 
@@ -8042,14 +8045,14 @@ function renderDatePicker() {
   startDate.setDate(startDate.getDate() - firstDay.getDay());
   
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
   
   // Generate calendar days
   for (let i = 0; i < 42; i++) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
     
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
     const dayButton = document.createElement('button');
     dayButton.type = 'button';
     dayButton.className = 'date-picker-day';
@@ -8096,7 +8099,8 @@ async function loadExistingWorkDates(workerId, dateInput) {
       console.log('📅 Raw hours data:', hours);
       
       // Set today's date as default if available
-      const today = new Date().toISOString().split('T')[0];
+      const todayDate = new Date();
+      const today = `${todayDate.getFullYear()}-${(todayDate.getMonth() + 1).toString().padStart(2, '0')}-${todayDate.getDate().toString().padStart(2, '0')}`;
       if (!pickerExistingDates.includes(today)) {
         pickerSelectedDate = today;
         dateInput.value = formatDateWithDay(today);
