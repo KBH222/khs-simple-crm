@@ -8200,6 +8200,12 @@ function addHoursRowToTable(entry) {
   const tableBody = document.getElementById('hoursTableBody');
   if (!tableBody) return;
   
+  // Safety check for entry object
+  if (!entry || !entry.id) {
+    console.error('Invalid entry object passed to addHoursRowToTable:', entry);
+    return;
+  }
+  
   // Hide empty message
   const emptyMessage = document.getElementById('noHoursMessage');
   if (emptyMessage) {
@@ -8225,8 +8231,8 @@ function addHoursRowToTable(entry) {
     <td>${location}</td>
     <td>${entry.work_type}</td>
     <td>
-      <button class="edit-btn" onclick="editHours(${entry.id})" title="Edit">✏️</button>
-      <button class="delete-btn" onclick="deleteHours(${entry.id})" title="Delete">🗑️</button>
+      <button class="edit-btn" onclick="editHours('${entry.id}')" title="Edit">✏️</button>
+      <button class="delete-btn" onclick="deleteHours('${entry.id}')" title="Delete">🗑️</button>
     </td>
   `;
   
