@@ -1634,21 +1634,38 @@
       <div class="wizard-progress">
         <div class="wizard-step active" data-step="1">
           <div class="step-number">1</div>
-          <div class="step-title">Job Info</div>
+          <div class="step-title">Date</div>
         </div>
         <div class="wizard-step" data-step="2">
           <div class="step-number">2</div>
-          <div class="step-title">Time Entry</div>
+          <div class="step-title">Job Info</div>
         </div>
         <div class="wizard-step" data-step="3">
           <div class="step-number">3</div>
+          <div class="step-title">Time Entry</div>
+        </div>
+        <div class="wizard-step" data-step="4">
+          <div class="step-number">4</div>
           <div class="step-title">Confirm</div>
         </div>
       </div>
       
-      <!-- Step 1: Job Info -->
+      <!-- Step 1: Date -->
       <div id="wizardStep1" class="wizard-step-content active">
-        <h4>Job Information</h4>
+        <h4>Step 1 of 4: Select Date</h4>
+        <div class="form-group">
+          <label for="workDate">Work Date</label>
+          <input type="date" id="workDate" required>
+          <small class="form-help">Most likely today (change if needed)</small>
+        </div>
+        <div class="wizard-actions">
+          <button type="button" class="next-btn" onclick="nextWizardStep()">Next →</button>
+        </div>
+      </div>
+      
+      <!-- Step 2: Job Info -->
+      <div id="wizardStep2" class="wizard-step-content">
+        <h4>Step 2 of 4: Job Information</h4>
         <div class="form-group">
           <label for="jobLocation">Job Location</label>
           <select id="jobLocation">
@@ -1677,18 +1694,14 @@
           </select>
         </div>
         <div class="wizard-actions">
+          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Back</button>
           <button type="button" class="next-btn" onclick="nextWizardStep()">Next →</button>
         </div>
       </div>
       
-      <!-- Step 2: Time Entry -->
-      <div id="wizardStep2" class="wizard-step-content">
-        <h4>Time Information</h4>
-        <div class="form-group">
-          <label for="workDate">Work Date</label>
-          <input type="date" id="workDate" required>
-          <small class="form-help">Select the date you worked (cannot be in the future)</small>
-        </div>
+      <!-- Step 3: Time Entry -->
+      <div id="wizardStep3" class="wizard-step-content">
+        <h4>Step 3 of 4: Time Information</h4>
         <div class="form-row">
           <div class="form-group">
             <label for="startTime">Start Time</label>
@@ -1712,14 +1725,14 @@
           End time must be after start time
         </div>
         <div class="wizard-actions">
-          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Previous</button>
+          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Back</button>
           <button type="button" class="next-btn" onclick="nextWizardStep()">Next →</button>
         </div>
       </div>
       
-      <!-- Step 3: Confirm -->
-      <div id="wizardStep3" class="wizard-step-content">
-        <h4>Confirm Entry</h4>
+      <!-- Step 4: Confirm & Save -->
+      <div id="wizardStep4" class="wizard-step-content">
+        <h4>Step 4 of 4: Confirm & Submit</h4>
         <div class="summary-card">
           <div class="summary-row">
             <span class="summary-label">Date:</span>
@@ -1747,14 +1760,14 @@
           </div>
         </div>
         <div class="wizard-actions">
-          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Previous</button>
-          <button type="button" class="save-btn" onclick="saveHoursEntry()" id="saveHoursBtn">Save Entry</button>
+          <button type="button" class="prev-btn" onclick="prevWizardStep()">← Back</button>
+          <button type="button" class="save-btn" onclick="saveHoursEntry()" id="saveHoursBtn">Submit Hours</button>
         </div>
       </div>
     </div>
   </div>
 
   <script src="gantt-chart.js?v=20250919103000"></script>
-  <script src="app.js?v=20250928000003"></script>
+  <script src="app.js?v=20250928000004"></script>
 </body>
 </html>

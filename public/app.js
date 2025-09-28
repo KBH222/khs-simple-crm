@@ -7853,7 +7853,15 @@ function openHoursWizard() {
   currentWizardStep = 1;
   updateWizardStep();
   
-  // Load defaults from localStorage
+  // Step 1: Set today's date as default
+  const workDateInput = document.getElementById('workDate');
+  if (workDateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    workDateInput.value = today;
+    workDateInput.max = today; // Prevent future dates
+  }
+  
+  // Step 2: Load defaults from localStorage
   const lastLocation = localStorage.getItem('lastJobLocation') || '';
   const lastWorkType = localStorage.getItem('lastWorkType') || '';
   
@@ -7863,13 +7871,14 @@ function openHoursWizard() {
   if (jobLocationEl) jobLocationEl.value = lastLocation;
   if (workTypeEl) workTypeEl.value = lastWorkType;
   
-  // Set today's date as default and max date
-  const workDateInput = document.getElementById('workDate');
-  if (workDateInput) {
-    const today = new Date().toISOString().split('T')[0];
-    workDateInput.value = today;
-    workDateInput.max = today; // Prevent future dates
-  }
+  // Step 3: Set default times
+  const startTimeEl = document.getElementById('startTime');
+  const endTimeEl = document.getElementById('endTime');
+  const lunchMinutesEl = document.getElementById('lunchMinutes');
+  
+  if (startTimeEl) startTimeEl.value = '08:00';
+  if (endTimeEl) endTimeEl.value = '16:30';
+  if (lunchMinutesEl) lunchMinutesEl.value = '30';
   
   // Show wizard modal
   const modal = document.getElementById('hoursWizardModal');
@@ -7895,28 +7904,11 @@ function closeHoursWizard() {
 
 function nextWizardStep() {
   if (currentWizardStep === 1) {
-    // Validate step 1
-    const jobLocation = document.getElementById('jobLocation').value;
-    const workType = document.getElementById('workType').value;
-    
-    if (!jobLocation || !workType) {
-      alert('Please select both Job Location and Work Type');
-      return;
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('lastJobLocation', jobLocation);
-    localStorage.setItem('lastWorkType', workType);
-    
-    currentWizardStep = 2;
-  } else if (currentWizardStep === 2) {
-    // Validate step 2
+    // Validate step 1 - Date
     const workDate = document.getElementById('workDate').value;
-    const startTime = document.getElementById('startTime').value;
-    const endTime = document.getElementById('endTime').value;
     
-    if (!workDate || !startTime || !endTime) {
-      alert('Please enter work date, start time, and end time');
+    if (!workDate) {
+      alert('Please select a work date');
       return;
     }
     
@@ -7930,6 +7922,32 @@ function nextWizardStep() {
       return;
     }
     
+    currentWizardStep = 2;
+  } else if (currentWizardStep === 2) {
+    // Validate step 2 - Job Info
+    const jobLocation = document.getElementById('jobLocation').value;
+    const workType = document.getElementById('workType').value;
+    
+    if (!jobLocation || !workType) {
+      alert('Please select both Job Location and Work Type');
+      return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('lastJobLocation', jobLocation);
+    localStorage.setItem('lastWorkType', workType);
+    
+    currentWizardStep = 3;
+  } else if (currentWizardStep === 3) {
+    // Validate step 3 - Time Entry
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    
+    if (!startTime || !endTime) {
+      alert('Please enter start time and end time');
+      return;
+    }
+    
     // Validate end time > start time
     if (endTime <= startTime) {
       document.getElementById('timeValidationError').style.display = 'block';
@@ -7938,9 +7956,9 @@ function nextWizardStep() {
     
     document.getElementById('timeValidationError').style.display = 'none';
     
-    // Update summary
+    // Update summary for step 4
     updateSummary();
-    currentWizardStep = 3;
+    currentWizardStep = 4;
   }
   
   updateWizardStep();
@@ -8006,12 +8024,11 @@ async function saveHoursEntry() {
   
   const saveBtn = document.getElementById('saveHoursBtn');
   saveBtn.disabled = true;
-  saveBtn.textContent = 'Saving...';
+  saveBtn.textContent = 'Submitting...';
   
   try {
-    // Get the work date from the wizard (default to today)
-    const workDateInput = document.getElementById('workDate');
-    const workDate = workDateInput ? workDateInput.value : new Date().toISOString().split('T')[0];
+    // Get all wizard data
+    const workDate = document.getElementById('workDate').value;
     const jobLocation = document.getElementById('jobLocation').value;
     const workType = document.getElementById('workType').value;
     const startTime = document.getElementById('startTime').value;
@@ -8070,7 +8087,7 @@ async function saveHoursEntry() {
       
       // Handle duplicate date error specially
       if (response.status === 409) {
-        alert(`❌ Cannot Save Hours Entry\n\n${errorData.message}\n\nPlease choose a different date or edit the existing entry for this date.`);
+        alert(`❌ Cannot Submit Hours Entry\n\n${errorData.message}\n\nPlease choose a different date or edit the existing entry for this date.`);
         throw new Error('Duplicate date entry');
       }
       
@@ -8083,7 +8100,7 @@ async function saveHoursEntry() {
     }
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = 'Save Entry';
+    saveBtn.textContent = 'Submit Hours';
   }
 }
 
