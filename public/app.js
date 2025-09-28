@@ -7063,7 +7063,7 @@ window.shareCustomerInfo = shareCustomerInfo;
 window.sendCustomerInfo = sendCustomerInfo;
 window.addCustomNote = addCustomNote;
 window.removeCustomNote = removeCustomNote;
-window.openMessagesApp = openMessagesApp;
+// window.openMessagesApp = openMessagesApp; // Function not defined, commented out
 window.smartSend = smartSend;
 
 // Test function accessibility
