@@ -7931,9 +7931,9 @@ window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
 var currentWizardStep = 1; // Using var for hoisting
 
 // Custom Date Picker Variables
-var currentDate = new Date();
-var selectedDate = null;
-var existingDates = [];
+var pickerCurrentDate = new Date();
+var pickerSelectedDate = null;
+var pickerExistingDates = [];
 
 // Custom Date Picker Functions
 function toggleDatePicker() {
@@ -7947,18 +7947,18 @@ function toggleDatePicker() {
 }
 
 function previousMonth() {
-  currentDate.setMonth(currentDate.getMonth() - 1);
+  pickerCurrentDate.setMonth(pickerCurrentDate.getMonth() - 1);
   renderDatePicker();
 }
 
 function nextMonth() {
-  currentDate.setMonth(currentDate.getMonth() + 1);
+  pickerCurrentDate.setMonth(pickerCurrentDate.getMonth() + 1);
   renderDatePicker();
 }
 
 function selectDate(dateStr) {
   // Check if date is unavailable
-  if (existingDates.includes(dateStr)) {
+  if (pickerExistingDates.includes(dateStr)) {
     alert(`⚠️ Hours Already Logged\n\nYou already have hours logged for ${dateStr}.\n\nPlease choose a different date or edit the existing entry.`);
     return;
   }
@@ -7973,7 +7973,7 @@ function selectDate(dateStr) {
     return;
   }
   
-  selectedDate = dateStr;
+  pickerSelectedDate = dateStr;
   document.getElementById('workDate').value = dateStr;
   document.getElementById('datePicker').style.display = 'none';
   renderDatePicker(); // Re-render to show selection
@@ -7983,8 +7983,8 @@ function renderDatePicker() {
   const calendar = document.getElementById('datePickerCalendar');
   const title = document.getElementById('datePickerTitle');
   
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const year = pickerCurrentDate.getFullYear();
+  const month = pickerCurrentDate.getMonth();
   
   // Update title
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -8035,11 +8035,11 @@ function renderDatePicker() {
         dayButton.classList.add('today');
       }
       
-      if (dateStr === selectedDate) {
+      if (dateStr === pickerSelectedDate) {
         dayButton.classList.add('selected');
       }
       
-      if (existingDates.includes(dateStr)) {
+      if (pickerExistingDates.includes(dateStr)) {
         dayButton.classList.add('unavailable');
         dayButton.title = 'Hours already logged for this date';
       } else if (date > today) {
@@ -8062,14 +8062,14 @@ async function loadExistingWorkDates(workerId, dateInput) {
     
     if (response.ok) {
       const hours = await response.json();
-      existingDates = hours.map(entry => entry.work_date);
+      pickerExistingDates = hours.map(entry => entry.work_date);
       
-      console.log('📅 Existing work dates:', existingDates);
+      console.log('📅 Existing work dates:', pickerExistingDates);
       
       // Set today's date as default if available
       const today = new Date().toISOString().split('T')[0];
-      if (!existingDates.includes(today)) {
-        selectedDate = today;
+      if (!pickerExistingDates.includes(today)) {
+        pickerSelectedDate = today;
         dateInput.value = today;
       }
       
@@ -8175,7 +8175,7 @@ function nextWizardStep() {
     }
     
     // Check if date already has hours logged
-    if (existingDates.includes(workDate)) {
+    if (pickerExistingDates.includes(workDate)) {
       alert(`⚠️ Hours Already Logged\n\nYou already have hours logged for ${workDate}.\n\nPlease choose a different date or edit the existing entry.`);
       return;
     }
