@@ -1,26 +1,13 @@
-FROM node:18-alpine
+﻿FROM node:22
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm install --production
 
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy application code
 COPY . .
 
-# Create data directory for SQLite (persistent volume)
-RUN mkdir -p /app/data && chmod 777 /app/data
-
-# Expose port
+ENV PORT=3001
 EXPOSE 3001
 
-# Set environment variable for production
-ENV NODE_ENV=production
-ENV PORT=3001
-
-# Start the application
 CMD ["npm", "start"]
