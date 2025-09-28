@@ -184,6 +184,11 @@ button {
   font-weight: 600;
   margin-right: 8px;
   border: 1px solid rgba(0,0,0,0.05);
+  /* Default styling for local API */
+  background-color: #FEF3C7;
+  color: #92400E;
+  min-width: 60px;
+  text-align: center;
 }
 
 /* Connection Status Indicator */

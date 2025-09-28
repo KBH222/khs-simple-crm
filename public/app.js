@@ -133,7 +133,15 @@ function updateEnvBadge() {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-  updateEnvBadge();
+  console.log('🚀 DOM Content Loaded - initializing app...');
+  
+  try {
+    updateEnvBadge();
+    console.log('✅ Environment badge updated');
+  } catch (error) {
+    console.error('❌ Error updating environment badge:', error);
+  }
+  
   log('DOM Content Loaded!');
   updateDateTime();
   setInterval(updateDateTime, 1000);
