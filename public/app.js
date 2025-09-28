@@ -5662,6 +5662,33 @@ function showLoadingMessage(message) {
   }
 }
 
+// Check if worker information is complete
+function isWorkerInfoComplete(worker) {
+  if (!worker) return false;
+  
+  // Required fields for complete worker info
+  const hasName = worker.name && worker.name.trim() !== '';
+  const hasRole = worker.role && worker.role.trim() !== '';
+  const hasEmail = worker.email && worker.email.trim() !== '';
+  const hasPhone = worker.phone && worker.phone.trim() !== '';
+  
+  return hasName && hasRole && hasEmail && hasPhone;
+}
+
+// Update Hours tab visual state based on worker info completion
+function updateHoursTabAccessibility(isComplete) {
+  const hoursTab = document.querySelector('.worker-detail-tab[data-tab="hours"]');
+  if (hoursTab) {
+    if (isComplete) {
+      hoursTab.classList.remove('disabled');
+      hoursTab.title = 'View and manage work hours';
+    } else {
+      hoursTab.classList.add('disabled');
+      hoursTab.title = 'Complete worker information first to access hours';
+    }
+  }
+}
+
 function openWorkerDetailModal(workerId) {
   const worker = workers.find(w => w.id === workerId);
   if (!worker) {
@@ -5686,16 +5713,37 @@ function openWorkerDetailModal(workerId) {
   document.getElementById('workerDisplayPhone').textContent = worker.phone || 'Not provided';
   document.getElementById('workerTotalHours').textContent = `${worker.total_hours_worked || 0}`;
   
-  // Show modal and default to Info tab
+  // Show modal and determine default tab based on completion status
   const modal = document.getElementById('workerDetailModal');
   modal.classList.add('active');
   
-  // Set default tab
-  showWorkerTab('info');
+  // Check if worker info is complete
+  const isComplete = isWorkerInfoComplete(worker);
   
-  // Setup tab click handlers
+  // Determine default tab:
+  // - If worker info incomplete: always show Info tab
+  // - If worker info complete: show Hours tab
+  const defaultTab = isComplete ? 'hours' : 'info';
+  
+  // Set default tab
+  showWorkerTab(defaultTab);
+  
+  // Update Hours tab accessibility based on completion status
+  updateHoursTabAccessibility(isComplete);
+  
+  // Setup tab click handlers with validation
   document.querySelectorAll('.worker-detail-tab').forEach(tab => {
-    tab.onclick = () => showWorkerTab(tab.dataset.tab);
+    tab.onclick = () => {
+      const tabName = tab.dataset.tab;
+      
+      // Check if trying to access Hours tab with incomplete info
+      if (tabName === 'hours' && !isWorkerInfoComplete(window.currentWorker)) {
+        alert('⚠️ Complete Worker Information Required\n\nPlease fill out all worker details (Name, Role, Email, Phone) before accessing the Hours tab.');
+        return;
+      }
+      
+      showWorkerTab(tabName);
+    };
   });
   
   // Setup close button
@@ -5758,6 +5806,7 @@ function showWorkerTab(tabName) {
   // Load specific content if needed
   if (tabName === 'hours' && window.currentWorker) {
     loadWorkerTimesheet(window.currentWorker.id);
+    loadWorkerHours(window.currentWorker.id); // Load individual hours entries
   } else if (tabName === 'tasks' && window.currentWorker) {
     loadWorkerTasks(window.currentWorker.id);
   } else if (tabName === 'notes' && window.currentWorker) {
@@ -8087,7 +8136,17 @@ async function saveHoursEntry() {
       
       // Handle duplicate date error specially
       if (response.status === 409) {
-        alert(`❌ Cannot Submit Hours Entry\n\n${errorData.message}\n\nPlease choose a different date or edit the existing entry for this date.`);
+        console.error('Duplicate entry error details:', errorData);
+        
+        // Show more helpful error message
+        const debugInfo = errorData.debug_info || {};
+        let message = errorData.message || 'Hours already logged for this date';
+        
+        if (debugInfo.existing_entry_id) {
+          message += `\n\nExisting entry ID: ${debugInfo.existing_entry_id}`;
+        }
+        
+        alert(`❌ Cannot Submit Hours Entry\n\n${message}`);
         throw new Error('Duplicate date entry');
       }
       

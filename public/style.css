@@ -3845,6 +3845,18 @@ body.has-offline-banner .app-header {
   background: white;
 }
 
+.worker-detail-tab.disabled {
+  background-color: #F3F4F6;
+  color: #9CA3AF;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.worker-detail-tab.disabled:hover {
+  background-color: #F3F4F6;
+  color: #9CA3AF;
+}
+
 /* Customer Form Radio Button Styles */
 .reference-options label,
 .type-options label {
@@ -4109,6 +4121,7 @@ body.has-offline-banner .app-header {
 .worker-hours-actions {
   display: flex;
   gap: 8px;
+  justify-content: center;
 }
 
 .worker-timesheet-container {

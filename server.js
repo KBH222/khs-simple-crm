@@ -2121,14 +2121,24 @@ app.post('/api/work-hours', (req, res) => {
   // Check for existing entry for this worker on this date
   db.get(`SELECT id FROM work_hours WHERE worker_id = ? AND work_date = ?`, [worker_id, work_date], (err, existing) => {
     if (err) {
+      console.error('Database error checking for duplicates:', err);
       return res.status(500).json({ error: 'Database error checking for duplicates' });
     }
     
+    // Debug logging
+    console.log(`[${new Date().toISOString()}] Checking for existing hours: worker_id=${worker_id}, work_date=${work_date}, found:`, existing);
+    
     if (existing) {
+      console.log(`[${new Date().toISOString()}] Duplicate found - existing entry ID: ${existing.id}`);
       return res.status(409).json({ 
         error: 'Hours already logged for this date', 
-        message: 'A worker can only log hours once per day. Please edit the existing entry or choose a different date.',
-        existing_id: existing.id
+        message: `A worker can only log hours once per day. An entry already exists for ${work_date}. Please edit the existing entry or choose a different date.`,
+        existing_id: existing.id,
+        debug_info: {
+          worker_id,
+          work_date,
+          existing_entry_id: existing.id
+        }
       });
     }
     
