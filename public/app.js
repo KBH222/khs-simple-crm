@@ -8156,7 +8156,7 @@ function handleDatePickerEscapeKey(event) {
   }
 }
 
-// Smart positioning to keep calendar within viewport
+// Smart positioning to keep calendar within viewport (mobile-friendly)
 function positionDatePicker() {
   const picker = document.getElementById('datePicker');
   const input = document.getElementById('workDate');
@@ -8171,12 +8171,32 @@ function positionDatePicker() {
   // Get viewport dimensions
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const isMobile = viewportWidth <= 768;
   
   // Get input position and dimensions
   const inputRect = input.getBoundingClientRect();
   const pickerRect = picker.getBoundingClientRect();
   
-  // Calculate ideal position (centered below input)
+  // Mobile-specific positioning
+  if (isMobile) {
+    // On mobile, center the picker horizontally and position below input
+    let top = inputRect.bottom + 8;
+    
+    // Check if there's enough space below, otherwise show above
+    if (top + pickerRect.height > viewportHeight - 20) {
+      top = inputRect.top - pickerRect.height - 8;
+    }
+    
+    // Apply mobile positioning (CSS handles centering via transform)
+    picker.style.position = 'fixed';
+    picker.style.top = `${top}px`;
+    picker.style.left = '50%';
+    picker.style.transform = 'translateX(-50%)';
+    
+    return;
+  }
+  
+  // Desktop positioning (existing logic)
   let top = inputRect.bottom + 4;
   let left = inputRect.left + (inputRect.width / 2) - (280 / 2); // 280px is picker width
   

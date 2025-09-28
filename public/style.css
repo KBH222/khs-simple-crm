@@ -4217,6 +4217,92 @@ body.has-offline-banner .app-header {
   background: none;
 }
 
+/* Mobile Responsive for Custom Date Picker */
+@media (max-width: 768px) {
+  .date-picker-dropdown {
+    width: 90vw;
+    max-width: 320px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  .date-picker-header {
+    margin-bottom: 12px;
+  }
+  
+  .date-picker-title {
+    font-size: 18px;
+  }
+  
+  .date-nav-btn,
+  .date-picker-close-btn {
+    font-size: 20px;
+    padding: 8px 12px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .date-picker-calendar {
+    gap: 4px;
+    margin-top: 12px;
+  }
+  
+  .date-picker-day {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .date-picker-dropdown {
+    width: 95vw;
+    max-width: 300px;
+    padding: 20px;
+  }
+  
+  .date-picker-title {
+    font-size: 16px;
+  }
+  
+  .date-nav-btn,
+  .date-picker-close-btn {
+    font-size: 18px;
+    padding: 10px 14px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+  
+  .date-picker-calendar {
+    gap: 6px;
+    margin-top: 16px;
+  }
+  
+  .date-picker-day {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  
+  .custom-date-picker input {
+    font-size: 16px;
+    padding: 12px 16px;
+  }
+  
+  .date-picker-btn {
+    padding: 12px 16px;
+    font-size: 18px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
+
 .worker-info-details {
   display: grid;
   gap: 24px;
