@@ -7922,7 +7922,60 @@ window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
 // Hours Wizard Functions
 var currentWizardStep = 1; // Using var for hoisting
 
-function openHoursWizard() {
+// Load existing work dates for a worker to disable them in date picker
+async function loadExistingWorkDates(workerId, dateInput) {
+  try {
+    console.log('📅 Loading existing work dates for worker:', workerId);
+    const response = await fetch(`/api/workers/${workerId}/hours`);
+    
+    if (response.ok) {
+      const hours = await response.json();
+      const existingDates = hours.map(entry => entry.work_date);
+      
+      console.log('📅 Existing work dates:', existingDates);
+      
+      // Add custom validation to the date input
+      setupDateValidation(dateInput, existingDates);
+      
+    } else {
+      console.warn('Could not load existing work dates');
+    }
+  } catch (error) {
+    console.error('Error loading existing work dates:', error);
+  }
+}
+
+// Setup date validation to prevent selecting existing dates
+function setupDateValidation(dateInput, existingDates) {
+  // Store existing dates on the input element for validation
+  dateInput.existingDates = existingDates;
+  
+  // Add change event listener to validate selected date
+  dateInput.addEventListener('change', function() {
+    const selectedDate = this.value;
+    
+    if (existingDates.includes(selectedDate)) {
+      // Show warning and reset to today
+      const today = new Date().toISOString().split('T')[0];
+      alert(`⚠️ Hours Already Logged\n\nYou already have hours logged for ${selectedDate}.\n\nPlease choose a different date or edit the existing entry.`);
+      this.value = today;
+    }
+  });
+  
+  // Add visual styling for better UX
+  dateInput.title = `Dates with existing hours: ${existingDates.length > 0 ? existingDates.join(', ') : 'None'}`;
+  
+  // Show existing dates info if any exist
+  const infoElement = document.getElementById('existingDatesInfo');
+  if (infoElement && existingDates.length > 0) {
+    const dateList = existingDates.slice(0, 5).join(', '); // Show first 5 dates
+    const moreText = existingDates.length > 5 ? ` and ${existingDates.length - 5} more` : '';
+    infoElement.textContent = `⚠️ Dates with hours already logged: ${dateList}${moreText}`;
+    infoElement.style.display = 'block';
+  }
+}
+
+async function openHoursWizard() {
   // Ensure currentWizardStep is initialized
   if (typeof currentWizardStep === 'undefined') {
     window.currentWizardStep = 1;
@@ -7943,12 +7996,15 @@ function openHoursWizard() {
   currentWizardStep = 1;
   updateWizardStep();
   
-  // Step 1: Set today's date as default
+  // Step 1: Set today's date as default and disable unavailable dates
   const workDateInput = document.getElementById('workDate');
   if (workDateInput) {
     const today = new Date().toISOString().split('T')[0];
     workDateInput.value = today;
     workDateInput.max = today; // Prevent future dates
+    
+    // Load existing work dates for this worker to grey out unavailable dates
+    await loadExistingWorkDates(window.currentWorker.id, workDateInput);
   }
   
   // Step 2: Load defaults from localStorage
@@ -7995,7 +8051,8 @@ function closeHoursWizard() {
 function nextWizardStep() {
   if (currentWizardStep === 1) {
     // Validate step 1 - Date
-    const workDate = document.getElementById('workDate').value;
+    const workDateInput = document.getElementById('workDate');
+    const workDate = workDateInput.value;
     
     if (!workDate) {
       alert('Please select a work date');
@@ -8009,6 +8066,12 @@ function nextWizardStep() {
     
     if (selectedDate > today) {
       alert('Work date cannot be in the future');
+      return;
+    }
+    
+    // Check if date already has hours logged
+    if (workDateInput.existingDates && workDateInput.existingDates.includes(workDate)) {
+      alert(`⚠️ Hours Already Logged\n\nYou already have hours logged for ${workDate}.\n\nPlease choose a different date or edit the existing entry.`);
       return;
     }
     
