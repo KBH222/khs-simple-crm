@@ -5707,21 +5707,12 @@ function openWorkerDetailModal(workerId) {
   // Setup Add Hours button event listener
   setTimeout(() => {
     const addHoursBtn = document.getElementById('addHoursBtn');
-    console.log('🔍 Looking for Add Hours button...');
-    console.log('   - Button found:', !!addHoursBtn);
-    console.log('   - Button visible:', addHoursBtn ? window.getComputedStyle(addHoursBtn).display !== 'none' : false);
-    console.log('   - Button in DOM:', addHoursBtn ? document.contains(addHoursBtn) : false);
-    
     if (addHoursBtn) {
       // Remove any existing event listeners
       addHoursBtn.onclick = null;
       
       // Add click event listener
       addHoursBtn.addEventListener('click', function(e) {
-        console.log('🖱️ Add Hours button clicked from worker modal!');
-        console.log('   - Event:', e);
-        console.log('   - Target:', e.target);
-        console.log('   - Current worker:', window.currentWorker);
         e.preventDefault();
         e.stopPropagation();
         openHoursWizard();
@@ -5729,18 +5720,10 @@ function openWorkerDetailModal(workerId) {
       
       // Also set onclick as backup
       addHoursBtn.onclick = function(e) {
-        console.log('🖱️ Add Hours button onclick fired!');
         e.preventDefault();
         e.stopPropagation();
         openHoursWizard();
       };
-      
-      console.log('✅ Add Hours button event listeners set up for worker:', worker.name);
-      console.log('   - onclick handler:', typeof addHoursBtn.onclick);
-      console.log('   - addEventListener called: true');
-    } else {
-      console.log('❌ Add Hours button not found in worker modal');
-      console.log('   - All buttons in modal:', document.querySelectorAll('#workerDetailModal button'));
     }
   }, 100); // Small delay to ensure DOM is ready
 }
@@ -7002,7 +6985,6 @@ window.shareCustomerInfo = shareCustomerInfo;
 window.sendCustomerInfo = sendCustomerInfo;
 window.addCustomNote = addCustomNote;
 window.removeCustomNote = removeCustomNote;
-window.copyCustomerInfo = copyCustomerInfo;
 window.openMessagesApp = openMessagesApp;
 window.smartSend = smartSend;
 
@@ -7851,54 +7833,34 @@ window.roundTimeToFiveMinutes = roundTimeToFiveMinutes;
 var currentWizardStep = 1; // Using var for hoisting
 
 function openHoursWizard() {
-  console.log('🚀 openHoursWizard called!');
-  console.log('   - currentWorker:', window.currentWorker);
-  console.log('   - currentWorker exists:', !!window.currentWorker);
-  
   // Ensure currentWizardStep is initialized
   if (typeof currentWizardStep === 'undefined') {
     window.currentWizardStep = 1;
-    console.log('⚠️ currentWizardStep was undefined, initializing to 1');
-  } else {
-    console.log('✅ currentWizardStep is available:', currentWizardStep);
   }
   
   if (!window.currentWorker) {
-    console.log('❌ No currentWorker - showing alert');
     alert('Please select a worker first');
     return;
   }
   
-  console.log('✅ Worker selected:', window.currentWorker.name);
-  
   // Reset wizard to step 1
   currentWizardStep = 1;
-  console.log('📝 Reset wizard to step:', currentWizardStep);
   updateWizardStep();
   
   // Load defaults from localStorage
   const lastLocation = localStorage.getItem('lastJobLocation') || '';
   const lastWorkType = localStorage.getItem('lastWorkType') || '';
-  console.log('💾 Loading defaults - Location:', lastLocation, 'WorkType:', lastWorkType);
   
   const jobLocationEl = document.getElementById('jobLocation');
   const workTypeEl = document.getElementById('workType');
-  console.log('🔍 Form elements found - jobLocation:', !!jobLocationEl, 'workType:', !!workTypeEl);
   
   if (jobLocationEl) jobLocationEl.value = lastLocation;
   if (workTypeEl) workTypeEl.value = lastWorkType;
   
   // Show modal
   const modal = document.getElementById('hoursWizardModal');
-  console.log('🎭 Modal element found:', !!modal);
   if (modal) {
     modal.style.display = 'block';
-    console.log('🎭 Modal display set to block');
-    console.log('🎭 Modal computed style display:', window.getComputedStyle(modal).display);
-    console.log('🎭 Modal visibility:', window.getComputedStyle(modal).visibility);
-    console.log('🎭 Modal should now be visible');
-  } else {
-    console.log('❌ Modal element not found!');
   }
 }
 
@@ -8165,41 +8127,17 @@ function updateShowWorkerTab() {
 
 // Set up event listener for Add Hours button
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM loaded, looking for addHoursBtn');
   const addHoursBtn = document.getElementById('addHoursBtn');
-  console.log('addHoursBtn found:', !!addHoursBtn);
   if (addHoursBtn) {
     addHoursBtn.addEventListener('click', function() {
-      console.log('Add Hours button clicked!');
       openHoursWizard();
     });
-    console.log('Event listener added to Add Hours button');
   }
   
   // Update the worker tab function
   updateShowWorkerTab();
 });
 
-// Test function for debugging button issues
-function testAddHoursButton() {
-  console.log('🧪 Testing Add Hours Button...');
-  console.log('   - Current worker:', window.currentWorker);
-  console.log('   - Button exists:', !!document.getElementById('addHoursBtn'));
-  console.log('   - Worker modal active:', document.getElementById('workerDetailModal')?.classList.contains('active'));
-  console.log('   - Hours tab active:', document.getElementById('workerHoursTab')?.classList.contains('active'));
-  
-  const btn = document.getElementById('addHoursBtn');
-  if (btn) {
-    console.log('   - Button display:', window.getComputedStyle(btn).display);
-    console.log('   - Button visibility:', window.getComputedStyle(btn).visibility);
-    console.log('   - Button pointer-events:', window.getComputedStyle(btn).pointerEvents);
-    console.log('   - Button onclick:', typeof btn.onclick);
-    console.log('   - Calling openHoursWizard directly...');
-    openHoursWizard();
-  } else {
-    console.log('   - Button not found!');
-  }
-}
 
 // Make wizard functions and variables globally accessible
 window.currentWizardStep = currentWizardStep;
@@ -8208,4 +8146,3 @@ window.closeHoursWizard = closeHoursWizard;
 window.nextWizardStep = nextWizardStep;
 window.prevWizardStep = prevWizardStep;
 window.saveHoursEntry = saveHoursEntry;
-window.testAddHoursButton = testAddHoursButton;
