@@ -1684,6 +1684,11 @@
       <!-- Step 2: Time Entry -->
       <div id="wizardStep2" class="wizard-step-content">
         <h4>Time Information</h4>
+        <div class="form-group">
+          <label for="workDate">Work Date</label>
+          <input type="date" id="workDate" required>
+          <small class="form-help">Select the date you worked (cannot be in the future)</small>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label for="startTime">Start Time</label>
@@ -1750,6 +1755,6 @@
   </div>
 
   <script src="gantt-chart.js?v=20250919103000"></script>
-  <script src="app.js?v=20250928000002"></script>
+  <script src="app.js?v=20250928000003"></script>
 </body>
 </html>

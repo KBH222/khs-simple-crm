@@ -7863,6 +7863,14 @@ function openHoursWizard() {
   if (jobLocationEl) jobLocationEl.value = lastLocation;
   if (workTypeEl) workTypeEl.value = lastWorkType;
   
+  // Set today's date as default and max date
+  const workDateInput = document.getElementById('workDate');
+  if (workDateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    workDateInput.value = today;
+    workDateInput.max = today; // Prevent future dates
+  }
+  
   // Show wizard modal
   const modal = document.getElementById('hoursWizardModal');
   if (modal) {
@@ -7903,11 +7911,22 @@ function nextWizardStep() {
     currentWizardStep = 2;
   } else if (currentWizardStep === 2) {
     // Validate step 2
+    const workDate = document.getElementById('workDate').value;
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
     
-    if (!startTime || !endTime) {
-      alert('Please enter both start and end times');
+    if (!workDate || !startTime || !endTime) {
+      alert('Please enter work date, start time, and end time');
+      return;
+    }
+    
+    // Validate date is not in the future
+    const selectedDate = new Date(workDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    
+    if (selectedDate > today) {
+      alert('Work date cannot be in the future');
       return;
     }
     
@@ -7955,8 +7974,8 @@ function updateWizardStep() {
 }
 
 function updateSummary() {
-  const today = new Date();
-  const dateStr = today.toLocaleDateString();
+  const workDate = document.getElementById('workDate').value;
+  const dateStr = workDate ? new Date(workDate + 'T00:00:00').toLocaleDateString() : 'Not selected';
   
   const jobLocation = document.getElementById('jobLocation').value;
   const workType = document.getElementById('workType').value;
@@ -7990,7 +8009,9 @@ async function saveHoursEntry() {
   saveBtn.textContent = 'Saving...';
   
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // Get the work date from the wizard (default to today)
+    const workDateInput = document.getElementById('workDate');
+    const workDate = workDateInput ? workDateInput.value : new Date().toISOString().split('T')[0];
     const jobLocation = document.getElementById('jobLocation').value;
     const workType = document.getElementById('workType').value;
     const startTime = document.getElementById('startTime').value;
@@ -7999,7 +8020,7 @@ async function saveHoursEntry() {
     
     const entryData = {
       worker_id: window.currentWorker.id,
-      work_date: today,
+      work_date: workDate,
       start_time: startTime,
       end_time: endTime,
       break_minutes: lunchMinutes,
@@ -8046,11 +8067,20 @@ async function saveHoursEntry() {
       }
     } else {
       const errorData = await response.json();
+      
+      // Handle duplicate date error specially
+      if (response.status === 409) {
+        alert(`❌ Cannot Save Hours Entry\n\n${errorData.message}\n\nPlease choose a different date or edit the existing entry for this date.`);
+        throw new Error('Duplicate date entry');
+      }
+      
       throw new Error(errorData.error || 'Failed to save hours');
     }
   } catch (error) {
     console.error('Error saving hours:', error);
-    alert('Failed to save hours entry: ' + error.message);
+    if (error.message !== 'Duplicate date entry') {
+      alert('Failed to save hours entry: ' + error.message);
+    }
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = 'Save Entry';

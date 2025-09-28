@@ -360,7 +360,8 @@ const initializeTables = () => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (worker_id) REFERENCES workers (id),
-    FOREIGN KEY (job_id) REFERENCES jobs (id)
+    FOREIGN KEY (job_id) REFERENCES jobs (id),
+    UNIQUE(worker_id, work_date)
   )`);
   
   // Tasks table
@@ -380,6 +381,13 @@ const initializeTables = () => {
   // Add worker_id column if it doesn't exist (for existing databases)
   db.run(`ALTER TABLE tasks ADD COLUMN worker_id TEXT`, (err) => {
     // Ignore error if column already exists
+  });
+  
+  // Add unique constraint for work_hours to prevent duplicate dates per worker
+  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_worker_date ON work_hours(worker_id, work_date)`, (err) => {
+    if (err) {
+      console.log('Note: Unique constraint on work_hours may already exist or have conflicts');
+    }
   });
   
   // Tools table - Similar to tasks but for tools needed for each job
@@ -2110,44 +2118,79 @@ app.post('/api/work-hours', (req, res) => {
     return res.status(400).json({ error: 'Worker, date, times, and work type are required' });
   }
   
-  // Calculate hours worked
-  const startDateTime = new Date(`${work_date}T${start_time}`);
-  const endDateTime = new Date(`${work_date}T${end_time}`);
-  const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
-  const hoursWorked = Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100;
-  
-  // Calculate overtime (over 8 hours per day)
-  const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
-  
-  const hoursId = generateId('hours');
-  const now = new Date().toISOString();
-  
-  db.run(`INSERT INTO work_hours 
-          (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, 
-           hours_worked, work_type, description, overtime_hours, created_at, updated_at) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [hoursId, worker_id, job_id, work_date, start_time, end_time, break_minutes || 0, 
-     hoursWorked, work_type, description, overtimeHours, now, now],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      
-      res.json({
-        id: hoursId,
-        worker_id,
-        job_id,
-        work_date,
-        start_time,
-        end_time,
-        break_minutes: break_minutes || 0,
-        hours_worked: hoursWorked,
-        work_type,
-        description,
-        overtime_hours: overtimeHours,
-        created_at: now
+  // Check for existing entry for this worker on this date
+  db.get(`SELECT id FROM work_hours WHERE worker_id = ? AND work_date = ?`, [worker_id, work_date], (err, existing) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error checking for duplicates' });
+    }
+    
+    if (existing) {
+      return res.status(409).json({ 
+        error: 'Hours already logged for this date', 
+        message: 'A worker can only log hours once per day. Please edit the existing entry or choose a different date.',
+        existing_id: existing.id
       });
-    });
+    }
+    
+    // Calculate hours worked
+    const startDateTime = new Date(`${work_date}T${start_time}`);
+    const endDateTime = new Date(`${work_date}T${end_time}`);
+    const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
+    const hoursWorked = Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100;
+    
+    // Calculate overtime (over 8 hours per day)
+    const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
+    
+    const hoursId = generateId('hours');
+    const now = new Date().toISOString();
+    
+    db.run(`INSERT INTO work_hours 
+            (id, worker_id, job_id, work_date, start_time, end_time, break_minutes, 
+             hours_worked, work_type, description, overtime_hours, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hoursId, worker_id, job_id, work_date, start_time, end_time, break_minutes || 0, 
+       hoursWorked, work_type, description, overtimeHours, now, now],
+      function(err) {
+        if (err) {
+          // Handle unique constraint violation
+          if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            return res.status(409).json({ 
+              error: 'Hours already logged for this date',
+              message: 'A worker can only log hours once per day. Please edit the existing entry or choose a different date.'
+            });
+          }
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        res.json({
+          id: hoursId,
+          worker_id,
+          job_id,
+          work_date,
+          start_time,
+          end_time,
+          break_minutes: break_minutes || 0,
+          hours_worked: hoursWorked,
+          work_type,
+          description,
+          overtime_hours: overtimeHours,
+          created_at: now,
+          entry: {
+            id: hoursId,
+            worker_id,
+            job_id,
+            work_date,
+            start_time,
+            end_time,
+            break_minutes: break_minutes || 0,
+            hours_worked: hoursWorked,
+            work_type,
+            description,
+            overtime_hours: overtimeHours
+          }
+        });
+      });
+  });
 });
 
 app.put('/api/work-hours/:id', (req, res) => {
@@ -2158,33 +2201,55 @@ app.put('/api/work-hours/:id', (req, res) => {
     return res.status(400).json({ error: 'Worker, date, times, and work type are required' });
   }
   
-  // Recalculate hours worked
-  const startDateTime = new Date(`${work_date}T${start_time}`);
-  const endDateTime = new Date(`${work_date}T${end_time}`);
-  const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
-  const hoursWorked = Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100;
-  const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
-  
-  const now = new Date().toISOString();
-  
-  db.run(`UPDATE work_hours 
-          SET worker_id = ?, job_id = ?, work_date = ?, start_time = ?, end_time = ?, 
-              break_minutes = ?, hours_worked = ?, work_type = ?, description = ?, 
-              overtime_hours = ?, updated_at = ?
-          WHERE id = ?`,
-    [worker_id, job_id, work_date, start_time, end_time, break_minutes || 0, 
-     hoursWorked, work_type, description, overtimeHours, now, id],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Work hours entry not found' });
-      }
-      
-      res.json({ message: 'Work hours updated' });
-    });
+  // Check for existing entry for this worker on this date (excluding current record)
+  db.get(`SELECT id FROM work_hours WHERE worker_id = ? AND work_date = ? AND id != ?`, [worker_id, work_date, id], (err, existing) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error checking for duplicates' });
+    }
+    
+    if (existing) {
+      return res.status(409).json({ 
+        error: 'Hours already logged for this date', 
+        message: 'A worker can only log hours once per day. Another entry already exists for this date.',
+        existing_id: existing.id
+      });
+    }
+    
+    // Recalculate hours worked
+    const startDateTime = new Date(`${work_date}T${start_time}`);
+    const endDateTime = new Date(`${work_date}T${end_time}`);
+    const totalMinutes = (endDateTime - startDateTime) / (1000 * 60);
+    const hoursWorked = Math.round(((totalMinutes - (break_minutes || 0)) / 60) * 100) / 100;
+    const overtimeHours = hoursWorked > 8 ? hoursWorked - 8 : 0;
+    
+    const now = new Date().toISOString();
+    
+    db.run(`UPDATE work_hours 
+            SET worker_id = ?, job_id = ?, work_date = ?, start_time = ?, end_time = ?, 
+                break_minutes = ?, hours_worked = ?, work_type = ?, description = ?, 
+                overtime_hours = ?, updated_at = ?
+            WHERE id = ?`,
+      [worker_id, job_id, work_date, start_time, end_time, break_minutes || 0, 
+       hoursWorked, work_type, description, overtimeHours, now, id],
+      function(err) {
+        if (err) {
+          // Handle unique constraint violation
+          if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            return res.status(409).json({ 
+              error: 'Hours already logged for this date',
+              message: 'A worker can only log hours once per day. Another entry already exists for this date.'
+            });
+          }
+          return res.status(500).json({ error: 'Database error' });
+        }
+        
+        if (this.changes === 0) {
+          return res.status(404).json({ error: 'Work hours entry not found' });
+        }
+        
+        res.json({ message: 'Work hours updated' });
+      });
+  });
 });
 
 app.delete('/api/work-hours/:id', (req, res) => {
