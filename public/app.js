@@ -5403,6 +5403,33 @@ async function loadJobsForDropdowns() {
   }
 }
 
+// Load job locations for wizard dropdown (Customer : Job)
+async function loadJobLocationsForWizard() {
+  const jobLocationSelect = document.getElementById('jobLocation');
+  if (!jobLocationSelect) return;
+
+  try {
+    const response = await fetch('/api/jobs');
+    const jobs = await response.json();
+
+    // Preserve the placeholder
+    const placeholder = jobLocationSelect.querySelector('option[value=""]') || (() => { const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'Select location...'; return opt; })();
+    jobLocationSelect.innerHTML = '';
+    jobLocationSelect.appendChild(placeholder);
+
+    if (response.ok) {
+      jobs.forEach(job => {
+        const option = document.createElement('option');
+        option.value = `${job.customer_name} : ${job.title}`;
+        option.textContent = `${job.customer_name} : ${job.title}`;
+        jobLocationSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    logError('Error loading job locations:', error);
+  }
+}
+
 // Handle hours form submission
 async function handleHoursSubmit(e) {
   e.preventDefault();
@@ -8426,14 +8453,18 @@ function openHoursWizard() {
     });
   }
   
-  // Step 2: Load defaults from localStorage
+  // Step 2: Load job locations and defaults
+  loadJobLocationsForWizard();
   const lastLocation = localStorage.getItem('lastJobLocation') || '';
   const lastWorkType = localStorage.getItem('lastWorkType') || '';
   
   const jobLocationEl = document.getElementById('jobLocation');
   const workTypeEl = document.getElementById('workType');
   
-  if (jobLocationEl) jobLocationEl.value = lastLocation;
+  // Apply after options load
+  setTimeout(() => {
+    if (jobLocationEl && lastLocation) jobLocationEl.value = lastLocation;
+  }, 100);
   if (workTypeEl) workTypeEl.value = lastWorkType;
   
   // Step 3: Set default times
