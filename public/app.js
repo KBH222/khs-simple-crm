@@ -8349,13 +8349,8 @@ async function loadExistingWorkDates(workerId, dateInput) {
       console.log('📅 Existing work dates loaded:', pickerExistingDates);
       console.log('📅 Raw hours data:', hours);
       
-      // Set today's date as default if available
-      const todayDate = new Date();
-      const today = `${todayDate.getFullYear()}-${(todayDate.getMonth() + 1).toString().padStart(2, '0')}-${todayDate.getDate().toString().padStart(2, '0')}`;
-      if (!pickerExistingDates.includes(today)) {
-        pickerSelectedDate = today;
-        dateInput.value = formatDateWithDay(today);
-      }
+      // Keep the existing selected date (don't override if already set)
+      // The openHoursWizard function now handles setting the default date
       
       // Always render the date picker after loading dates
       renderDatePicker();
@@ -8418,6 +8413,12 @@ function openHoursWizard() {
   // Step 1: Setup custom date picker with existing dates (async)
   const workDateInput = document.getElementById('workDate');
   if (workDateInput) {
+    // Always default to today's date first
+    const todayDate = new Date();
+    const today = `${todayDate.getFullYear()}-${(todayDate.getMonth() + 1).toString().padStart(2, '0')}-${todayDate.getDate().toString().padStart(2, '0')}`;
+    workDateInput.value = formatDateWithDay(today);
+    pickerSelectedDate = today;
+    
     // Load existing work dates for this worker to grey out unavailable dates
     console.log('📅 Loading fresh dates when wizard opens');
     loadExistingWorkDates(window.currentWorker.id, workDateInput).catch(error => {
