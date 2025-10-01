@@ -8,6 +8,20 @@ let currentImportLeadId = null;
 let currentFilterStatus = 'pending';
 
 /**
+ * Show notification message
+ */
+function showNotification(message, type = 'info') {
+  // Simple alert for now - can be enhanced with toast notifications later
+  if (type === 'error') {
+    alert('❌ ' + message);
+  } else if (type === 'success') {
+    alert('✅ ' + message);
+  } else {
+    alert(message);
+  }
+}
+
+/**
  * Load import leads based on status filter
  */
 async function loadImportLeads(status = 'pending') {
@@ -500,17 +514,23 @@ function initImportLeadsPage() {
   }
   
   // Close modals on outside click
-  document.getElementById('importLeadModal').addEventListener('click', (e) => {
-    if (e.target.id === 'importLeadModal') {
-      closeImportLeadModal();
-    }
-  });
+  const importModal = document.getElementById('importLeadModal');
+  if (importModal) {
+    importModal.addEventListener('click', (e) => {
+      if (e.target.id === 'importLeadModal') {
+        closeImportLeadModal();
+      }
+    });
+  }
   
-  document.getElementById('rejectReasonModal').addEventListener('click', (e) => {
-    if (e.target.id === 'rejectReasonModal') {
-      closeRejectReasonModal();
-    }
-  });
+  const rejectModal = document.getElementById('rejectReasonModal');
+  if (rejectModal) {
+    rejectModal.addEventListener('click', (e) => {
+      if (e.target.id === 'rejectReasonModal') {
+        closeRejectReasonModal();
+      }
+    });
+  }
 }
 
 // Initialize when DOM is ready
