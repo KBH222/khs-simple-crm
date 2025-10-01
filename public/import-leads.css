@@ -50,9 +50,8 @@
 #import-leads .filters { margin-top: 0 !important; }
 
 /* Temporary: make Import Queue header red to verify changes are applied */
-#import-leads .page-header h2 {
-  color: #EF4444 !important;
-}
+/* revert header color to default after verification */
+#import-leads .page-header h2 { color: #111827 !important; }
 
 /* Eliminate any accidental top offset on the Import Queue page scroll container */
 #import-leads {

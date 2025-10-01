@@ -313,6 +313,7 @@ body.has-offline-banner .app-header {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  padding-top: 12px; /* prevent first-view whitespace when header spacing collapses */
 }
 
 /* Dashboard */

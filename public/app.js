@@ -317,6 +317,10 @@ window.showPage = function(pageName) {
       const main = document.querySelector('.app-main');
       if (main) main.scrollTop = 0;
       if (document.scrollingElement) document.scrollingElement.scrollTop = 0; else window.scrollTo(0, 0);
+      // Defer a final reset to override any late auto-scrolls from page-specific scripts
+      setTimeout(() => {
+        try { targetPage.scrollTop = 0; } catch (_) {}
+      }, 60);
     } catch (_) {}
     log('✅ Successfully showing page:', pageName);
   } else {
