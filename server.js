@@ -13,6 +13,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
+// Disable caching for local development to avoid stale JS/CSS/HTML
+if (!process.env.RAILWAY_ENVIRONMENT) {
+  app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+  });
+}
+
 // Track processed idempotency keys (in production, use Redis or database)
 const processedKeys = new Map();
 const IDEMPOTENCY_KEY_TTL = 24 * 60 * 60 * 1000; // 24 hours
