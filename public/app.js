@@ -330,6 +330,10 @@ function showPage(pageName) {
     loadMasterListPreferences();
   } else if (pageName === 'profile') {
     showProfile();
+  } else if (pageName === 'import-leads') {
+    if (typeof loadImportLeads === 'function') {
+      loadImportLeads('pending');
+    }
   }
 }
 
