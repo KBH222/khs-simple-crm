@@ -40,14 +40,9 @@
   margin-top: 20px;
 }
 
-/* Ensure the page starts at the top when opened */
-#import-leads.page {
-  scroll-margin-top: 0;
-}
-
-/* Prevent initial blank viewport gap */
-#import-leads .page-container {
-  padding-top: 0;
+/* Match other pages: no extra top gap beyond global header */
+#import-leads .page-container > *:first-child {
+  margin-top: 0 !important;
 }
 
 .import-lead-card {

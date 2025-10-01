@@ -310,12 +310,6 @@ window.showPage = function(pageName) {
   
   if (targetPage) {
     targetPage.classList.add('active');
-    // Always reset scroll to top when navigating to a page (container + window)
-    try {
-      const main = document.querySelector('.app-main');
-      if (main && typeof main.scrollTo === 'function') main.scrollTo({ top: 0, behavior: 'auto' });
-    } catch (_) {}
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (_) { window.scrollTo(0, 0); }
     log('✅ Successfully showing page:', pageName);
   } else {
     logError('❌ Page not found:', pageName);
