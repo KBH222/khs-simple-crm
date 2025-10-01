@@ -1,8 +1,16 @@
 // Service Worker Registration and Update Management
 
-if ('serviceWorker' in navigator) {
+// Disable Service Worker on localhost to avoid dev caching issues
+const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+if ('serviceWorker' in navigator && !isLocalhost) {
   window.addEventListener('load', () => {
     registerServiceWorker();
+  });
+} else if (isLocalhost && 'serviceWorker' in navigator) {
+  // Ensure any existing SW is unregistered during local development
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(reg => reg.unregister());
   });
 }
 
