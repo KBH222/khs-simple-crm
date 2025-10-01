@@ -459,11 +459,9 @@ async function confirmRejectLead() {
 
 /**
  * Format phone number
+ * using global window.formatPhoneNumber from app.js
  */
-/* using global window.formatPhoneNumber from app.js */) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-  }
-  return phone;
-}
+
 
 /**
  * Format file size
