@@ -54,6 +54,12 @@
   color: #EF4444 !important;
 }
 
+/* Eliminate any accidental top offset on the Import Queue page scroll container */
+#import-leads {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
 .import-lead-card {
   background: white;
   border: 1px solid #E5E7EB;

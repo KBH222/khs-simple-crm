@@ -301,6 +301,8 @@ body.has-offline-banner .app-header {
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .page.active {

@@ -310,12 +310,13 @@ window.showPage = function(pageName) {
   
   if (targetPage) {
     targetPage.classList.add('active');
-    // Reset scroll position to top for consistent page entry
+    // Reset scroll position on all scroll containers, including the active page element itself
     try {
+      // The .page element is the actual scroll container (overflow-y: auto)
+      targetPage.scrollTop = 0;
       const main = document.querySelector('.app-main');
-      if (main) { main.scrollTop = 0; }
-      if (document.scrollingElement) { document.scrollingElement.scrollTop = 0; }
-      else { window.scrollTo(0, 0); }
+      if (main) main.scrollTop = 0;
+      if (document.scrollingElement) document.scrollingElement.scrollTop = 0; else window.scrollTo(0, 0);
     } catch (_) {}
     log('✅ Successfully showing page:', pageName);
   } else {
