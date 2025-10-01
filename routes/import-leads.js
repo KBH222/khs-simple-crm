@@ -8,13 +8,14 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
-// Middleware to check authentication
+// Middleware to check authentication (support both admin/user and worker sessions)
 const requireAuth = (req, res, next) => {
-  if (req.session && req.session.user) {
-    next();
-  } else {
-    res.status(401).json({ error: 'Unauthorized' });
+  const hasAdminSession = !!(req.session && req.session.user);
+  const hasWorkerSession = !!(req.session && req.session.userType === 'worker' && req.session.workerId);
+  if (hasAdminSession || hasWorkerSession) {
+    return next();
   }
+  return res.status(401).json({ error: 'Unauthorized' });
 };
 
 // Apply auth middleware to all routes
