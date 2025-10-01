@@ -40,6 +40,16 @@
   margin-top: 20px;
 }
 
+/* Ensure the page starts at the top when opened */
+#import-leads.page {
+  scroll-margin-top: 0;
+}
+
+/* Prevent initial blank viewport gap */
+#import-leads .page-container {
+  padding-top: 0;
+}
+
 .import-lead-card {
   background: white;
   border: 1px solid #E5E7EB;

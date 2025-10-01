@@ -310,6 +310,8 @@ window.showPage = function(pageName) {
   
   if (targetPage) {
     targetPage.classList.add('active');
+    // Always reset scroll to top when navigating to a page
+    try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
     log('✅ Successfully showing page:', pageName);
   } else {
     logError('❌ Page not found:', pageName);
