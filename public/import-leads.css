@@ -45,6 +45,10 @@
   margin-top: 0 !important;
 }
 
+/* Extra guard: remove any inherited top margins on first header section */
+#import-leads .page-header { margin-top: 0 !important; }
+#import-leads .filters { margin-top: 0 !important; }
+
 .import-lead-card {
   background: white;
   border: 1px solid #E5E7EB;

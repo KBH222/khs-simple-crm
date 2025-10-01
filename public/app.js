@@ -310,6 +310,13 @@ window.showPage = function(pageName) {
   
   if (targetPage) {
     targetPage.classList.add('active');
+    // Reset scroll position to top for consistent page entry
+    try {
+      const main = document.querySelector('.app-main');
+      if (main) { main.scrollTop = 0; }
+      if (document.scrollingElement) { document.scrollingElement.scrollTop = 0; }
+      else { window.scrollTo(0, 0); }
+    } catch (_) {}
     log('✅ Successfully showing page:', pageName);
   } else {
     logError('❌ Page not found:', pageName);
