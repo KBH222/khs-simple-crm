@@ -7,6 +7,7 @@ const multer = require('multer');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { initializeAllData } = require('./init-data');
+const importLeadsRoutes = require('./routes/import-leads');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -1503,6 +1504,10 @@ app.delete('/api/extra-costs/:id', (req, res) => {
     res.json({ message: 'Extra cost deleted' });
   });
 });
+
+// Import Leads API (modular routes)
+app.locals.db = db; // Make db available to import leads routes
+app.use('/api/import-leads', importLeadsRoutes);
 
 // Photo API
 app.get('/api/jobs/:jobId/photos', (req, res) => {

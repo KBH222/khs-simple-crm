@@ -27,6 +27,7 @@
   <meta http-equiv="Expires" content="0">
   <title>KHS CRM</title>
   <link rel="stylesheet" href="style.css?v=20250922000002&t=1737523200000">
+  <link rel="stylesheet" href="import-leads.css?v=20250101000000">
   <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
 </head>
 <body>
@@ -133,6 +134,18 @@
                 <div class="nav-card-info">
                   <h3>Profile</h3>
                   <p>User account and preferences</p>
+                </div>
+                <div class="nav-card-arrow">→</div>
+              </div>
+            </div>
+
+            <div class="nav-card" data-page="import-leads" onclick="showPage('import-leads')">
+              <div class="nav-card-header" style="background-color: #EC4899;"></div>
+              <div class="nav-card-content">
+                <div class="nav-card-icon">📥</div>
+                <div class="nav-card-info">
+                  <h3>Import Queue</h3>
+                  <p>Review supplier lead imports</p>
                 </div>
                 <div class="nav-card-arrow">→</div>
               </div>
@@ -1532,8 +1545,185 @@
           </form>
         </div>
       </div>
+
+      <!-- Import Leads (Queue) Page -->
+      <div id="import-leads" class="page">
+        <div class="page-container">
+          <div class="page-header">
+            <button class="back-btn" data-target="dashboard">← Dashboard</button>
+            <h2>Import Queue</h2>
+            <div class="import-stats">
+              <span class="stat-badge pending" id="pendingCount">0 Pending</span>
+              <span class="stat-badge approved" id="approvedCount">0 Approved</span>
+            </div>
+          </div>
+          
+          <!-- Filter Tabs -->
+          <div class="filters">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-status="pending" onclick="filterImportLeads('pending')">Pending</button>
+              <button class="filter-tab" data-status="approved" onclick="filterImportLeads('approved')">Approved</button>
+              <button class="filter-tab" data-status="rejected" onclick="filterImportLeads('rejected')">Rejected</button>
+              <button class="filter-tab" data-status="all" onclick="filterImportLeads('all')">All</button>
+            </div>
+          </div>
+          
+          <!-- Import Leads List -->
+          <div id="importLeadsList" class="import-leads-list">
+            <div class="loading">Loading import leads...</div>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
+
+<!-- Import Lead Detail Modal -->
+<div id="importLeadModal" class="modal">
+  <div class="modal-content import-lead-modal-content">
+    <div class="modal-header">
+      <h3 id="importLeadModalTitle">Review Import Lead</h3>
+      <button class="close-btn" onclick="closeImportLeadModal()">&times;</button>
+    </div>
+    
+    <div class="import-lead-detail">
+      <!-- Status Badge -->
+      <div class="import-status-badge" id="importStatusBadge">
+        <span class="status-indicator"></span>
+        <span class="status-text">Pending Review</span>
+      </div>
+      
+      <!-- Email Info -->
+      <div class="import-section">
+        <h4>📧 Email Information</h4>
+        <div class="import-field">
+          <label>Subject:</label>
+          <div class="field-value" id="importSubject">-</div>
+        </div>
+        <div class="import-field">
+          <label>Received:</label>
+          <div class="field-value" id="importDate">-</div>
+        </div>
+      </div>
+      
+      <!-- Customer Information Form -->
+      <div class="import-section">
+        <h4>👤 Customer Information</h4>
+        <form id="importLeadForm">
+          <div class="form-group">
+            <label for="importName">Name *</label>
+            <input type="text" id="importName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="importPhone">Phone</label>
+            <input type="tel" id="importPhone" placeholder="(808) 387-6129" maxlength="14">
+          </div>
+          
+          <div class="form-group">
+            <label for="importEmail">Email</label>
+            <input type="email" id="importEmail">
+          </div>
+          
+          <div class="form-group">
+            <label for="importStreet">Street Address *</label>
+            <input type="text" id="importStreet" placeholder="123 Main Street" required>
+          </div>
+          
+          <div class="form-row" style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 2;">
+              <label for="importCity">City *</label>
+              <input type="text" id="importCity" placeholder="Honolulu" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="importState">State</label>
+              <input type="text" id="importState" value="HI" readonly style="background-color: #f9fafb;">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="importZip">ZIP Code *</label>
+              <input type="text" id="importZip" placeholder="96815" maxlength="5" pattern="[0-9]{5}" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Job Type Selection -->
+      <div class="import-section">
+        <h4>🏗️ Job Type</h4>
+        <div class="job-type-selector">
+          <label class="job-type-option">
+            <input type="radio" name="importJobType" value="Kitchen" checked>
+            <span class="job-type-card">
+              <span class="job-type-icon">🍳</span>
+              <span class="job-type-label">Kitchen</span>
+            </span>
+          </label>
+          <label class="job-type-option">
+            <input type="radio" name="importJobType" value="Bathroom">
+            <span class="job-type-card">
+              <span class="job-type-icon">🚿</span>
+              <span class="job-type-label">Bathroom</span>
+            </span>
+          </label>
+          <label class="job-type-option">
+            <input type="radio" name="importJobType" value="Other">
+            <span class="job-type-card">
+              <span class="job-type-icon">🔧</span>
+              <span class="job-type-label">Other</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Attachments -->
+      <div class="import-section">
+        <h4>📎 Attachments (<span id="attachmentCount">0</span>)</h4>
+        <div id="importAttachments" class="import-attachments-list">
+          <p style="color: #6B7280; font-size: 14px;">No attachments</p>
+        </div>
+      </div>
+      
+      <!-- Email Body -->
+      <div class="import-section">
+        <h4>📄 Email Content</h4>
+        <div class="email-body-preview" id="importEmailBody">
+          <p style="color: #6B7280;">No content available</p>
+        </div>
+      </div>
+      
+      <!-- Notes -->
+      <div class="import-section">
+        <h4>📝 Notes</h4>
+        <textarea id="importNotes" placeholder="Add notes about this lead..." rows="3" style="width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px;"></textarea>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="modal-actions import-actions">
+      <button type="button" class="cancel-btn" onclick="closeImportLeadModal()">Close</button>
+      <button type="button" class="reject-btn" id="rejectLeadBtn" onclick="rejectImportLead()">❌ Reject</button>
+      <button type="button" class="save-btn secondary-save" id="saveLeadBtn" onclick="saveImportLead()">💾 Save Changes</button>
+      <button type="button" class="approve-btn" id="approveLeadBtn" onclick="approveImportLead()">✅ Approve & Create Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Reason Modal -->
+<div id="rejectReasonModal" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>Reject Lead</h3>
+      <button class="close-btn" onclick="closeRejectReasonModal()">&times;</button>
+    </div>
+    <div style="padding: 20px;">
+      <p style="margin-bottom: 15px; color: #374151;">Please provide a reason for rejecting this lead:</p>
+      <textarea id="rejectReason" rows="4" placeholder="e.g., Duplicate, Out of service area, etc." style="width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="cancel-btn" onclick="closeRejectReasonModal()">Cancel</button>
+      <button type="button" class="reject-btn" onclick="confirmRejectLead()">Confirm Rejection</button>
+    </div>
+  </div>
+</div>
 
 <!-- Contact Modal -->
   <div id="contactModal" class="modal">
@@ -1778,6 +1968,7 @@
   </div>
 
   <script src="gantt-chart.js?v=20250919103000"></script>
+  <script src="import-leads.js?v=20250101000000"></script>
     <script src="app.js?v=20250928000033"></script>
 </body>
 </html>
