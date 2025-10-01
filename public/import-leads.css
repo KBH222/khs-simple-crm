@@ -49,6 +49,11 @@
 #import-leads .page-header { margin-top: 0 !important; }
 #import-leads .filters { margin-top: 0 !important; }
 
+/* Temporary: make Import Queue header red to verify changes are applied */
+#import-leads .page-header h2 {
+  color: #EF4444 !important;
+}
+
 .import-lead-card {
   background: white;
   border: 1px solid #E5E7EB;
