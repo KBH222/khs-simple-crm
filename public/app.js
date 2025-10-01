@@ -292,7 +292,7 @@ function setupEventListeners() {
 }
 
 
-function showPage(pageName) {
+window.showPage = function(pageName) {
   log('🚀 Showing page:', pageName);
   
   // Hide all pages
@@ -5498,12 +5498,12 @@ async function handleHoursSubmit(e) {
 }
 
 // 🚀 BEAST MODE PHONE FORMATTER - Handles EVERYTHING!
-const formatPhoneNumber = (value = '') => {
+if (!window.formatPhoneNumber) { window.formatPhoneNumber = function(value = '') {
   const digits = value.replace(/\D/g, '');
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-};
+}; }
 
 // 💪 ULTIMATE PHONE SETUP - Works for ANY input field
 const setupPhoneFormatting = (selector = 'input[type="tel"], #workerPhone, #customerPhone') => {
