@@ -1,0 +1,515 @@
+/**
+ * Import Leads Styles
+ * Add these styles to your existing public/style.css
+ * or include this file separately: <link rel="stylesheet" href="import-leads.css">
+ */
+
+/* ========================================
+   IMPORT LEADS PAGE
+   ======================================== */
+
+.import-stats {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.stat-badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stat-badge.pending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.stat-badge.approved {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+/* Import Leads List */
+.import-leads-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.import-lead-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.import-lead-card:hover {
+  border-color: #3B82F6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.lead-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.lead-main-info {
+  flex: 1;
+}
+
+.lead-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.lead-subject {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+  font-style: italic;
+}
+
+.lead-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lead-info-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.lead-info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.info-icon {
+  font-size: 16px;
+}
+
+.info-text {
+  color: #6B7280;
+}
+
+.lead-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #F3F4F6;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6B7280;
+}
+
+.error-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* ========================================
+   IMPORT LEAD MODAL
+   ======================================== */
+
+.import-lead-modal-content {
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.import-lead-detail {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Status Badge */
+.import-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Import Sections */
+.import-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.import-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.import-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-field {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.import-field label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 100px;
+}
+
+.field-value {
+  color: #6B7280;
+  flex: 1;
+}
+
+/* Job Type Selector */
+.job-type-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.job-type-option {
+  cursor: pointer;
+}
+
+.job-type-option input[type="radio"] {
+  display: none;
+}
+
+.job-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.job-type-option input[type="radio"]:checked + .job-type-card {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.job-type-card:hover {
+  border-color: #3B82F6;
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.1);
+}
+
+.job-type-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.job-type-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Attachments List */
+.import-attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.attachment-item:hover {
+  background: #F3F4F6;
+}
+
+.attachment-icon {
+  font-size: 20px;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.attachment-download {
+  padding: 4px 10px;
+  background: #3B82F6;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.attachment-download:hover {
+  background: #2563EB;
+}
+
+/* Email Body Preview */
+.email-body-preview {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Import Actions */
+.import-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.approve-btn {
+  padding: 10px 20px;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.approve-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.approve-btn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.reject-btn {
+  padding: 10px 20px;
+  background: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reject-btn:hover {
+  background: #DC2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.secondary-save {
+  background: #6B7280;
+}
+
+.secondary-save:hover {
+  background: #4B5563;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .import-stats {
+    flex-wrap: wrap;
+  }
+  
+  .lead-card-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .lead-info-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .lead-meta {
+    font-size: 12px;
+  }
+  
+  .import-lead-modal-content {
+    max-width: 100%;
+    width: 95%;
+    margin: 10px;
+  }
+  
+  .job-type-selector {
+    grid-template-columns: 1fr;
+  }
+  
+  .import-actions {
+    flex-direction: column;
+  }
+  
+  .import-actions button {
+    width: 100%;
+  }
+  
+  .attachment-item {
+    flex-wrap: wrap;
+  }
+  
+  .attachment-name {
+    width: 100%;
+    order: 1;
+  }
+  
+  .attachment-size {
+    order: 2;
+  }
+  
+  .attachment-download {
+    order: 3;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .lead-name {
+    font-size: 16px;
+  }
+  
+  .lead-subject {
+    font-size: 13px;
+  }
+  
+  .import-section h4 {
+    font-size: 14px;
+  }
+  
+  .job-type-icon {
+    font-size: 24px;
+  }
+  
+  .job-type-label {
+    font-size: 13px;
+  }
+}
+
+/* ========================================
+   LOADING & ANIMATIONS
+   ======================================== */
+
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6B7280;
+  font-size: 16px;
+}
+
+.loading::after {
+  content: '...';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+/* Smooth transitions for modal */
+.modal {
+  transition: opacity 0.3s ease;
+}
+
+.modal.active {
+  opacity: 1;
+}
+
+.modal-content {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
