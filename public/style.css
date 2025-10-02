@@ -321,6 +321,11 @@ body.has-offline-banner .app-header {
   margin-top: 0;
 }
 
+/* Master Lists header color override */
+#materials .page-header h2 {
+  color: #DC2626; /* red */
+}
+
 /* Dashboard */
 .dashboard-header {
   display: flex;
