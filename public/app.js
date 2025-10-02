@@ -340,6 +340,16 @@ window.showPage = function(pageName) {
   } else if (pageName === 'materials') {
     loadMasterLists();
     loadMasterListPreferences();
+    // Ensure top of page after content loads
+    setTimeout(() => {
+      try {
+        const pageEl = document.getElementById('materials');
+        if (pageEl) pageEl.scrollTop = 0;
+        const main = document.querySelector('.app-main');
+        if (main) main.scrollTop = 0;
+        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+      } catch (_) {}
+    }, 50);
   } else if (pageName === 'profile') {
     showProfile();
   } else if (pageName === 'import-leads') {

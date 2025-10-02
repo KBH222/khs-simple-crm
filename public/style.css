@@ -326,6 +326,17 @@ body.has-offline-banner .app-header {
   color: #DC2626; /* red */
 }
 
+/* Aggressive top-spacing reset for Master Lists page */
+#materials.page {
+  padding-top: 0 !important;
+}
+#materials .page-container {
+  padding-top: 0 !important;
+}
+#materials .page-header {
+  margin-top: 0 !important;
+}
+
 /* Dashboard */
 .dashboard-header {
   display: flex;
