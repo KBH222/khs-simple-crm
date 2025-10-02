@@ -316,6 +316,11 @@ body.has-offline-banner .app-header {
   padding-top: 12px; /* prevent first-view whitespace when header spacing collapses */
 }
 
+/* Remove any accidental top whitespace on specific pages */
+#materials.page .page-container > *:first-child {
+  margin-top: 0;
+}
+
 /* Dashboard */
 .dashboard-header {
   display: flex;
@@ -434,6 +439,7 @@ body.has-offline-banner .app-header {
   font-size: 24px;
   font-weight: 600;
   color: #111827;
+  margin: 0; /* eliminate default top margin pushing content down */
 }
 
 .add-btn {
