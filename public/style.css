@@ -306,7 +306,7 @@ body.has-offline-banner .app-header {
 }
 
 .page.active {
-  display: block;
+  display: flow-root; /* prevent margin-collapsing from first child (e.g., headers) */
 }
 
 .page-container {
