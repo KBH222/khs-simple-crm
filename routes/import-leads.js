@@ -8,8 +8,28 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
+// Dev-only: bypass auth if explicitly enabled via environment
+const DEV_BYPASS_IMPORT_LEADS_AUTH = process.env.DEV_BYPASS_IMPORT_LEADS_AUTH === 'true';
+
+// Log session for debugging before any auth checks
+router.use((req, res, next) => {
+  try {
+    const s = req.session || {};
+    console.log('[import-leads] session snapshot:', {
+      userType: s.userType,
+      user: s.user ? { id: s.user.id } : null,
+      workerId: s.workerId
+    });
+  } catch (_) {}
+  next();
+});
+
 // Middleware to check authentication (support both admin/user and worker sessions)
 const requireAuth = (req, res, next) => {
+  if (DEV_BYPASS_IMPORT_LEADS_AUTH) {
+    console.warn('[import-leads] DEV_BYPASS_IMPORT_LEADS_AUTH enabled: bypassing auth');
+    return next();
+  }
   const hasAdminSession = !!(req.session && req.session.user);
   const hasWorkerSession = !!(req.session && req.session.userType === 'worker' && req.session.workerId);
   if (hasAdminSession || hasWorkerSession) {

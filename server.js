@@ -1519,6 +1519,22 @@ app.delete('/api/extra-costs/:id', (req, res) => {
 app.locals.db = db; // Make db available to import leads routes
 app.use('/api/import-leads', importLeadsRoutes);
 
+// Debug: expose current session (dev-only)
+app.get('/debug-session', (req, res) => {
+  try {
+    const s = req.session || {};
+    return res.json({
+      userType: s.userType || null,
+      user: s.user || null,
+      workerId: s.workerId || null,
+      workerName: s.workerName || null,
+      workerRole: s.workerRole || null
+    });
+  } catch (e) {
+    return res.json({ error: 'no session' });
+  }
+});
+
 // Photo API
 app.get('/api/jobs/:jobId/photos', (req, res) => {
   const { jobId } = req.params;
