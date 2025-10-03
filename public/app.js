@@ -310,17 +310,23 @@ window.showPage = function(pageName) {
   
   if (targetPage) {
     targetPage.classList.add('active');
-    // Reset scroll position on all scroll containers, including the active page element itself
+    // Force scroll position to top using multiple strategies
     try {
-      // The .page element is the actual scroll container (overflow-y: auto)
-      targetPage.scrollTop = 0;
-      const main = document.querySelector('.app-main');
-      if (main) main.scrollTop = 0;
-      if (document.scrollingElement) document.scrollingElement.scrollTop = 0; else window.scrollTo(0, 0);
-      // Defer a final reset to override any late auto-scrolls from page-specific scripts
+      requestAnimationFrame(() => {
+        try { targetPage.scrollTop = 0; } catch (_) {}
+        try {
+          const main = document.querySelector('.app-main');
+          if (main) main.scrollTop = 0;
+        } catch (_) {}
+        try {
+          if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        } catch (_) {}
+      });
       setTimeout(() => {
         try { targetPage.scrollTop = 0; } catch (_) {}
-      }, 60);
+        try { window.scrollTo(0, 0); } catch (_) {}
+      }, 100);
     } catch (_) {}
     log('✅ Successfully showing page:', pageName);
   } else {
@@ -340,16 +346,6 @@ window.showPage = function(pageName) {
   } else if (pageName === 'materials') {
     loadMasterLists();
     loadMasterListPreferences();
-    // Ensure top of page after content loads
-    setTimeout(() => {
-      try {
-        const pageEl = document.getElementById('materials');
-        if (pageEl) pageEl.scrollTop = 0;
-        const main = document.querySelector('.app-main');
-        if (main) main.scrollTop = 0;
-        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
-      } catch (_) {}
-    }, 50);
   } else if (pageName === 'profile') {
     showProfile();
   } else if (pageName === 'import-leads') {

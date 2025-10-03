@@ -292,49 +292,32 @@ body.has-offline-banner .app-header {
 
 /* Main Content */
 .app-main {
-  height: calc(100vh - 56px);
-  overflow: hidden;
+  height: auto;
+  min-height: calc(100vh - 56px);
+  overflow: auto;
 }
 
 .page {
   display: none;
-  height: 100%;
-  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
   -webkit-overflow-scrolling: touch;
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
 
 .page.active {
-  display: flow-root; /* prevent margin-collapsing from first child (e.g., headers) */
+  display: block;
+  scroll-margin-top: 0;
+  scroll-padding-top: 0;
 }
 
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  padding-top: 12px; /* prevent first-view whitespace when header spacing collapses */
-}
-
-/* Remove any accidental top whitespace on specific pages */
-#materials.page .page-container > *:first-child {
-  margin-top: 0;
-}
-
-/* Master Lists header color override */
-#materials .page-header h2 {
-  color: #DC2626; /* red */
-}
-
-/* Aggressive top-spacing reset for Master Lists page */
-#materials.page {
-  padding-top: 0 !important;
-}
-#materials .page-container {
-  padding-top: 0 !important;
-}
-#materials .page-header {
-  margin-top: 0 !important;
+  padding-top: 0; /* eliminate initial top gap */
 }
 
 /* Dashboard */
@@ -455,7 +438,6 @@ body.has-offline-banner .app-header {
   font-size: 24px;
   font-weight: 600;
   color: #111827;
-  margin: 0; /* eliminate default top margin pushing content down */
 }
 
 .add-btn {
