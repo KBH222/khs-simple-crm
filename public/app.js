@@ -352,8 +352,6 @@ window.showPage = function(pageName) {
     if (typeof loadImportLeads === 'function') {
       loadImportLeads('pending');
     }
-  } else if (pageName === 'workers-2') {
-    // placeholder - no data load
   }
 }
 
