@@ -8344,25 +8344,29 @@ function renderDatePicker() {
     
     // Add classes based on date status
     if (date.getMonth() !== month) {
+      // Still allow selecting previous/next month dates shown in the grid
       dayButton.classList.add('other-month');
+    }
+    
+    if (dateStr === todayStr) {
+      dayButton.classList.add('today');
+    }
+    
+    if (dateStr === pickerSelectedDate) {
+      dayButton.classList.add('selected');
+    }
+    
+    if (pickerExistingDates.includes(dateStr)) {
+      // Already used; keep disabled
+      dayButton.classList.add('unavailable');
+      dayButton.title = 'Hours already logged for this date';
+    } else if (date > today) {
+      // Future dates remain disabled
+      dayButton.classList.add('future');
+      dayButton.title = 'Future dates not allowed';
     } else {
-      if (dateStr === todayStr) {
-        dayButton.classList.add('today');
-      }
-      
-      if (dateStr === pickerSelectedDate) {
-        dayButton.classList.add('selected');
-      }
-      
-      if (pickerExistingDates.includes(dateStr)) {
-        dayButton.classList.add('unavailable');
-        dayButton.title = 'Hours already logged for this date';
-      } else if (date > today) {
-        dayButton.classList.add('future');
-        dayButton.title = 'Future dates not allowed';
-      } else {
-        dayButton.onclick = () => selectDate(dateStr);
-      }
+      // Allow selection for any past date, including previous month
+      dayButton.onclick = () => selectDate(dateStr);
     }
     
     calendar.appendChild(dayButton);
