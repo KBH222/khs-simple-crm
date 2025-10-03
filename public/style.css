@@ -5755,6 +5755,19 @@ body.has-offline-banner .app-header {
   background: #059669;
 }
 
+/* Hours Wizard: reduce button width by ~20% and center */
+#hoursWizardModal .wizard-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+#hoursWizardModal .wizard-actions button {
+  flex: 0 0 auto;
+  width: 80%;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .summary-card {
   background: #F9FAFB;
   border: 1px solid #E5E7EB;
