@@ -118,7 +118,7 @@ button {
 
 /* App Layout */
 .screen {
-  min-height: 100vh;
+  min-height: auto;
 }
 
 .app-header {
