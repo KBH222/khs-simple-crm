@@ -5415,6 +5415,7 @@ async function loadJobLocationsForWizard() {
   if (!jobLocationSelect) return;
 
   try {
+    // Load only current clients' jobs. If API supports filtering, prefer it; otherwise filter on client flag.
     const response = await fetch('/api/jobs');
     const jobs = await response.json();
 
@@ -5424,7 +5425,14 @@ async function loadJobLocationsForWizard() {
     jobLocationSelect.appendChild(placeholder);
 
     if (response.ok) {
-      jobs.forEach(job => {
+      // Filter to current clients only if the job has a current/customer flag
+      const filtered = jobs.filter(j => {
+        // Accept heuristics: customer_status/current_client flags; else include all
+        if (typeof j.current_client !== 'undefined') return !!j.current_client;
+        if (typeof j.customer_status !== 'undefined') return String(j.customer_status).toUpperCase() === 'CURRENT';
+        return true;
+      });
+      filtered.forEach(job => {
         const option = document.createElement('option');
         option.value = `${job.customer_name} : ${job.title}`;
         option.textContent = `${job.customer_name} : ${job.title}`;
