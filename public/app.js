@@ -310,24 +310,8 @@ window.showPage = function(pageName) {
   
   if (targetPage) {
     targetPage.classList.add('active');
-    // Force scroll position to top using multiple strategies
-    try {
-      requestAnimationFrame(() => {
-        try { targetPage.scrollTop = 0; } catch (_) {}
-        try {
-          const main = document.querySelector('.app-main');
-          if (main) main.scrollTop = 0;
-        } catch (_) {}
-        try {
-          if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
-          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-        } catch (_) {}
-      });
-      setTimeout(() => {
-        try { targetPage.scrollTop = 0; } catch (_) {}
-        try { window.scrollTo(0, 0); } catch (_) {}
-      }, 100);
-    } catch (_) {}
+    // Optional: keep viewport at top on navigation (simple, non-invasive)
+    try { window.scrollTo(0, 0); } catch (_) {}
     log('✅ Successfully showing page:', pageName);
   } else {
     logError('❌ Page not found:', pageName);
