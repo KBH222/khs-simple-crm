@@ -293,7 +293,7 @@ body.has-offline-banner .app-header {
 /* Main Content */
 .app-main {
   height: auto;
-  min-height: calc(100vh - 56px);
+  min-height: auto;
   overflow: auto;
 }
 
