@@ -5757,17 +5757,17 @@ body.has-offline-banner .app-header {
   background: #059669;
 }
 
-/* Hours Wizard: reduce button width by ~20% and center */
+/* Hours Wizard: keep two buttons side-by-side and split space evenly */
 #hoursWizardModal .wizard-actions {
-  justify-content: center;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  flex-wrap: nowrap;
 }
 #hoursWizardModal .wizard-actions button {
-  flex: 0 0 auto;
-  width: 80%;
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: auto;
+  flex: 1 1 0;
+  width: auto;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .summary-card {
@@ -5989,6 +5989,17 @@ body.has-offline-banner .app-header {
     width: 28px;
     height: 28px;
     font-size: 16px;
+  }
+}
+
+/* Mobile: Hours Wizard two-up buttons */
+@media (max-width: 480px) {
+  #hoursWizardModal .wizard-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #hoursWizardModal .wizard-actions button {
+    flex: 1 1 calc(50% - 8px);
   }
 }
 
