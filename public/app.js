@@ -5415,23 +5415,25 @@ async function loadJobLocationsForWizard() {
   if (!jobLocationSelect) return;
 
   try {
-    // Load only current clients' jobs. If API supports filtering, prefer it; otherwise filter on client flag.
-    const response = await fetch('/api/jobs');
-    const jobs = await response.json();
+    // Load only CURRENT clients, then include jobs for those customers only
+    const customersRes = await fetch('/api/customers');
+    const customers = customersRes.ok ? await customersRes.json() : [];
+    const clientIds = new Set(
+      (Array.isArray(customers) ? customers : (customers.customers || []))
+        .filter(c => String(c.customer_type).toUpperCase() === 'CURRENT')
+        .map(c => c.id)
+    );
+
+    const jobsRes = await fetch('/api/jobs');
+    const jobs = jobsRes.ok ? await jobsRes.json() : [];
 
     // Preserve the placeholder
     const placeholder = jobLocationSelect.querySelector('option[value=""]') || (() => { const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'Select location...'; return opt; })();
     jobLocationSelect.innerHTML = '';
     jobLocationSelect.appendChild(placeholder);
 
-    if (response.ok) {
-      // Filter to current clients only if the job has a current/customer flag
-      const filtered = jobs.filter(j => {
-        // Accept heuristics: customer_status/current_client flags; else include all
-        if (typeof j.current_client !== 'undefined') return !!j.current_client;
-        if (typeof j.customer_status !== 'undefined') return String(j.customer_status).toUpperCase() === 'CURRENT';
-        return true;
-      });
+    if (jobsRes.ok && clientIds.size > 0) {
+      const filtered = jobs.filter(j => clientIds.has(j.customer_id));
       filtered.forEach(job => {
         const option = document.createElement('option');
         option.value = `${job.customer_name} : ${job.title}`;
