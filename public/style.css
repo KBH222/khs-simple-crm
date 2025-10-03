@@ -5641,6 +5641,8 @@ body.has-offline-banner .app-header {
 .wizard-modal {
   max-width: 600px;
   width: 90%;
+  padding-left: 12px;
+  padding-right: 12px; /* small horizontal padding inside modal */
 }
 
 .wizard-progress {
@@ -5706,7 +5708,7 @@ body.has-offline-banner .app-header {
 
 .wizard-step-content {
   display: none;
-  padding: 20px 0;
+  padding: 20px 16px; /* add horizontal padding so text doesn't touch edges */
 }
 
 .wizard-step-content.active {
