@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
@@ -6,12 +7,53 @@ const { promisify } = require('util');
 const multer = require('multer');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const session = require('express-session');
 const { initializeAllData } = require('./init-data');
 const importLeadsRoutes = require('./routes/import-leads');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
+
+// Optionally load additional environment variables from .env.local for local development
+try {
+  const localEnvPath = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(localEnvPath)) {
+    require('dotenv').config({ path: localEnvPath, override: false });
+  }
+} catch (err) {
+  console.warn('Failed to load .env.local:', err);
+}
+
+let sessionSecret = process.env.SESSION_SECRET;
+
+// For local development, generate an ephemeral secret if not provided
+if (!sessionSecret && !isProduction) {
+  sessionSecret = crypto.randomBytes(32).toString('hex');
+  console.warn('SESSION_SECRET not set. Generated ephemeral development secret.');
+}
+
+if (!sessionSecret) {
+  throw new Error('SESSION_SECRET environment variable is required for session support');
+}
+
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
+app.use(session({
+  name: 'khs.sid',
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction ? true : false
+  }
+}));
 
 // Disable caching for local development to avoid stale JS/CSS/HTML
 if (!process.env.RAILWAY_ENVIRONMENT) {
@@ -469,6 +511,33 @@ const initializeTables = () => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (worker_id) REFERENCES workers (id)
   )`);
+
+  // Import leads table (temporary queue for supplier emails)
+  db.run(`CREATE TABLE IF NOT EXISTS import_leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    street_address TEXT,
+    city TEXT,
+    state TEXT DEFAULT 'HI',
+    zip_code TEXT,
+    subject_line TEXT,
+    email_body TEXT,
+    job_type TEXT CHECK(job_type IN ('Kitchen', 'Bathroom', 'Other')),
+    attachments TEXT,
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+    imported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME,
+    processed_by TEXT,
+    customer_id TEXT,
+    job_id TEXT,
+    notes TEXT,
+    FOREIGN KEY (customer_id) REFERENCES customers (id),
+    FOREIGN KEY (job_id) REFERENCES jobs (id)
+  )`);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_import_leads_status ON import_leads(status)`);
   
   // Create default admin user (only if none exists)
   db.get("SELECT COUNT(*) as count FROM users WHERE role = 'OWNER'", (err, row) => {
@@ -1521,18 +1590,7 @@ app.use('/api/import-leads', importLeadsRoutes);
 
 // Debug: expose current session (dev-only)
 app.get('/debug-session', (req, res) => {
-  try {
-    const s = req.session || {};
-    return res.json({
-      userType: s.userType || null,
-      user: s.user || null,
-      workerId: s.workerId || null,
-      workerName: s.workerName || null,
-      workerRole: s.workerRole || null
-    });
-  } catch (e) {
-    return res.json({ error: 'no session' });
-  }
+  res.json({ session: req.session });
 });
 
 // Photo API

@@ -14,6 +14,8 @@ const DEV_BYPASS_IMPORT_LEADS_AUTH = process.env.DEV_BYPASS_IMPORT_LEADS_AUTH ==
 // Log session for debugging before any auth checks
 router.use((req, res, next) => {
   try {
+    // Raw dump for quick debugging
+    console.log('Session debug:', req.session);
     const s = req.session || {};
     console.log('[import-leads] session snapshot:', {
       userType: s.userType,
@@ -72,11 +74,22 @@ router.get('/', (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch import leads' });
     }
     
-    // Parse attachments JSON for each lead
-    const leads = rows.map(lead => ({
-      ...lead,
-      attachments: lead.attachments ? JSON.parse(lead.attachments) : []
-    }));
+    const leads = rows.map(lead => {
+      let attachments = [];
+
+      if (lead.attachments) {
+        try {
+          attachments = JSON.parse(lead.attachments);
+        } catch (parseErr) {
+          console.warn('[import-leads] Failed to parse attachments JSON for lead', lead.id, parseErr);
+        }
+      }
+
+      return {
+        ...lead,
+        attachments
+      };
+    });
     
     res.json(leads);
   });
@@ -103,8 +116,16 @@ router.get('/:id', (req, res) => {
       return res.status(404).json({ error: 'Import lead not found' });
     }
     
-    // Parse attachments
-    lead.attachments = lead.attachments ? JSON.parse(lead.attachments) : [];
+    if (lead.attachments) {
+      try {
+        lead.attachments = JSON.parse(lead.attachments);
+      } catch (parseErr) {
+        console.warn('[import-leads] Failed to parse attachments JSON for lead', lead.id, parseErr);
+        lead.attachments = [];
+      }
+    } else {
+      lead.attachments = [];
+    }
     
     res.json(lead);
   });
